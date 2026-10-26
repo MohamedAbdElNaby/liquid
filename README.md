@@ -5,7 +5,7 @@
 Liquid Glass UI components for React Native, built to drop into React Navigation as custom tab bars and headers.
 
 - **iOS 26+** uses the native Liquid Glass material (`UIGlassEffect`, `UIGlassContainerEffect`). Earlier iOS versions fall back to a system material blur.
-- **Android 12+** uses [AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) by Kyant0 (Jetpack Compose `drawBackdrop`) to blur, saturate and refract the React Native views behind the glass. Lens refraction needs Android 13+. Earlier Android versions get a frosted, opaque material.
+- **Android 12+** draws the glass with Jetpack Compose effects, built on code vendored from [AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) by Kyant (Apache 2.0, no extra dependency), to blur, saturate and refract the React Native views behind the glass. Lens refraction needs Android 13+. Earlier Android versions get a frosted, opaque material.
 - New Architecture (Fabric) only.
 - Every animation (the tab bar drop, morphs, toggles, sliders) runs natively, not on the JS thread.
 
@@ -232,24 +232,12 @@ Keep a container's `spacing` below the gap between its children: the shapes then
 
 ## How the Android glass works
 
-AndroidLiquidGlass draws a backdrop with Compose effects (vibrancy, blur, lens). Each `LiquidGlassView` hosts a small `ComposeView` behind its React children, and feeds it a custom `Backdrop` that records the views drawn *behind* the glass into a `RenderNode` before every frame. Re-recording that node refreshes the glass without recomposing, so scrolling content stays smooth under tab bars and headers.
+The glass draws a backdrop with Compose effects (vibrancy, blur, lens). Each `LiquidGlassView` hosts a small `ComposeView` behind its React children, and feeds it a custom `Backdrop` that records the views drawn *behind* the glass into a `RenderNode` before every frame. Re-recording that node refreshes the glass without recomposing, so scrolling content stays smooth under tab bars and headers.
 
 Limitations:
 
 - Content rendered in a separate surface (`SurfaceView`, some video and map views) is not sampled.
 - Glass shapes do not merge on Android. `LiquidGlassContainer` is a regular view there.
-
-### Choosing the AndroidLiquidGlass version
-
-The library uses `io.github.kyant0:backdrop:1.0.6`, which works with Kotlin 2.2 (React Native 0.88). Apps on Kotlin 2.4+ can opt into 2.x in `android/build.gradle`:
-
-```groovy
-buildscript {
-  ext {
-    liquidBackdropVersion = "2.0.1"
-  }
-}
-```
 
 ## Example app
 
@@ -267,4 +255,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT. AndroidLiquidGlass is licensed under Apache 2.0.
+MIT. The vendored AndroidLiquidGlass code is Apache 2.0, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

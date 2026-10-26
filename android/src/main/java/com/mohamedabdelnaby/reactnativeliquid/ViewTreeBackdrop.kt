@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.unit.Density
-import com.kyant.backdrop.Backdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.Backdrop
 
 /**
  * A [Backdrop] that samples the classic Android view hierarchy drawn *behind* [target].

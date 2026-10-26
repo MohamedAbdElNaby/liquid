@@ -15,8 +15,8 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.views.view.ReactViewGroup
 import com.facebook.react.views.view.ReactViewManager
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.Backdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.backdrops.emptyBackdrop
 import kotlin.math.abs
 
 /**

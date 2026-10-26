@@ -8,8 +8,8 @@ import android.view.ViewTreeObserver
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.facebook.react.views.view.ReactViewGroup
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.Backdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.backdrops.emptyBackdrop
 
 /**
  * A React view group that draws a Liquid Glass surface (AndroidLiquidGlass by Kyant0) behind its

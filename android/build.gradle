@@ -17,9 +17,8 @@ buildscript {
 ext.ReactNativeLiquid = [
   minSdkVersion: 24,
   compileSdkVersion: 36,
-  // AndroidLiquidGlass (https://github.com/Kyant0/AndroidLiquidGlass).
-  // 1.0.x needs Kotlin 2.2+ in the app, 2.x needs Kotlin 2.4+.
-  liquidBackdropVersion: "1.0.6",
+  // The glass effects are vendored from AndroidLiquidGlass (see THIRD_PARTY_NOTICES.md).
+  // They need Kotlin 2.2+ in the app.
   liquidComposeVersion: "1.10.3"
 ]
 
@@ -54,11 +53,15 @@ android {
   buildFeatures {
     compose true
   }
+
+  // The vendored backdrop code uses context parameters.
+  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions.freeCompilerArgs.add("-Xcontext-parameters")
+  }
 }
 
 dependencies {
   implementation "com.facebook.react:react-android"
-  implementation "io.github.kyant0:backdrop:${getExtOrDefault("liquidBackdropVersion")}"
   implementation "androidx.compose.ui:ui:${getExtOrDefault("liquidComposeVersion")}"
   implementation "androidx.compose.foundation:foundation:${getExtOrDefault("liquidComposeVersion")}"
 }

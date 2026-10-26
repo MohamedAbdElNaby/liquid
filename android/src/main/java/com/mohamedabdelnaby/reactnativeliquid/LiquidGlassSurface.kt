@@ -26,13 +26,13 @@ import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.shadow.Shadow
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.Backdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.drawBackdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.blur
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.lens
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.vibrancy
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.highlight.Highlight
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.shadow.Shadow
 import kotlin.math.min
 
 /** Observable glass configuration, written by the view manager and read by Compose. */

@@ -35,17 +35,17 @@ import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.views.view.ReactViewGroup
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberBackdrop
-import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.shadow.InnerShadow
-import com.kyant.backdrop.shadow.Shadow
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.Backdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.backdrops.layerBackdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.backdrops.rememberBackdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.backdrops.rememberCombinedBackdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.backdrops.rememberLayerBackdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.drawBackdrop
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.blur
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.lens
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.highlight.Highlight
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.shadow.InnerShadow
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.shadow.Shadow
 import kotlinx.coroutines.flow.collectLatest
 
 @Stable

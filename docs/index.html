@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>React Native Liquid</title>
-<meta name="description" content="Liquid Glass components for React Native and React Navigation: native on iOS 26, AndroidLiquidGlass on Android.">
+<meta name="description" content="Liquid Glass components for React Native and React Navigation: native on iOS 26, Compose glass on Android.">
 <style>
 :root {
   --bg: #f5f5f7;
@@ -324,7 +324,7 @@ figcaption { margin-top: 8px; font-size: 14px; color: var(--muted); text-align: 
 
 <div class="hero">
   <h1>Liquid Glass for React Native</h1>
-  <p>Tab bars, headers, toggles, sliders, menus and search that plug straight into React Navigation. Native glass on iOS 26, AndroidLiquidGlass on Android, and every animation runs natively.</p>
+  <p>Tab bars, headers, toggles, sliders, menus and search that plug straight into React Navigation. Native glass on iOS 26, Compose glass on Android, and every animation runs natively.</p>
   <div class="badges">
     <span class="badge">iOS 26 UIGlassEffect</span>
     <span class="badge">Android · Kyant0 backdrop</span>
@@ -627,14 +627,6 @@ npx react-native run-android</code></pre>
     <li><code>isLiquidGlassSupported</code>: <code>true</code> on iOS 26+ and Android 12+.</li>
     <li><code>createLiquidBottomTabBar</code>, <code>createLiquidTopTabBar</code>, <code>createLiquidHeader</code> return render functions; create them once outside of render.</li>
   </ul>
-  <h3>Android library version</h3>
-  <p>The library uses <code>io.github.kyant0:backdrop:1.0.6</code>, which works with Kotlin 2.2. Apps on Kotlin 2.4+ can opt into 2.x:</p>
-<pre><code><span class="cm">// android/build.gradle</span>
-buildscript {
-  ext {
-    liquidBackdropVersion = <span class="str">"2.0.1"</span>
-  }
-}</code></pre>
 </section>
 
 <section id="troubleshooting">
@@ -651,7 +643,7 @@ buildscript {
 </section>
 
 <footer>
-  MIT licensed. AndroidLiquidGlass by Kyant0 is licensed under Apache 2.0.
+  MIT licensed. Includes code vendored from AndroidLiquidGlass by Kyant (Apache 2.0), see THIRD_PARTY_NOTICES.md.
 </footer>
 
 </main>

@@ -31,7 +31,7 @@ Rules that apply to the whole library:
 - Wrap the app in `SafeAreaProvider` (React Navigation already does this).
 - Every component takes `colorScheme`: `'system'` (default), `'light'` or `'dark'`.
 - iOS 26+ gets native Liquid Glass; older iOS gets a blur material. Android 12+
-  gets AndroidLiquidGlass; Android 13+ adds refraction.
+  gets Compose glass (no extra dependency); Android 13+ adds refraction.
 
 ## 2. Bottom tab bar
 

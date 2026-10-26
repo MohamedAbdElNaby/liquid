@@ -1,4 +1,3 @@
-import { StyleSheet, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
   createLiquidBottomTabBar,
@@ -8,6 +7,7 @@ import { HomeScreen } from './screens/HomeScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { ControlsScreen } from './screens/ControlsScreen';
 import { GlassLabScreen } from './screens/GlassLabScreen';
+import { ControlsIcon, DiscoverIcon, HomeIcon, LabIcon } from './TabIcons';
 
 export type TabParamList = {
   Home: undefined;
@@ -18,27 +18,17 @@ export type TabParamList = {
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-function TabIcon({ glyph, color }: { glyph: string; color: string }) {
-  return <Text style={[styles.icon, { color }]}>{glyph}</Text>;
-}
-
 const tabBar = createLiquidBottomTabBar({
   search: { placeholder: 'Search photos' },
 });
 const header = createLiquidHeader({ variant: 'bar' });
 
-const homeIcon = ({ color }: { color: string }) => (
-  <TabIcon glyph="⌂" color={color} />
-);
-const discoverIcon = ({ color }: { color: string }) => (
-  <TabIcon glyph="◎" color={color} />
-);
-const controlsIcon = ({ color }: { color: string }) => (
-  <TabIcon glyph="◐" color={color} />
-);
-const labIcon = ({ color }: { color: string }) => (
-  <TabIcon glyph="✦" color={color} />
-);
+type IconArgs = { color: string; size: number; focused: boolean };
+
+const homeIcon = (props: IconArgs) => <HomeIcon {...props} />;
+const discoverIcon = (props: IconArgs) => <DiscoverIcon {...props} />;
+const controlsIcon = (props: IconArgs) => <ControlsIcon {...props} />;
+const labIcon = (props: IconArgs) => <LabIcon {...props} />;
 
 export function Tabs() {
   return (
@@ -79,9 +69,3 @@ export function Tabs() {
   );
 }
 
-const styles = StyleSheet.create({
-  icon: {
-    fontSize: 22,
-    lineHeight: 26,
-  },
-});

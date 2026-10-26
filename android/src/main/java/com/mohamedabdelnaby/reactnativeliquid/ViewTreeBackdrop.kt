@@ -41,6 +41,8 @@ internal class ViewTreeBackdrop(
   private val enabled: () -> Boolean = { true },
   /** Optional paint (e.g. a color filter) applied to a child while it is recorded. */
   private val childPaint: (parent: ViewGroup, child: View) -> Paint? = { _, _ -> null },
+  /** Draws [child] in its own coordinates instead of its display list; returns false to skip. */
+  private val drawChildContent: (parent: ViewGroup, child: View, canvas: Canvas) -> Boolean = { _, _, _ -> false },
 ) : Backdrop {
 
   private val node = RenderNode("LiquidGlassBackdrop").apply { setClipToBounds(false) }
@@ -185,8 +187,10 @@ internal class ViewTreeBackdrop(
     if (child.alpha < 1f) {
       canvas.saveLayerAlpha(null, (child.alpha * 255).toInt())
     }
-    childPaint(parent, child)?.let { canvas.saveLayer(null, it) }
-    drawView(child, canvas)
+    if (!drawChildContent(parent, child, canvas)) {
+      childPaint(parent, child)?.let { canvas.saveLayer(null, it) }
+      drawView(child, canvas)
+    }
     canvas.restoreToCount(saveCount)
   }
 

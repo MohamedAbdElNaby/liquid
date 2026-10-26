@@ -1,6 +1,7 @@
 package com.mohamedabdelnaby.reactnativeliquid
 
 import android.content.Context
+import android.graphics.Canvas
 import android.graphics.Paint
 import android.view.ViewGroup
 import android.os.Build
@@ -87,11 +88,12 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
     magnification: () -> Float = { 1f },
     enabled: () -> Boolean = { true },
     childPaint: (parent: ViewGroup, child: View) -> Paint? = { _, _ -> null },
+    drawChildContent: (parent: ViewGroup, child: View, canvas: Canvas) -> Boolean = { _, _, _ -> false },
   ): Backdrop {
     if (!isGlassEffectSupported) {
       return emptyBackdrop()
     }
-    return ViewTreeBackdrop(target, coordinatesDependent, magnification, enabled, childPaint)
+    return ViewTreeBackdrop(target, coordinatesDependent, magnification, enabled, childPaint, drawChildContent)
       .also { backdrops.add(it) }
   }
 

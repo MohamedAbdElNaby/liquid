@@ -9,6 +9,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.Choreographer
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewConfiguration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
+import com.facebook.react.uimanager.util.ReactFindViewUtil
 import com.facebook.react.views.view.ReactViewGroup
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.Backdrop
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.drawBackdrop
@@ -49,6 +51,9 @@ import kotlin.math.roundToInt
 private const val INSET_DP = 4f
 /** Scale of the lens while lifted, relative to the resting pill. */
 // The lifted lens is an elliptical drop, wider than the pill.
+/** Native id of the focused copy of a tab rendered by JS (LIQUID_LENS_CONTENT_ID). */
+private const val LENS_CONTENT_ID = "liquid-lens-content"
+
 private const val PRESSED_SCALE_X = 1.38f
 private const val PRESSED_SCALE_Y = 1.2f
 /** Spring stiffness of the drop melting back into the pill. */
@@ -191,6 +196,31 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
       // Tab content seen through the lens takes the focused color, like iOS 26.
       childPaint = { parent, child ->
         if (parent === this && !GlassRegistry.isGlassSurface(this, child)) focusedPaint() else null
+      },
+      // Or, when JS renders a focused copy of the tab, the lens shows that copy instead.
+      drawChildContent = { parent, child, canvas ->
+        if (parent !== this || GlassRegistry.isGlassSurface(this, child)) {
+          false
+        } else {
+          val lens = ReactFindViewUtil.findView(child, LENS_CONTENT_ID)
+          if (lens == null || lens === child) {
+            false
+          } else {
+            // Offset of the copy inside the tab; it is hidden (alpha 0) in the bar, but View.draw
+            // ignores the view's own alpha.
+            var dx = 0f
+            var dy = 0f
+            var view: View = lens
+            while (view !== child) {
+              dx += view.left
+              dy += view.top
+              view = view.parent as? View ?: break
+            }
+            canvas.translate(dx, dy)
+            lens.draw(canvas)
+            true
+          }
+        }
       },
     )
   }

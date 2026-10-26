@@ -483,7 +483,21 @@ static const CGFloat kBarStretch = 0.45;
   _scaleY.target = kPressedScaleY;
 }
 
-/// Renders each tab item as a template image tinted with the focused color.
+/// The focused copy of a tab that JS renders for the lens (see LIQUID_LENS_CONTENT_ID).
+static UIView *RNLiquidLensContent(UIView *item)
+{
+  for (UIView *child in item.subviews) {
+    if ([child respondsToSelector:@selector(nativeId)] &&
+        [[child valueForKey:@"nativeId"] isEqual:@"liquid-lens-content"]) {
+      return child;
+    }
+  }
+  return nil;
+}
+
+/// Snapshots what each tab looks like under the lens: the focused copy that
+/// JS renders (its own icon and colors), or the tab tinted with the focused
+/// color when there is none.
 - (void)captureTintedItems
 {
   for (UIView *tintView in @[ _tintUnderView, _tintView ]) {
@@ -491,18 +505,39 @@ static const CGFloat kBarStretch = 0.45;
       [view removeFromSuperview];
     }
   }
-  if (_focusedTintColor == nil) {
-    return;
-  }
   for (UIView *item in _itemsView.subviews) {
     CGRect bounds = item.bounds;
     if (CGRectIsEmpty(bounds)) {
       continue;
     }
+    UIView *lens = RNLiquidLensContent(item);
+    if (lens == nil && _focusedTintColor == nil) {
+      continue;
+    }
+    // Draw only the focused copy: hide the normal content and show the copy for the snapshot.
+    NSMutableArray<UIView *> *hidden = [NSMutableArray new];
+    CGFloat lensAlpha = lens.alpha;
+    if (lens != nil) {
+      for (UIView *child in item.subviews) {
+        if (child != lens && !child.hidden) {
+          child.hidden = YES;
+          [hidden addObject:child];
+        }
+      }
+      lens.alpha = 1;
+    }
     UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithBounds:bounds];
-    UIImage *image = [[renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
+    UIImage *image = [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
       [item.layer renderInContext:context.CGContext];
-    }] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    }];
+    if (lens != nil) {
+      lens.alpha = lensAlpha;
+      for (UIView *child in hidden) {
+        child.hidden = NO;
+      }
+    } else {
+      image = [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    }
     for (UIView *tintView in @[ _tintUnderView, _tintView ]) {
       UIImageView *copy = [[UIImageView alloc] initWithImage:image];
       copy.tintColor = _focusedTintColor;

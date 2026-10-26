@@ -83,6 +83,20 @@ Options (pass to `createLiquidBottomTabBar` or `<LiquidBottomTabBar {...props} /
 | `lens` | `true` | The liquid drop that lifts while pressing and dragging. |
 | `height` / `horizontalMargin` / `bottomOffset` | `62` / `20` / safe area | Size and position. |
 
+**Icons.** `tabBarIcon` can return any element: an SVG (`react-native-svg`),
+`react-native-vector-icons`, an image or text. Under the liquid drop each tab is
+drawn in its focused state, so you get the effect either way:
+
+```tsx
+// One icon that changes color: just use `color`.
+tabBarIcon: ({ color, size }) => <Icon name="settings" color={color} size={size} />,
+
+// Two icons: return a different one when `focused` (outline / filled).
+tabBarIcon: ({ focused, color, size }) => (
+  <Icon name={focused ? 'home' : 'home-outline'} color={color} size={size} />
+),
+```
+
 Screen options it reads: `tabBarIcon`, `tabBarLabel`, `tabBarShowLabel`,
 `tabBarBadge`, `tabBarActiveTintColor`, `tabBarInactiveTintColor`,
 `tabBarLabelStyle`, `tabBarHideOnKeyboard`, `tabBarStyle: { display: 'none' }`.

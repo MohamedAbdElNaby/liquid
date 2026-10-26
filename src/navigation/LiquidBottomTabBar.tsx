@@ -329,6 +329,17 @@ type TabItemProps = {
 };
 
 /** A tab's content. Touches and the lift animation are handled by the native bar. */
+/** Native id of the focused copy of a tab, shown only through the lens. */
+export const LIQUID_LENS_CONTENT_ID = 'liquid-lens-content';
+
+/**
+ * A tab's content. Touches and the lift animation are handled by the native bar.
+ *
+ * Each tab also renders a hidden copy in its focused state (`tabBarIcon` with
+ * `focused: true` and the active color). The native bar shows that copy
+ * through the lens, so a single icon is recolored and a separate focused icon
+ * (outline / filled) is swapped in. Any icon works: SVG, vector icons, images.
+ */
 const TabItem = memo(function TabItemContent({
   options,
   title,
@@ -339,6 +350,58 @@ const TabItem = memo(function TabItemContent({
   onAccessibilityTap,
 }: TabItemProps) {
   const color = focused ? activeTintColor : inactiveTintColor;
+
+  return (
+    <View
+      accessible
+      accessibilityRole={Platform.OS === 'web' ? 'link' : 'tab'}
+      accessibilityState={{ selected: focused }}
+      accessibilityLabel={options.tabBarAccessibilityLabel ?? title}
+      onAccessibilityTap={onAccessibilityTap}
+      testID={options.tabBarButtonTestID}
+      style={styles.item}
+    >
+      <TabContent
+        options={options}
+        title={title}
+        focused={focused}
+        color={color}
+        colors={colors}
+      />
+      {Platform.OS === 'web' ? null : (
+        <View
+          nativeID={LIQUID_LENS_CONTENT_ID}
+          pointerEvents="none"
+          importantForAccessibility="no-hide-descendants"
+          accessibilityElementsHidden
+          style={[StyleSheet.absoluteFill, styles.item, styles.lensContent]}
+        >
+          <TabContent
+            options={options}
+            title={title}
+            focused
+            color={activeTintColor}
+            colors={colors}
+          />
+        </View>
+      )}
+    </View>
+  );
+});
+
+function TabContent({
+  options,
+  title,
+  focused,
+  color,
+  colors,
+}: {
+  options: BottomTabNavigationOptions;
+  title: string;
+  focused: boolean;
+  color: string;
+  colors: LiquidColors;
+}) {
   const showLabel = options.tabBarShowLabel !== false;
 
   const label =
@@ -360,15 +423,7 @@ const TabItem = memo(function TabItemContent({
     );
 
   return (
-    <View
-      accessible
-      accessibilityRole={Platform.OS === 'web' ? 'link' : 'tab'}
-      accessibilityState={{ selected: focused }}
-      accessibilityLabel={options.tabBarAccessibilityLabel ?? title}
-      onAccessibilityTap={onAccessibilityTap}
-      testID={options.tabBarButtonTestID}
-      style={styles.item}
-    >
+    <>
       <View>
         {options.tabBarIcon?.({ focused, color, size: 24 })}
         {options.tabBarBadge != null ? (
@@ -385,9 +440,9 @@ const TabItem = memo(function TabItemContent({
         ) : null}
       </View>
       {showLabel ? label : null}
-    </View>
+    </>
   );
-});
+}
 
 /**
  * Raises the bar above the keyboard while `enabled`. Measures where the bar
@@ -497,6 +552,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Drawn natively through the lens only.
+  lensContent: {
+    opacity: 0,
   },
   label: {
     fontSize: 10,

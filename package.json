@@ -13,6 +13,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "USAGE.md",
     "src",
     "lib",
     "android",

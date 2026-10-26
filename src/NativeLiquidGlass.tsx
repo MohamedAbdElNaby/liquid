@@ -75,6 +75,8 @@ export function NativeLiquidSwitch({
   value,
   disabled,
   onTintColor,
+  offTintColor,
+  thumbTintColor,
   onValueChange,
   style,
 }: SwitchProps) {
@@ -82,7 +84,8 @@ export function NativeLiquidSwitch({
     <Switch
       value={value ?? false}
       disabled={disabled ?? false}
-      trackColor={{ true: onTintColor }}
+      trackColor={{ true: onTintColor, false: offTintColor }}
+      thumbColor={thumbTintColor as string | undefined}
       onValueChange={(next) =>
         onValueChange?.({ nativeEvent: { value: next } } as never)
       }

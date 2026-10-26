@@ -563,7 +563,7 @@ npx react-native run-android</code></pre>
   <figure class="gif"><img src="media/controls.gif" alt="Segmented control, toggle, slider and expandable search in use" width="300" height="453" loading="lazy"><figcaption>Segmented control, toggle, slider and expandable search.</figcaption></figure>
   <h2>Toggle</h2>
 <pre><code>&lt;<span class="tag">LiquidToggle</span> value={enabled} onValueChange={setEnabled} /&gt;</code></pre>
-  <p>A <code>UISwitch</code> on iOS (glass thumb on iOS 26) and a port of the AndroidLiquidGlass toggle on Android. Props: <code>value</code>, <code>onValueChange</code>, <code>disabled</code>, <code>onTintColor</code>, <code>colorScheme</code>, <code>style</code>, <code>accessibilityLabel</code>, <code>testID</code>. Horizontal drags are not stolen by a parent scroll view.</p>
+  <p>Pressing turns the thumb into a clear glass lens that grows past the track, slides while the track fills with color, then settles back into a solid thumb. Native on both platforms (UIKit and Compose), and every part can be recolored. Props: <code>value</code>, <code>onValueChange</code>, <code>disabled</code>, <code>onTintColor</code> (track when on), <code>offTintColor</code> (track when off), <code>thumbTintColor</code> (thumb at rest), <code>lensTintColor</code> (glass lens while pressed), <code>colorScheme</code>, <code>style</code>, <code>accessibilityLabel</code>, <code>testID</code>. Horizontal drags are not stolen by a parent scroll view.</p>
 </section>
 
 <section id="slider">

@@ -9,7 +9,7 @@ Liquid Glass UI components for React Native, built to drop into React Navigation
 - New Architecture (Fabric) only.
 - Every animation (the tab bar drop, morphs, toggles, sliders) runs natively, not on the JS thread.
 
-Full documentation with every prop: open [`docs/index.html`](docs/index.html) in a browser.
+Full documentation with every prop: open [`docs/index.html`](docs/index.html) in a browser. For copy-paste recipes of every component, see [`USAGE.md`](USAGE.md) (it ships with the package).
 
 ## Preview
 
@@ -205,6 +205,7 @@ Keep a container's `spacing` below the gap between its children: the shapes then
 <LiquidButton title="Continue" variant="prominent" onPress={next} />
 <LiquidIconButton accessibilityLabel="Add" onPress={add}><PlusIcon /></LiquidIconButton>
 <LiquidToggle value={enabled} onValueChange={setEnabled} />
+<LiquidToggle value={on} onValueChange={setOn} onTintColor="#FF3B30" offTintColor="#3A3A3C" thumbTintColor="#FFFFFF" lensTintColor="rgba(255,59,48,0.12)" />
 <LiquidSlider value={volume} onValueChange={setVolume} step={0.1} />
 <LiquidSegmentedControl segments={['Day', 'Week', 'Month']} selectedIndex={i} onChange={setI} />
 <LiquidSearchBar value={query} onChangeText={setQuery} />

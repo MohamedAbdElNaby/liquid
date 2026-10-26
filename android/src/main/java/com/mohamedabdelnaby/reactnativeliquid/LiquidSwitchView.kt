@@ -53,6 +53,9 @@ internal class SwitchState {
   var value by mutableStateOf(false)
   var disabled by mutableStateOf(false)
   var onTintColor by mutableStateOf<Int?>(null)
+  var offTintColor by mutableStateOf<Int?>(null)
+  var thumbTintColor by mutableStateOf<Int?>(null)
+  var lensTintColor by mutableStateOf<Int?>(null)
   var colorScheme by mutableStateOf("system")
 }
 
@@ -80,7 +83,10 @@ private fun LiquidSwitch(state: SwitchState, backdrop: Backdrop, onValueChange: 
   val dark = isDarkScheme(state.colorScheme)
   val accentColor = state.onTintColor?.let { Color(it) }
     ?: if (dark) Color(0xFF30D158) else Color(0xFF34C759)
-  val trackColor = if (dark) Color(0xFF787880).copy(0.36f) else Color(0xFF787878).copy(0.2f)
+  val trackColor = state.offTintColor?.let { Color(it) }
+    ?: if (dark) Color(0xFF787880).copy(0.36f) else Color(0xFF787878).copy(0.2f)
+  val thumbColor = state.thumbTintColor?.let { Color(it) } ?: Color.White
+  val lensTint = state.lensTintColor?.let { Color(it) }
   val capsule = RoundedCornerShape(percent = 50)
 
   val density = LocalDensity.current
@@ -190,7 +196,12 @@ private fun LiquidSwitch(state: SwitchState, backdrop: Backdrop, onValueChange: 
               scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
               scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
             },
-            onDrawSurface = { drawRect(Color.White.copy(alpha = 1f - drag.pressProgress)) },
+            onDrawSurface = {
+              val progress = drag.pressProgress
+              // The solid thumb frosts away into clear (optionally tinted) glass, and back.
+              drawRect(thumbColor.copy(alpha = thumbColor.alpha * (1f - progress)))
+              lensTint?.let { drawRect(it.copy(alpha = it.alpha * progress)) }
+            },
           )
           .size(40f.dp, 24f.dp),
       )
@@ -220,6 +231,21 @@ class LiquidSwitchViewManager : LiquidComposeHostManager() {
   @ReactProp(name = "onTintColor", customType = "Color")
   fun setOnTintColor(view: ReactViewGroup, value: Int?) {
     (view as? LiquidSwitchView)?.state?.onTintColor = value
+  }
+
+  @ReactProp(name = "offTintColor", customType = "Color")
+  fun setOffTintColor(view: ReactViewGroup, value: Int?) {
+    (view as? LiquidSwitchView)?.state?.offTintColor = value
+  }
+
+  @ReactProp(name = "thumbTintColor", customType = "Color")
+  fun setThumbTintColor(view: ReactViewGroup, value: Int?) {
+    (view as? LiquidSwitchView)?.state?.thumbTintColor = value
+  }
+
+  @ReactProp(name = "lensTintColor", customType = "Color")
+  fun setLensTintColor(view: ReactViewGroup, value: Int?) {
+    (view as? LiquidSwitchView)?.state?.lensTintColor = value
   }
 
   @ReactProp(name = "colorScheme")

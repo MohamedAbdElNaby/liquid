@@ -102,7 +102,7 @@ private fun LiquidSwitch(state: SwitchState, backdrop: Backdrop, onValueChange: 
       valueRange = 0f..1f,
       visibilityThreshold = 0.001f,
       initialScale = 1f,
-      pressedScale = 1.5f,
+      pressedScale = 1.35f,
       onDragStarted = {},
       onDragStopped = {
         fraction = if (didDrag) {
@@ -175,7 +175,7 @@ private fun LiquidSwitch(state: SwitchState, backdrop: Backdrop, onValueChange: 
             effects = {
               val progress = drag.pressProgress
               blur(8f.dp.toPx() * (1f - progress))
-              lens(5f.dp.toPx() * progress, 10f.dp.toPx() * progress, chromaticAberration = true)
+              lens(6f.dp.toPx() * progress, 12f.dp.toPx() * progress, chromaticAberration = true)
             },
             highlight = {
               Highlight.Ambient.copy(
@@ -187,7 +187,8 @@ private fun LiquidSwitch(state: SwitchState, backdrop: Backdrop, onValueChange: 
             shadow = { Shadow(radius = 4f.dp, color = Color.Black.copy(alpha = 0.05f)) },
             innerShadow = {
               val progress = drag.pressProgress
-              InnerShadow(radius = 4f.dp * progress, alpha = progress)
+              // Light, so the lens stays clear instead of darkening at its edge.
+              InnerShadow(radius = 3f.dp * progress, alpha = 0.35f * progress)
             },
             layerBlock = {
               scaleX = drag.scaleX
@@ -200,7 +201,9 @@ private fun LiquidSwitch(state: SwitchState, backdrop: Backdrop, onValueChange: 
               val progress = drag.pressProgress
               // The solid thumb frosts away into clear (optionally tinted) glass, and back.
               drawRect(thumbColor.copy(alpha = thumbColor.alpha * (1f - progress)))
-              lensTint?.let { drawRect(it.copy(alpha = it.alpha * progress)) }
+              // A faint white body makes the lens read as glass without hiding the track.
+              val glass = lensTint ?: Color.White.copy(alpha = if (dark) 0.03f else 0.06f)
+              drawRect(glass.copy(alpha = glass.alpha * progress))
             },
           )
           .size(40f.dp, 24f.dp),

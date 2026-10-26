@@ -13,7 +13,7 @@
 using namespace facebook::react;
 
 /// Scale of the glass lens while pressed, relative to the resting thumb.
-static const CGFloat kPressedScale = 1.5;
+static const CGFloat kPressedScale = 1.35;
 /// Gap between the thumb and the track edge.
 static const CGFloat kInset = 2;
 /// Distance a touch must move before it drags the thumb instead of tapping.
@@ -204,7 +204,10 @@ static RNLiquidRGBA RNLiquidResolve(UIColor *color, UITraitCollection *traits)
     _lensTint = lensTint;
     if (@available(iOS 26.0, *)) {
       UIGlassEffect *glass = [UIGlassEffect effectWithStyle:UIGlassEffectStyleClear];
-      glass.tintColor = lensTint;
+      // A faint white body makes the lens read as glass without hiding the track.
+      glass.tintColor = lensTint ?: [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *traits) {
+        return [UIColor colorWithWhite:1 alpha:traits.userInterfaceStyle == UIUserInterfaceStyleDark ? 0.03 : 0.06];
+      }];
       _lensView.effect = glass;
     } else {
       _lensView.effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemUltraThinMaterial];

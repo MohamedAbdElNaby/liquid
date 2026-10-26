@@ -60,6 +60,8 @@ static const CGFloat kBarStretch = 0.45;
   UIView *_tintView;
   UIColor *_focusedTintColor;
   UIVisualEffectView *_lensView;
+  // The drop's body color: light in light mode, dark in dark mode.
+  UIView *_lensFill;
   // Specular reflections drawn over the lens, so it reads as a thick drop of liquid.
   UIView *_sheenView;
   CAGradientLayer *_rimLayer;
@@ -148,7 +150,12 @@ static const CGFloat kBarStretch = 0.45;
     _lensView.userInteractionEnabled = NO;
     _lensView.alpha = 0;
     _lensView.hidden = YES;
+    _lensFill = [UIView new];
+    _lensFill.userInteractionEnabled = NO;
+    _lensFill.layer.cornerCurve = kCACornerCurveContinuous;
     [self addSubview:_lensView];
+    // Over the glass so the system material can't hide it, under the sharp tinted tabs.
+    [self addSubview:_lensFill];
     [self addSubview:_tintView];
 
     _sheenView = [UIView new];
@@ -543,6 +550,9 @@ static const CGFloat kBarStretch = 0.45;
   UIColor *dim = dark ? [UIColor colorWithWhite:1 alpha:0.08] : [UIColor colorWithWhite:0 alpha:0.045];
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
+  _glossLayer.colors = @[
+    (id)[UIColor colorWithWhite:1 alpha:dark ? 0.12 : 0.35].CGColor, (id)[UIColor colorWithWhite:1 alpha:0].CGColor
+  ];
   _rimLayer.colors = @[
     (id)bright.CGColor, (id)dim.CGColor, (id)dim.CGColor, (id)second.CGColor, (id)dim.CGColor, (id)dim.CGColor,
     (id)bright.CGColor,
@@ -555,15 +565,15 @@ static const CGFloat kBarStretch = 0.45;
   [self updateRimColors];
   _lensTintColor = tint;
   if (@available(iOS 26.0, *)) {
-    // Clear glass with a light fill: a dense drop that mutes the reflections of the glass.
-    UIGlassEffect *lensGlass = [UIGlassEffect effectWithStyle:UIGlassEffectStyleClear];
-    lensGlass.tintColor = tint ?: [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *traits) {
-      // Dark glass in dark mode, so the drop matches the dark bar.
-      return traits.userInterfaceStyle == UIUserInterfaceStyleDark ? [UIColor colorWithWhite:0 alpha:0.32]
-                                                                   : [UIColor colorWithWhite:1 alpha:0.26];
-    }];
-    _lensView.effect = lensGlass;
+    // Untinted clear glass stays sharp: a tint makes the system render it frosted.
+    // The body color is a plain fill inside the drop instead.
+    _lensView.effect = [UIGlassEffect effectWithStyle:UIGlassEffectStyleClear];
   }
+  // A light body in light mode, a dark body in dark mode to match the bar.
+  _lensFill.backgroundColor = tint ?: [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *traits) {
+    return traits.userInterfaceStyle == UIUserInterfaceStyleDark ? [UIColor colorWithRed:0.07 green:0.07 blue:0.08 alpha:0.62]
+                                                                 : [UIColor colorWithWhite:1 alpha:0.22];
+  }];
 }
 
 - (void)settle
@@ -701,6 +711,12 @@ static const CGFloat kBarStretch = 0.45;
   if (_lensView.clipsToBounds) {
     _lensView.layer.cornerRadius = restFrame.size.height / 2;
   }
+  _lensFill.bounds = _lensView.bounds;
+  _lensFill.center = _lensView.center;
+  _lensFill.transform = _lensView.transform;
+  _lensFill.layer.cornerRadius = restFrame.size.height / 2;
+  _lensFill.alpha = _lensView.alpha;
+  _lensFill.hidden = _lensView.hidden;
 
   _sheenView.hidden = _lensView.hidden;
   if (!_sheenView.hidden) {

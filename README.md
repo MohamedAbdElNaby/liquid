@@ -241,12 +241,13 @@ Limitations:
 
 ## Example app
 
-The `example` folder is an Expo app with a native stack, bottom tabs, top tabs and a controls screen.
+The `example` folder is a React Native CLI app with a native stack, bottom tabs with search, top tabs, a controls screen, a glass lab and a light/dark switch. It installs the published package from npm.
 
 ```sh
-yarn
-yarn example expo prebuild
-yarn example ios     # or: yarn example android
+cd example
+npm install
+cd ios && pod install && cd ..
+npm run ios       # or: npm run android
 ```
 
 ## Contributing

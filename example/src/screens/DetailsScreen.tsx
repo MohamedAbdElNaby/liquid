@@ -7,7 +7,7 @@ import {
   useLiquidColors,
   useLiquidHeaderHeight,
 } from '@mohamed_abd_elnaby/react-native-liquid';
-import type { RootStackParamList } from '../App';
+import type { RootStackParamList } from '../../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Details'>;
 

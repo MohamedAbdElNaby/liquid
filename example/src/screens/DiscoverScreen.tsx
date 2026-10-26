@@ -2,6 +2,7 @@ import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import {
+  LIQUID_TOP_TAB_BAR_HEIGHT,
   LiquidGlassView,
   createLiquidTopTabBar,
   useLiquidColors,
@@ -21,7 +22,7 @@ function PhotosTab() {
       keyExtractor={(item) => item.id}
       contentContainerStyle={[
         styles.grid,
-        { paddingBottom: tabBarHeight + 16 },
+        { paddingTop: LIQUID_TOP_TAB_BAR_HEIGHT, paddingBottom: tabBarHeight + 16 },
       ]}
       renderItem={({ item }) => (
         <Image source={{ uri: item.image }} style={styles.tile} />
@@ -37,7 +38,10 @@ function ColorsTab() {
     <FlatList
       data={PHOTOS}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}
+      contentContainerStyle={{
+        paddingTop: LIQUID_TOP_TAB_BAR_HEIGHT,
+        paddingBottom: tabBarHeight + 16,
+      }}
       renderItem={({ item }) => (
         <View style={[styles.swatch, { backgroundColor: item.color }]}>
           <LiquidGlassView cornerRadius={16} style={styles.swatchLabel}>
@@ -101,6 +105,7 @@ const styles = StyleSheet.create({
   },
   about: {
     padding: 24,
+    paddingTop: LIQUID_TOP_TAB_BAR_HEIGHT + 16,
   },
   aboutText: {
     fontSize: 16,

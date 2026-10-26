@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useColorScheme,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,11 +14,13 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   LiquidGlassView,
+  LiquidMenu,
   isLiquidGlassSupported,
   useLiquidColors,
 } from '@mohamed_abd_elnaby/react-native-liquid';
 import { PHOTOS, type Photo } from '../data';
-import type { RootStackParamList } from '../App';
+import { AppearanceSwitch } from '../AppearanceSwitch';
+import type { RootStackParamList } from '../../App';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
 
@@ -28,12 +31,14 @@ const PhotoCard = memo(function PhotoCardContent({
   photo: Photo;
   onPress: (photo: Photo) => void;
 }) {
+const mode = useColorScheme()??'light';
+
   return (
     <Pressable onPress={() => onPress(photo)} style={styles.card}>
       <Image source={{ uri: photo.image }} style={styles.image} />
       <LiquidGlassView
         glassStyle="clear"
-        colorScheme="dark"
+        colorScheme={mode}
         cornerRadius={20}
         style={styles.caption}
       >
@@ -70,6 +75,17 @@ export function HomeScreen() {
       }}
       ListHeaderComponent={
         <View style={styles.header}>
+          <LiquidMenu
+            accessibilityLabel="More"
+            items={[
+              { title: 'Select chats', systemImage: 'checkmark.circle' },
+              { title: 'Read all', systemImage: 'text.bubble' },
+              { title: 'Delete all', systemImage: 'trash', destructive: true },
+            ]}
+            style={styles.moreButton}
+          >
+            <Text style={[styles.more, { color: colors.label }]}>•••</Text>
+          </LiquidMenu>
           <Text style={[styles.largeTitle, { color: colors.label }]}>
             Liquid
           </Text>
@@ -78,6 +94,7 @@ export function HomeScreen() {
               ? 'Native Liquid Glass is active on this device.'
               : 'This OS version renders the fallback material.'}
           </Text>
+          <AppearanceSwitch style={styles.appearance} />
         </View>
       }
     />
@@ -89,6 +106,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 12,
   },
+  moreButton: {
+    marginBottom: 12,
+  },
+  more: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
   largeTitle: {
     fontSize: 34,
     fontWeight: '700',
@@ -96,6 +121,9 @@ const styles = StyleSheet.create({
   note: {
     fontSize: 15,
     marginTop: 4,
+  },
+  appearance: {
+    marginTop: 16,
   },
   card: {
     marginHorizontal: 16,

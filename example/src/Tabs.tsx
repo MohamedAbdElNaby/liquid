@@ -1,18 +1,19 @@
-import { Alert, Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
   createLiquidBottomTabBar,
   createLiquidHeader,
-  useLiquidColors,
 } from '@mohamed_abd_elnaby/react-native-liquid';
 import { HomeScreen } from './screens/HomeScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { ControlsScreen } from './screens/ControlsScreen';
+import { GlassLabScreen } from './screens/GlassLabScreen';
 
 export type TabParamList = {
   Home: undefined;
   Discover: undefined;
   Controls: undefined;
+  Lab: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -21,22 +22,9 @@ function TabIcon({ glyph, color }: { glyph: string; color: string }) {
   return <Text style={[styles.icon, { color }]}>{glyph}</Text>;
 }
 
-function SearchAccessory() {
-  const { colors } = useLiquidColors();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Search"
-      onPress={() => Alert.alert('Search', 'Accessory pressed')}
-      style={styles.accessory}
-    >
-      <Text style={[styles.icon, { color: colors.label }]}>⌕</Text>
-    </Pressable>
-  );
-}
-
-const tabBar = createLiquidBottomTabBar({ accessory: <SearchAccessory /> });
+const tabBar = createLiquidBottomTabBar({
+  search: { placeholder: 'Search photos' },
+});
 const header = createLiquidHeader({ variant: 'bar' });
 
 const homeIcon = ({ color }: { color: string }) => (
@@ -47,6 +35,9 @@ const discoverIcon = ({ color }: { color: string }) => (
 );
 const controlsIcon = ({ color }: { color: string }) => (
   <TabIcon glyph="◐" color={color} />
+);
+const labIcon = ({ color }: { color: string }) => (
+  <TabIcon glyph="✦" color={color} />
 );
 
 export function Tabs() {
@@ -76,6 +67,14 @@ export function Tabs() {
           tabBarIcon: controlsIcon,
         }}
       />
+      <Tab.Screen
+        name="Lab"
+        component={GlassLabScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: labIcon,
+        }}
+      />
     </Tab.Navigator>
   );
 }
@@ -84,11 +83,5 @@ const styles = StyleSheet.create({
   icon: {
     fontSize: 22,
     lineHeight: 26,
-  },
-  accessory: {
-    flex: 1,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

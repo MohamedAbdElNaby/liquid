@@ -13,8 +13,6 @@
         "!android/build",
         "cpp",
         "src/**",
-        "example/package.json",
-        "example/android",
         "!example/android/.gradle",
         "!example/android/build",
         "!example/android/app/build"
@@ -34,8 +32,6 @@
         "ios",
         "cpp",
         "src/**",
-        "example/package.json",
-        "example/ios",
         "!example/ios/build",
         "!example/ios/Pods"
       ],

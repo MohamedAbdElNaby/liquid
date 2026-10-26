@@ -47,6 +47,12 @@ example/ios/Pods
 # Ruby
 example/vendor/
 
+# Example app
+example/node_modules/
+example/android/app/build/
+example/android/build/
+example/ios/build/
+
 # node.js
 #
 node_modules/

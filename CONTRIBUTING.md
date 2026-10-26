@@ -21,38 +21,13 @@ yarn
 
 > Since the project relies on Yarn workspaces, you cannot use [`npm`](https://github.com/npm/cli) for development without manually migrating.
 
-The [example app](/example/) demonstrates usage of the library. You need to run it to test any changes you make.
-
-It is configured to use the local version of the library, so any changes you make to the library's source code will be reflected in the example app. Changes to the library's JavaScript code will be reflected in the example app without a rebuild, but native code changes will require a rebuild of the example app.
-
-If you want to use Android Studio or Xcode to edit the native code, you can open the `example/android` or `example/ios` directories respectively in those editors. To edit the Objective-C or Swift files, open `example/ios/ReactNativeLiquidExample.xcworkspace` in Xcode and find the source files at `Pods > Development Pods > @mohamed_abd_elnaby/react-native-liquid`.
-
-To edit the Java or Kotlin files, open `example/android` in Android studio and find the source files at `mohamedabdelnaby-react-native-liquid` under `Android`.
-
-You can use various commands from the root directory to work with the project.
-
-To start the packager:
+The [example app](/example/) is a React Native CLI app that demonstrates the library. It installs the published package from npm. To test local changes, pack the library (`yarn prepare && npm pack`) and install the resulting `.tgz` in the example (`npm install ../mohamed_abd_elnaby-react-native-liquid-x.y.z.tgz`), then rebuild the native app.
 
 ```sh
-yarn example start
-```
-
-To run the example app on Android:
-
-```sh
-yarn example android
-```
-
-To run the example app on iOS:
-
-```sh
-yarn example ios
-```
-
-To run the example app on Web:
-
-```sh
-yarn example web
+cd example
+npm install
+npm run start      # Metro
+npm run android    # or: npm run ios
 ```
 
 Make sure your code passes TypeScript:
@@ -113,11 +88,6 @@ The `package.json` file contains various scripts for common tasks:
 - `yarn typecheck`: type-check files with TypeScript.
 - `yarn lint`: lint files with [ESLint](https://eslint.org/).
 - `yarn test`: run unit tests with [Jest](https://jestjs.io/).
-- `yarn example start`: start the Metro server for the example app.
-- `yarn example android`: run the example app on Android.
-- `yarn example ios`: run the example app on iOS.
-- `yarn example web`: run the example app on Web.
-- `yarn example build:web`: build the example app for Web.
 
 ### Sending a pull request
 

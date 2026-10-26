@@ -1,0 +1,32 @@
+name: Publish to GitHub Packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Build
+        run: yarn prepare
+
+      - name: Publish
+        # The package's publishConfig already points at npm.pkg.github.com.
+        run: |
+          echo "@mohamedabdelnaby:registry=https://npm.pkg.github.com" > "$RUNNER_TEMP/.npmrc"
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> "$RUNNER_TEMP/.npmrc"
+          npm publish --ignore-scripts --userconfig "$RUNNER_TEMP/.npmrc"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

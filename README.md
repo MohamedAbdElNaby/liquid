@@ -5,7 +5,7 @@
 Liquid Glass UI components for React Native, built to drop into React Navigation as custom tab bars and headers.
 
 - **iOS 26+** uses the native Liquid Glass material (`UIGlassEffect`, `UIGlassContainerEffect`). Earlier iOS versions fall back to a system material blur.
-- **Android 12+** draws the glass with Jetpack Compose effects, built on code vendored from [AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) by Kyant (Apache 2.0, no extra dependency), to blur, saturate and refract the React Native views behind the glass. Lens refraction needs Android 13+. Earlier Android versions get a frosted, opaque material.
+- **Android 12+** draws the glass natively with Jetpack Compose: it blurs, saturates and refracts the React Native views behind the glass. The glass code ships inside this package, so there is **no extra dependency** to install. Lens refraction needs Android 13+. Earlier Android versions get a frosted, opaque material.
 - New Architecture (Fabric) only.
 - Every animation (the tab bar drop, morphs, toggles, sliders) runs natively, not on the JS thread.
 
@@ -238,6 +238,8 @@ Limitations:
 
 - Content rendered in a separate surface (`SurfaceView`, some video and map views) is not sampled.
 - Glass shapes do not merge on Android. `LiquidGlassContainer` is a regular view there.
+
+The glass effects (blur, vibrancy, lens, highlight, shadows) are adapted from [AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) by Kyant and included in the package under its Apache 2.0 license. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Example app
 

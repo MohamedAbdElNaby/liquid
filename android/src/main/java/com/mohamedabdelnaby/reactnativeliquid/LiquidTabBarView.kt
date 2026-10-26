@@ -49,10 +49,16 @@ import kotlin.math.roundToInt
 private const val INSET_DP = 4f
 /** Scale of the lens while lifted, relative to the resting pill. */
 // The lifted lens is an elliptical drop, wider than the pill.
-private const val PRESSED_SCALE_X = 1.3f
-private const val PRESSED_SCALE_Y = 1.14f
+private const val PRESSED_SCALE_X = 1.38f
+private const val PRESSED_SCALE_Y = 1.2f
 /** Spring stiffness of the drop melting back into the pill. */
 private const val SETTLE_STIFFNESS = 1100f
+
+/**
+ * The drop returns to its normal size faster than it melts, so it is still liquid, at tab size,
+ * for a moment before it becomes the pill.
+ */
+private const val SETTLE_SCALE_STIFFNESS = 1700f
 
 /** Spring stiffness of the lens travelling to a tapped tab, and following a finger. */
 private const val TAP_TRAVEL_STIFFNESS = 330f
@@ -350,10 +356,11 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
   }
 
   private fun settle() {
-    // The lens shrinks to the pill with the same spring that fades it, so it melts into the pill.
+    // The drop first loses its reflections and shrinks back to tab size while still liquid, then
+    // melts into the pill.
     press.stiffness = SETTLE_STIFFNESS
-    scaleX.stiffness = SETTLE_STIFFNESS
-    scaleY.stiffness = SETTLE_STIFFNESS
+    scaleX.stiffness = SETTLE_SCALE_STIFFNESS
+    scaleY.stiffness = SETTLE_SCALE_STIFFNESS
     press.target = 0f
     scaleX.target = 1f
     scaleY.target = 1f
@@ -510,6 +517,7 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
   val tabWidth = (state.widthPx - inset * 2) / state.tabCount
   val height = state.heightPx - inset * 2
   val capsule = RoundedCornerShape(percent = 50)
+  val dark = isDarkScheme(state.colorScheme)
 
   // The ComposeView gives its root fixed constraints; the parent Box lets the lens be smaller.
   Box(Modifier.fillMaxSize()) {
@@ -539,7 +547,11 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
           // Light refraction, no color fringes: the rim bends the content without mirroring it.
           lens(8f.dp.toPx() * progress, 12f.dp.toPx() * progress)
         },
-        highlight = { Highlight.Default.copy(width = 1.5.dp, alpha = (state.press * 2f).coerceAtMost(1f)) },
+        // Reflections fade out during the first part of the settle, before the drop melts.
+        highlight = {
+          val reflect = ((state.press - 0.45f) / 0.55f).coerceIn(0f, 1f).let { it * it * (3f - 2f * it) }
+          Highlight.Default.copy(width = 1.5.dp, alpha = reflect)
+        },
         shadow = null,
         innerShadow = { InnerShadow(radius = 8f.dp * state.press, alpha = state.press) },
         // A light fill gives the drop density while it stays see-through.
@@ -547,7 +559,9 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
           // Drawn in the drop's own shape so the fill never shows square corners.
           drawRoundRect(
             color = state.lensTintColor?.let { tint -> Color(tint).let { it.copy(alpha = it.alpha * state.press) } }
-              ?: Color.White.copy(alpha = 0.32f * state.press),
+              // Dark glass in dark mode, so the drop matches the dark bar.
+              ?: if (dark) Color(0xFF1C1C1E).copy(alpha = 0.42f * state.press)
+              else Color.White.copy(alpha = 0.32f * state.press),
             cornerRadius = CornerRadius(size.height / 2f),
           )
         },

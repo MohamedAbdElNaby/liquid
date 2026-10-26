@@ -15,13 +15,16 @@ using namespace facebook::react;
 static const CGFloat kInset = 4;
 /// Scale of the lens while it is lifted, relative to the resting pill.
 // The lifted lens is an elliptical drop, wider than the pill.
-static const CGFloat kPressedScaleX = 1.3;
-static const CGFloat kPressedScaleY = 1.14;
+static const CGFloat kPressedScaleX = 1.38;
+static const CGFloat kPressedScaleY = 1.2;
 /// Spring stiffness of the lens travelling to a tapped tab, and following a finger.
 static const double kTapTravelStiffness = 330;
 static const double kDragStiffness = 1000;
 /// Spring stiffness of the drop melting back into the pill.
 static const double kSettleStiffness = 1100;
+/// The drop returns to its normal size faster than it melts, so it is still
+/// liquid, at tab size, for a moment before it becomes the pill.
+static const double kSettleScaleStiffness = 1700;
 /// Extra scale of every tab while the lens is lifted.
 static const CGFloat kTabLiftScale = 0;
 /// Extra scale of the tab right under the lens.
@@ -535,8 +538,8 @@ static const CGFloat kBarStretch = 0.45;
 - (void)updateRimColors
 {
   BOOL dark = self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
-  UIColor *bright = [UIColor colorWithWhite:1 alpha:0.7];
-  UIColor *second = [UIColor colorWithWhite:1 alpha:0.45];
+  UIColor *bright = [UIColor colorWithWhite:1 alpha:dark ? 0.5 : 0.7];
+  UIColor *second = [UIColor colorWithWhite:1 alpha:dark ? 0.3 : 0.45];
   UIColor *dim = dark ? [UIColor colorWithWhite:1 alpha:0.08] : [UIColor colorWithWhite:0 alpha:0.045];
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
@@ -555,7 +558,8 @@ static const CGFloat kBarStretch = 0.45;
     // Clear glass with a light fill: a dense drop that mutes the reflections of the glass.
     UIGlassEffect *lensGlass = [UIGlassEffect effectWithStyle:UIGlassEffectStyleClear];
     lensGlass.tintColor = tint ?: [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *traits) {
-      return traits.userInterfaceStyle == UIUserInterfaceStyleDark ? [UIColor colorWithWhite:1 alpha:0.16]
+      // Dark glass in dark mode, so the drop matches the dark bar.
+      return traits.userInterfaceStyle == UIUserInterfaceStyleDark ? [UIColor colorWithWhite:0 alpha:0.32]
                                                                    : [UIColor colorWithWhite:1 alpha:0.26];
     }];
     _lensView.effect = lensGlass;
@@ -564,11 +568,11 @@ static const CGFloat kBarStretch = 0.45;
 
 - (void)settle
 {
-  // The lens shrinks to the pill with the same spring that fades it into the
-  // pill, so it melts into it.
+  // The drop first loses its reflections and shrinks back to tab size while
+  // still liquid, then melts into the pill.
   _press.stiffness = kSettleStiffness;
-  _scaleX.stiffness = kSettleStiffness;
-  _scaleY.stiffness = kSettleStiffness;
+  _scaleX.stiffness = kSettleScaleStiffness;
+  _scaleY.stiffness = kSettleScaleStiffness;
   _press.target = 0;
   _scaleX.target = 1;
   _scaleY.target = 1;
@@ -704,7 +708,10 @@ static const CGFloat kBarStretch = 0.45;
     _sheenView.bounds = bounds;
     _sheenView.center = _lensView.center;
     _sheenView.transform = _lensView.transform;
-    _sheenView.alpha = _lensView.alpha;
+    // Reflections fade out during the first part of the settle, before the drop melts.
+    CGFloat reflect = MIN(MAX((press - 0.45) / 0.55, 0.0), 1.0);
+    reflect = reflect * reflect * (3 - 2 * reflect);
+    _sheenView.alpha = _lensView.alpha * reflect;
     CGFloat radius = bounds.size.height / 2;
     _rimLayer.frame = bounds;
     _rimMask.frame = bounds;

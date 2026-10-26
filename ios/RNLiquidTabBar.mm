@@ -535,9 +535,9 @@ static const CGFloat kBarStretch = 0.45;
 - (void)updateRimColors
 {
   BOOL dark = self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
-  UIColor *bright = [UIColor colorWithWhite:1 alpha:0.95];
-  UIColor *second = [UIColor colorWithWhite:1 alpha:0.7];
-  UIColor *dim = dark ? [UIColor colorWithWhite:1 alpha:0.12] : [UIColor colorWithWhite:0 alpha:0.07];
+  UIColor *bright = [UIColor colorWithWhite:1 alpha:0.7];
+  UIColor *second = [UIColor colorWithWhite:1 alpha:0.45];
+  UIColor *dim = dark ? [UIColor colorWithWhite:1 alpha:0.08] : [UIColor colorWithWhite:0 alpha:0.045];
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
   _rimLayer.colors = @[
@@ -708,7 +708,7 @@ static const CGFloat kBarStretch = 0.45;
     CGFloat radius = bounds.size.height / 2;
     _rimLayer.frame = bounds;
     _rimMask.frame = bounds;
-    _rimMask.lineWidth = 2;
+    _rimMask.lineWidth = 1.5;
     _rimMask.path = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(bounds, 1, 1) cornerRadius:radius - 1].CGPath;
     CGRect gloss = CGRectMake(radius * 0.45, bounds.size.height * 0.1, bounds.size.width - radius * 0.9,
                               bounds.size.height * 0.38);

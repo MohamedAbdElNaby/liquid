@@ -15,10 +15,10 @@ using namespace facebook::react;
 static const CGFloat kInset = 4;
 /// Scale of the lens while it is lifted, relative to the resting pill.
 // The lifted lens is an elliptical drop, wider than the pill.
-static const CGFloat kPressedScaleX = 1.24;
-static const CGFloat kPressedScaleY = 1.16;
+static const CGFloat kPressedScaleX = 1.3;
+static const CGFloat kPressedScaleY = 1.14;
 /// Spring stiffness of the lens travelling to a tapped tab, and following a finger.
-static const double kTapTravelStiffness = 380;
+static const double kTapTravelStiffness = 330;
 static const double kDragStiffness = 1000;
 /// Spring stiffness of the drop melting back into the pill.
 static const double kSettleStiffness = 1100;
@@ -108,7 +108,7 @@ static const CGFloat kBarStretch = 0.45;
     _scaleX = RNLiquidSpring(0.85, 420, 0.001);
     _scaleY = RNLiquidSpring(0.9, 420, 0.001);
     // A slow, well-damped velocity spring makes the drop heavy: it deforms gradually.
-    _velocity = RNLiquidSpring(0.95, 60, 0.01);
+    _velocity = RNLiquidSpring(0.95, 45, 0.01);
     _scaleX.snap(1);
     _scaleY.snap(1);
     _lensEnabled = YES;
@@ -499,8 +499,8 @@ static const CGFloat kBarStretch = 0.45;
     // Clear glass with a light fill: a dense drop that mutes the reflections of the glass.
     UIGlassEffect *lensGlass = [UIGlassEffect effectWithStyle:UIGlassEffectStyleClear];
     lensGlass.tintColor = tint ?: [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *traits) {
-      return traits.userInterfaceStyle == UIUserInterfaceStyleDark ? [UIColor colorWithWhite:1 alpha:0.22]
-                                                                   : [UIColor colorWithWhite:1 alpha:0.38];
+      return traits.userInterfaceStyle == UIUserInterfaceStyleDark ? [UIColor colorWithWhite:1 alpha:0.16]
+                                                                   : [UIColor colorWithWhite:1 alpha:0.26];
     }];
     _lensView.effect = lensGlass;
   }
@@ -609,7 +609,7 @@ static const CGFloat kBarStretch = 0.45;
 
   // The lens stretches along its direction of travel.
   // Like liquid, the drop stretches along its motion and thins out while it travels.
-  double speedStretch = MIN(std::fabs(_velocity.value) / 10 * 0.35, 0.2);
+  double speedStretch = MIN(std::fabs(_velocity.value) / 10 * 0.24, 0.13);
   CGFloat scaleX = _scaleX.value / (1 - speedStretch);
   CGFloat scaleY = _scaleY.value * (1 - speedStretch / 3);
   _lensView.bounds = CGRectMake(0, 0, restFrame.size.width, restFrame.size.height);

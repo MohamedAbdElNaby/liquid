@@ -49,13 +49,13 @@ import kotlin.math.roundToInt
 private const val INSET_DP = 4f
 /** Scale of the lens while lifted, relative to the resting pill. */
 // The lifted lens is an elliptical drop, wider than the pill.
-private const val PRESSED_SCALE_X = 1.24f
-private const val PRESSED_SCALE_Y = 1.16f
+private const val PRESSED_SCALE_X = 1.3f
+private const val PRESSED_SCALE_Y = 1.14f
 /** Spring stiffness of the drop melting back into the pill. */
 private const val SETTLE_STIFFNESS = 1100f
 
 /** Spring stiffness of the lens travelling to a tapped tab, and following a finger. */
-private const val TAP_TRAVEL_STIFFNESS = 380f
+private const val TAP_TRAVEL_STIFFNESS = 330f
 private const val DRAG_STIFFNESS = 1000f
 /** Extra scale of every tab while the lens is lifted. */
 private const val TAB_LIFT_SCALE = 0f
@@ -121,7 +121,7 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
   private val scaleX = LiquidSpring(0.85f, 420f, 0.001f)
   private val scaleY = LiquidSpring(0.9f, 420f, 0.001f)
   // A slow, well-damped velocity spring makes the drop heavy: it deforms gradually.
-  private val velocity = LiquidSpring(0.95f, 60f, 0.01f)
+  private val velocity = LiquidSpring(0.95f, 45f, 0.01f)
 
   private var selectedIndex = 0
   // Set once a pager drives the bar (top tabs): tab changes then glide the pill.
@@ -523,7 +523,7 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
         // The drop stays fully glassy while it shrinks and only fades in the last part.
         alpha = (state.press * 1.25f).coerceAtMost(1f).let { p -> p * p * p * (p * (p * 6f - 15f) + 10f) }
         // Like liquid, the drop stretches along its motion and thins out while it travels.
-        val stretch = (abs(state.velocity) / 10f * 0.35f).coerceAtMost(0.2f)
+        val stretch = (abs(state.velocity) / 10f * 0.24f).coerceAtMost(0.13f)
         scaleX = state.scaleX / (1f - stretch)
         scaleY = state.scaleY * (1f - stretch / 3f)
       }
@@ -547,7 +547,7 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
           // Drawn in the drop's own shape so the fill never shows square corners.
           drawRoundRect(
             color = state.lensTintColor?.let { tint -> Color(tint).let { it.copy(alpha = it.alpha * state.press) } }
-              ?: Color.White.copy(alpha = 0.24f * state.press),
+              ?: Color.White.copy(alpha = 0.32f * state.press),
             cornerRadius = CornerRadius(size.height / 2f),
           )
         },

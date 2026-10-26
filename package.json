@@ -67,7 +67,7 @@
   },
   "homepage": "https://github.com/MohamedAbdElNaby/liquid#readme",
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^21.2.4",

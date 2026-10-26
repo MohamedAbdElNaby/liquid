@@ -12,6 +12,15 @@ import { LiquidToggle, createLiquidBottomTabBar /* ... */ } from '@mohamedabdeln
 
 ## 1. Setup
 
+The package is published to GitHub Packages. Tell npm or yarn where the
+`@mohamedabdelnaby` scope lives, with a GitHub token that has `read:packages`:
+
+```sh
+# .npmrc in your app (keep the token in an environment variable, not in the file)
+@mohamedabdelnaby:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
 ```sh
 yarn add @mohamedabdelnaby/react-native-liquid react-native-safe-area-context
 # Only the navigators you use:

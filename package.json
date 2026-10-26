@@ -1,6 +1,6 @@
 {
   "name": "@mohamed_abd_elnaby/react-native-liquid",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Liquid glass UI components for React Native and React Navigation: bottom tabs, top tabs, headers, toggles and more",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",

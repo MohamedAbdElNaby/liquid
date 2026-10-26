@@ -204,7 +204,7 @@ private fun LiquidSlider(state: SliderState, backdrop: Backdrop, onEvent: (Strin
           effects = {
             val progress = drag.pressProgress
             blur(8f.dp.toPx() * (1f - progress))
-            lens(10f.dp.toPx() * progress, 14f.dp.toPx() * progress, chromaticAberration = true)
+            lens(6f.dp.toPx() * progress, 10f.dp.toPx() * progress)
           },
           highlight = {
             Highlight.Ambient.copy(
@@ -216,7 +216,8 @@ private fun LiquidSlider(state: SliderState, backdrop: Backdrop, onEvent: (Strin
           shadow = { Shadow(radius = 4f.dp, color = Color.Black.copy(alpha = 0.05f)) },
           innerShadow = {
             val progress = drag.pressProgress
-            InnerShadow(radius = 4f.dp * progress, alpha = progress)
+            // Light, so the lens stays clear instead of darkening at its edge.
+            InnerShadow(radius = 3f.dp * progress, alpha = 0.3f * progress)
           },
           layerBlock = {
             scaleX = drag.scaleX
@@ -225,7 +226,11 @@ private fun LiquidSlider(state: SliderState, backdrop: Backdrop, onEvent: (Strin
             scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
             scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
           },
-          onDrawSurface = { drawRect(Color.White.copy(alpha = 1f - drag.pressProgress)) },
+          onDrawSurface = {
+            val progress = drag.pressProgress
+            // The solid thumb frosts away into clear glass with a faint white body, and back.
+            drawRect(Color.White.copy(alpha = 1f - progress + 0.06f * progress))
+          },
         )
         .size(40f.dp, 24f.dp),
     )

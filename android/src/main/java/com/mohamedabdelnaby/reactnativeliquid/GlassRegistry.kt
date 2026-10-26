@@ -76,8 +76,10 @@ internal object GlassRegistry {
     }
     val clear = state.glassStyle == "clear"
     paint.color = state.tintColor
-      ?: if (dark) Color.argb(if (clear) 40 else 150, 28, 28, 30)
-      else Color.argb(if (clear) 30 else 140, 255, 255, 255)
+      // The same tint as the glass surface itself (LiquidGlassSurface), so a lens over this glass
+      // does not see a darker or lighter copy of it.
+      ?: if (dark) Color.argb(if (clear) 31 else 97, 28, 28, 30)
+      else Color.argb(if (clear) 20 else 82, 255, 255, 255)
     val radius = min(state.cornerRadius * state.density, min(glass.width, glass.height) / 2f)
     canvas.drawRoundRect(0f, 0f, glass.width.toFloat(), glass.height.toFloat(), radius, radius, paint)
   }

@@ -1,6 +1,7 @@
 package com.mohamedabdelnaby.reactnativeliquid
 
 import android.content.Context
+import android.view.View
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -140,6 +142,17 @@ private fun LiquidSwitch(state: SwitchState, backdrop: Backdrop, onValueChange: 
 
   val trackBackdrop = rememberLayerBackdrop()
 
+  // The thumb moves through a graphicsLayer, which React's view group does not always redraw
+  // (it ignores layout requests), so the thumb could stay put while the track changed color.
+  // Invalidate the host views on every animated frame.
+  val host = LocalView.current
+  LaunchedEffect(drag, host) {
+    snapshotFlow { drag.value + drag.pressProgress + drag.scaleX + drag.scaleY }.collect {
+      host.invalidate()
+      (host.parent as? View)?.invalidate()
+    }
+  }
+
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     Box(
       Modifier.alpha(if (state.disabled) 0.45f else 1f),
@@ -166,7 +179,8 @@ private fun LiquidSwitch(state: SwitchState, backdrop: Backdrop, onValueChange: 
               backdrop,
               rememberBackdrop(trackBackdrop) { drawBackdrop ->
                 val progress = drag.pressProgress
-                scale(lerp(2f / 3f, 0.75f, progress), lerp(0f, 0.75f, progress)) {
+                // The track under the lens is shown almost at full size, so the lens stays clear.
+                scale(lerp(2f / 3f, 0.92f, progress), lerp(0f, 0.92f, progress)) {
                   drawBackdrop()
                 }
               },
@@ -175,7 +189,7 @@ private fun LiquidSwitch(state: SwitchState, backdrop: Backdrop, onValueChange: 
             effects = {
               val progress = drag.pressProgress
               blur(8f.dp.toPx() * (1f - progress))
-              lens(6f.dp.toPx() * progress, 12f.dp.toPx() * progress, chromaticAberration = true)
+              lens(4f.dp.toPx() * progress, 8f.dp.toPx() * progress)
             },
             highlight = {
               Highlight.Ambient.copy(

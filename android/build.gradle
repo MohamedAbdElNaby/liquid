@@ -1,0 +1,64 @@
+buildscript {
+  // The Compose compiler plugin must match the Kotlin version used by the app.
+  def kotlinVersion = rootProject.ext.has("kotlinVersion")
+    ? rootProject.ext.get("kotlinVersion")
+    : (rootProject.findProperty("android.kotlinVersion") ?: "2.2.0")
+
+  repositories {
+    google()
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath("org.jetbrains.kotlin.plugin.compose:org.jetbrains.kotlin.plugin.compose.gradle.plugin:${kotlinVersion}")
+  }
+}
+
+ext.ReactNativeLiquid = [
+  minSdkVersion: 24,
+  compileSdkVersion: 36,
+  // AndroidLiquidGlass (https://github.com/Kyant0/AndroidLiquidGlass).
+  // 1.0.x needs Kotlin 2.2+ in the app, 2.x needs Kotlin 2.4+.
+  liquidBackdropVersion: "1.0.6",
+  liquidComposeVersion: "1.10.3"
+]
+
+ext.getExtOrDefault = { prop ->
+  if (rootProject.ext.has(prop)) {
+    return rootProject.ext.get(prop)
+  }
+
+  return ReactNativeLiquid[prop]
+}
+
+
+apply plugin: "com.android.library"
+
+if (project.extensions.findByName("kotlin") == null) {
+  apply plugin: "kotlin-android"
+}
+
+apply plugin: "org.jetbrains.kotlin.plugin.compose"
+
+apply plugin: "com.facebook.react"
+
+android {
+  namespace "com.mohamedabdelnaby.reactnativeliquid"
+
+  compileSdkVersion getExtOrDefault("compileSdkVersion")
+
+  defaultConfig {
+    minSdkVersion getExtOrDefault("minSdkVersion")
+  }
+
+  buildFeatures {
+    compose true
+  }
+}
+
+dependencies {
+  implementation "com.facebook.react:react-android"
+  implementation "io.github.kyant0:backdrop:${getExtOrDefault("liquidBackdropVersion")}"
+  implementation "androidx.compose.ui:ui:${getExtOrDefault("liquidComposeVersion")}"
+  implementation "androidx.compose.foundation:foundation:${getExtOrDefault("liquidComposeVersion")}"
+}

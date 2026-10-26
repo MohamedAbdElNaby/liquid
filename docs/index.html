@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>React Native Liquid</title>
+<meta name="description" content="Liquid Glass components for React Native and React Navigation: native on iOS 26, AndroidLiquidGlass on Android.">
+<style>
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-2: #f0f0f3;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --border: rgba(0, 0, 0, 0.09);
+  --accent: #007aff;
+  --accent-soft: rgba(0, 122, 255, 0.1);
+  --code-bg: #f6f6f8;
+  --code-text: #1d1d1f;
+  --kw: #ad3da4;
+  --str: #c41a16;
+  --tag: #0b4f79;
+  --cm: #707f8c;
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-pill: rgba(0, 0, 0, 0.06);
+  --glass-rim: rgba(255, 255, 255, 0.9);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  --hero-1: #7fd1ff;
+  --hero-2: #ff9f6b;
+  --hero-3: #b18cff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000;
+    --surface: #111113;
+    --surface-2: #1c1c1e;
+    --text: #f5f5f7;
+    --muted: #98989d;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #0a84ff;
+    --accent-soft: rgba(10, 132, 255, 0.16);
+    --code-bg: #161618;
+    --code-text: #e8e8ed;
+    --kw: #ff7ab2;
+    --str: #ff8170;
+    --tag: #6bdfff;
+    --cm: #7f8c98;
+    --glass: rgba(44, 44, 46, 0.62);
+    --glass-pill: rgba(0, 0, 0, 0.42);
+    --glass-rim: rgba(255, 255, 255, 0.14);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --hero-1: #1b6fae;
+    --hero-2: #b4492a;
+    --hero-3: #5b3fb0;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #000000;
+  --surface: #111113;
+  --surface-2: #1c1c1e;
+  --text: #f5f5f7;
+  --muted: #98989d;
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #0a84ff;
+  --accent-soft: rgba(10, 132, 255, 0.16);
+  --code-bg: #161618;
+  --code-text: #e8e8ed;
+  --kw: #ff7ab2;
+  --str: #ff8170;
+  --tag: #6bdfff;
+  --cm: #7f8c98;
+  --glass: rgba(44, 44, 46, 0.62);
+  --glass-pill: rgba(0, 0, 0, 0.42);
+  --glass-rim: rgba(255, 255, 255, 0.14);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --hero-1: #1b6fae;
+  --hero-2: #b4492a;
+  --hero-3: #5b3fb0;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.875em; }
+:not(pre) > code {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.1em 0.4em;
+  overflow-wrap: anywhere;
+}
+
+/* Top bar */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 12px;
+  height: 56px; padding: 0 16px;
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); white-space: nowrap; min-width: 0; }
+.brand:hover { text-decoration: none; }
+.drop {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff, var(--hero-1) 45%, var(--hero-3));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+}
+.topbar .spacer { flex: 1; }
+.icon-btn {
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  height: 34px; min-width: 34px; padding: 0 10px; border-radius: 17px;
+  font: inherit; font-size: 14px; cursor: pointer;
+}
+.menu-btn { display: none; }
+
+/* Layout */
+.layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); max-width: 1180px; margin: 0 auto; }
+nav.side {
+  position: sticky; top: 56px; align-self: start;
+  height: calc(100vh - 56px); overflow-y: auto;
+  padding: 24px 16px 40px;
+  border-right: 1px solid var(--border);
+}
+nav.side h4 {
+  margin: 20px 8px 6px; font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--muted);
+}
+nav.side h4:first-child { margin-top: 0; }
+nav.side a {
+  display: block; padding: 5px 8px; border-radius: 8px;
+  color: var(--text); font-size: 14px;
+}
+nav.side a:hover { background: var(--surface-2); text-decoration: none; }
+nav.side a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+main { padding: 32px 40px 80px; min-width: 0; }
+
+/* Hero */
+.hero {
+  position: relative; overflow: hidden;
+  border-radius: 28px; padding: 40px 32px 120px;
+  background:
+    radial-gradient(circle at 15% 20%, var(--hero-1), transparent 55%),
+    radial-gradient(circle at 85% 30%, var(--hero-2), transparent 50%),
+    radial-gradient(circle at 50% 100%, var(--hero-3), transparent 60%),
+    var(--surface-2);
+  color: #fff;
+}
+.hero h1 { margin: 0 0 8px; font-size: clamp(30px, 5vw, 46px); line-height: 1.1; letter-spacing: -0.02em; text-shadow: 0 1px 12px rgba(0,0,0,0.25); }
+.hero p { margin: 0; max-width: 560px; font-size: 18px; text-shadow: 0 1px 8px rgba(0,0,0,0.3); }
+.hero .badges { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; }
+.hero .badge {
+  padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.45);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+
+/* Demo tab bar drawn with CSS */
+.demo-bar {
+  position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%);
+  width: min(460px, calc(100% - 32px));
+  display: flex; gap: 10px;
+}
+.demo-tabs {
+  flex: 1; position: relative; display: flex; height: 62px; padding: 4px;
+  border-radius: 31px; background: var(--glass);
+  backdrop-filter: saturate(160%) blur(18px); -webkit-backdrop-filter: saturate(160%) blur(18px);
+  box-shadow: var(--shadow), inset 0 0 0 1px var(--glass-rim);
+}
+.demo-pill {
+  position: absolute; top: 4px; bottom: 4px; left: 4px;
+  width: calc((100% - 8px) / 4); border-radius: 27px;
+  background: var(--glass-pill);
+  transition: transform 0.38s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.demo-tab {
+  position: relative; flex: 1; border: 0; background: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  color: var(--text); font: 600 10px/1 -apple-system, sans-serif;
+}
+.demo-tab svg { width: 22px; height: 22px; }
+.demo-tab.on { color: var(--accent); }
+.demo-search {
+  width: 62px; height: 62px; border-radius: 50%; border: 0; color: var(--text);
+  background: var(--glass);
+  backdrop-filter: saturate(160%) blur(18px); -webkit-backdrop-filter: saturate(160%) blur(18px);
+  box-shadow: var(--shadow), inset 0 0 0 1px var(--glass-rim);
+  display: flex; align-items: center; justify-content: center;
+}
+.demo-search svg { width: 22px; height: 22px; }
+.demo-note { margin-top: 8px; font-size: 13px; color: var(--muted); }
+
+/* Content */
+section { padding-top: 40px; }
+h2 { font-size: 28px; letter-spacing: -0.01em; margin: 0 0 12px; }
+h3 { font-size: 20px; margin: 32px 0 8px; }
+p, li { color: var(--text); }
+.lead { color: var(--muted); font-size: 17px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 16px 0; }
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px;
+}
+.card b { display: block; margin-bottom: 4px; }
+.card span { color: var(--muted); font-size: 14px; }
+.card a { color: inherit; }
+.card a:hover { text-decoration: none; }
+.card:has(a:hover) { border-color: var(--accent); }
+
+pre {
+  position: relative; margin: 14px 0;
+  background: var(--code-bg); color: var(--code-text);
+  border: 1px solid var(--border); border-radius: 14px;
+  padding: 16px 18px; overflow-x: auto; line-height: 1.55;
+}
+pre .copy {
+  position: absolute; top: 8px; right: 8px;
+  font: 12px -apple-system, sans-serif; padding: 4px 10px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted); cursor: pointer;
+  opacity: 0; transition: opacity 0.15s;
+}
+pre:hover .copy, pre .copy:focus { opacity: 1; }
+.kw { color: var(--kw); } .str { color: var(--str); } .tag { color: var(--tag); } .cm { color: var(--cm); font-style: italic; }
+
+.table-wrap { overflow-x: auto; margin: 12px 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--surface-2); }
+td:first-child { white-space: nowrap; }
+td:nth-child(2) { white-space: nowrap; color: var(--muted); }
+
+.note {
+  border-left: 3px solid var(--accent); background: var(--accent-soft);
+  padding: 12px 16px; border-radius: 0 12px 12px 0; margin: 16px 0; font-size: 15px;
+}
+.platforms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.platforms .card h4 { margin: 0 0 6px; }
+.platforms ul { margin: 0; padding-left: 18px; font-size: 15px; }
+footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 14px; }
+
+/* Media */
+.banner { display: block; width: 100%; height: auto; border-radius: 22px; margin: 0 0 8px; box-shadow: var(--shadow); }
+figure { margin: 18px 0; }
+figure img { display: block; max-width: 100%; height: auto; border-radius: 18px; border: 1px solid var(--border); background: var(--surface-2); }
+figure.gif img { margin: 0 auto; }
+figcaption { margin-top: 8px; font-size: 14px; color: var(--muted); text-align: center; }
+.media-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: start; }
+.gallery-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+.seg button { border: 0; background: none; color: var(--muted); font: 600 13px -apple-system, sans-serif; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+.seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; margin-top: 16px; }
+.gallery figure { margin: 0; }
+.gallery img { border-radius: 26px; border: 6px solid #111; }
+
+/* Phone width */
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .menu-btn { display: inline-block; }
+  .brand { font-size: 15px; }
+  .github { display: none !important; }
+  nav.side {
+    position: fixed; top: 56px; left: 0; right: 0; z-index: 15;
+    height: auto; max-height: calc(100vh - 56px);
+    background: var(--bg); border-right: 0; border-bottom: 1px solid var(--border);
+    display: none;
+  }
+  nav.side.open { display: block; }
+  main { padding: 20px 16px 64px; }
+  .hero { padding: 28px 20px 112px; border-radius: 22px; }
+  .hero p { font-size: 16px; }
+  td:first-child, td:nth-child(2) { white-space: normal; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open navigation" aria-expanded="false">☰</button>
+  <a class="brand" href="#top"><span class="drop" aria-hidden="true"></span>React Native Liquid</a>
+  <span class="spacer"></span>
+  <a class="icon-btn github" href="https://github.com/MohamedAbdElNaby/liquid" style="display:inline-flex;align-items:center;text-decoration:none">GitHub</a>
+  <button class="icon-btn" id="themeBtn" aria-label="Switch light and dark theme">◐</button>
+</header>
+
+<div class="layout">
+<nav class="side" id="side" aria-label="Documentation">
+  <h4>Start</h4>
+  <a href="#overview">Overview</a>
+  <a href="#gallery">Gallery</a>
+  <a href="#install">Installation</a>
+  <a href="#platforms">How it works</a>
+  <h4>React Navigation</h4>
+  <a href="#bottom-tabs">Bottom tab bar</a>
+  <a href="#top-tabs">Top tab bar</a>
+  <a href="#header">Header</a>
+  <h4>Components</h4>
+  <a href="#glass-view">Glass view &amp; container</a>
+  <a href="#button">Buttons</a>
+  <a href="#toggle">Toggle</a>
+  <a href="#slider">Slider</a>
+  <a href="#segmented">Segmented control</a>
+  <a href="#search">Search</a>
+  <a href="#menu">Menu</a>
+  <h4>Reference</h4>
+  <a href="#theme">Theme &amp; utilities</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+
+<main id="top">
+
+<img class="banner" src="media/banner.jpg" alt="React Native Liquid: three phones showing the Home, Discover and Controls screens with glass tab bars" width="1600" height="800">
+
+<div class="hero">
+  <h1>Liquid Glass for React Native</h1>
+  <p>Tab bars, headers, toggles, sliders, menus and search that plug straight into React Navigation. Native glass on iOS 26, AndroidLiquidGlass on Android, and every animation runs natively.</p>
+  <div class="badges">
+    <span class="badge">iOS 26 UIGlassEffect</span>
+    <span class="badge">Android · Kyant0 backdrop</span>
+    <span class="badge">New Architecture</span>
+  </div>
+  <div class="demo-bar" aria-hidden="true">
+    <div class="demo-tabs" id="demoTabs">
+      <span class="demo-pill" id="demoPill"></span>
+      <button class="demo-tab on" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+      <button class="demo-tab" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Discover</button>
+      <button class="demo-tab" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v18" /></svg>Controls</button>
+      <button class="demo-tab" tabindex="-1"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg>Lab</button>
+    </div>
+    <span class="demo-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></span>
+  </div>
+</div>
+<p class="demo-note">A CSS sketch of <code>LiquidBottomTabBar</code>. Click a tab. The real component draws native glass with a liquid drop that follows your finger.</p>
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p class="lead"><code>@mohamedabdelnaby/react-native-liquid</code> gives React Native apps the iOS 26 Liquid Glass look on both platforms, with components shaped to drop into React Navigation as custom tab bars and headers.</p>
+  <div class="grid">
+    <div class="card"><a href="#bottom-tabs"><b>LiquidBottomTabBar</b><span>Floating bar with a liquid drop, search and keyboard lift.</span></a></div>
+    <div class="card"><a href="#top-tabs"><b>LiquidTopTabBar</b><span>Floating segmented bar that follows the pager while swiping.</span></a></div>
+    <div class="card"><a href="#header"><b>LiquidHeader</b><span>Floating controls or a full glass bar for any stack.</span></a></div>
+    <div class="card"><a href="#glass-view"><b>LiquidGlassView</b><span>The glass material as a view, with morphing.</span></a></div>
+    <div class="card"><a href="#toggle"><b>LiquidToggle · LiquidSlider</b><span>Native switch and slider with glass thumbs.</span></a></div>
+    <div class="card"><a href="#menu"><b>LiquidMenu · Search</b><span>Glass menus and a search button that morphs into a field.</span></a></div>
+  </div>
+</section>
+
+<section id="gallery">
+  <div class="gallery-head">
+    <h2>Gallery</h2>
+    <div class="seg" role="group" aria-label="Screenshot appearance">
+      <button type="button" class="on" data-shots="light">Light</button>
+      <button type="button" data-shots="dark">Dark</button>
+    </div>
+  </div>
+  <p class="lead">The example app on iOS 26. Every glass surface here is a component from this library.</p>
+  <div class="gallery">
+    <figure><img data-shot="home" src="media/home-light.jpg" alt="Home screen" width="402" height="874" loading="lazy"><figcaption>Home · bottom tab bar</figcaption></figure>
+    <figure><img data-shot="discover" src="media/discover-light.jpg" alt="Discover screen" width="402" height="874" loading="lazy"><figcaption>Discover · top tab bar</figcaption></figure>
+    <figure><img data-shot="controls" src="media/controls-light.jpg" alt="Controls screen" width="402" height="874" loading="lazy"><figcaption>Controls</figcaption></figure>
+    <figure><img data-shot="lab" src="media/lab-light.jpg" alt="Glass Lab screen" width="402" height="874" loading="lazy"><figcaption>Glass Lab · toolbar</figcaption></figure>
+    <figure><img data-shot="details" src="media/details-light.jpg" alt="Details screen" width="402" height="874" loading="lazy"><figcaption>Details · floating header</figcaption></figure>
+  </div>
+</section>
+
+<section id="install">
+  <h2>Installation</h2>
+<pre><code>yarn add @mohamedabdelnaby/react-native-liquid react-native-safe-area-context</code></pre>
+  <p>Install the navigators you use, for example <code>@react-navigation/bottom-tabs</code>, <code>@react-navigation/material-top-tabs</code> or <code>@react-navigation/native-stack</code>. They are optional peer dependencies.</p>
+  <p>Then rebuild the native app:</p>
+<pre><code>cd ios &amp;&amp; pod install &amp;&amp; cd ..
+npx react-native run-ios
+npx react-native run-android</code></pre>
+  <h3>Requirements</h3>
+  <ul>
+    <li>React Native 0.80+ with the New Architecture (Fabric). Works in React Native CLI apps and Expo dev builds, not in Expo Go.</li>
+    <li>iOS: build with Xcode 26+ to get Liquid Glass on iOS 26 devices. Older iOS versions get a system blur material.</li>
+    <li>Android: Kotlin 2.2+ in the app. Glass needs Android 12+, lens refraction Android 13+. Older versions get a frosted material.</li>
+  </ul>
+</section>
+
+<section id="platforms">
+  <h2>How it works</h2>
+  <div class="platforms">
+    <div class="card">
+      <h4>iOS</h4>
+      <ul>
+        <li>Glass is <code>UIGlassEffect</code> and <code>UIGlassContainerEffect</code> in Fabric components.</li>
+        <li>The tab bar drop is a clear glass lens driven by a <code>CADisplayLink</code> spring.</li>
+        <li><code>UISwitch</code>, <code>UISlider</code> and <code>UIButton</code> menus give the system glass controls.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Android</h4>
+      <ul>
+        <li>Each glass view hosts a small Compose view drawn with <a href="https://github.com/Kyant0/AndroidLiquidGlass">AndroidLiquidGlass</a> (vibrancy, blur, lens).</li>
+        <li>The views behind the glass are recorded into a <code>RenderNode</code> every frame, so scrolling content stays live under the bars.</li>
+        <li>Springs run on <code>Choreographer</code>, never on the JS thread.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note">Content in a separate surface (<code>SurfaceView</code>, some video and map views) is not sampled on Android, and glass shapes do not merge there: <code>LiquidGlassContainer</code> is a plain view on Android.</div>
+</section>
+
+<section id="bottom-tabs">
+  <h2>Bottom tab bar</h2>
+  <p>A floating glass bar for <code>@react-navigation/bottom-tabs</code>. Pressing lifts a glass drop out of the pill. The drop follows your finger, stretches with its speed, magnifies the tabs and melts back into the pill. In light mode the bar is frosted white with a soft gray pill; in dark mode it is frosted dark gray with a darker pill.</p>
+<pre><code><span class="kw">import</span> { createBottomTabNavigator } <span class="kw">from</span> <span class="str">'@react-navigation/bottom-tabs'</span>;
+<span class="kw">import</span> { createLiquidBottomTabBar } <span class="kw">from</span> <span class="str">'@mohamedabdelnaby/react-native-liquid'</span>;
+
+<span class="kw">const</span> Tab = createBottomTabNavigator();
+<span class="cm">// Create the tabBar function once, outside of render.</span>
+<span class="kw">const</span> tabBar = createLiquidBottomTabBar({ search: { placeholder: <span class="str">'Search'</span> } });
+
+<span class="kw">export function</span> Tabs() {
+  <span class="kw">return</span> (
+    &lt;<span class="tag">Tab.Navigator</span> tabBar={tabBar}&gt;
+      &lt;<span class="tag">Tab.Screen</span> name=<span class="str">"Home"</span> component={Home}
+        options={{ tabBarIcon: ({ color }) =&gt; &lt;<span class="tag">HomeIcon</span> color={color} /&gt; }} /&gt;
+      &lt;<span class="tag">Tab.Screen</span> name=<span class="str">"Settings"</span> component={Settings} /&gt;
+    &lt;/<span class="tag">Tab.Navigator</span>&gt;
+  );
+}</code></pre>
+  <figure class="gif"><img src="media/tabbar.gif" alt="Tapping and dragging across the bottom tab bar: a glass drop lifts out of the pill, follows the finger and melts back" width="480" height="100" loading="lazy"><figcaption>Tap and drag: the drop lifts, follows the finger and melts into the pill.</figcaption></figure>
+  <div class="media-row">
+    <figure><img src="media/tabbar-themes.jpg" alt="The bottom tab bar in light and dark mode" width="900" height="374" loading="lazy"><figcaption>Light and dark: frosted white or dark gray, with a soft pill.</figcaption></figure>
+    <figure class="gif"><img src="media/search.gif" alt="The search button morphs into a field and the bar rises above the keyboard" width="320" height="345" loading="lazy"><figcaption><code>search</code>: the bar rises above the keyboard.</figcaption></figure>
+  </div>
+  <p>The bar floats over the screens. Pad scrollable content with <code>useBottomTabBarHeight()</code>; the bar reports its height to it.</p>
+  <p>It reads <code>tabBarIcon</code>, <code>tabBarLabel</code>, <code>tabBarShowLabel</code>, <code>tabBarBadge</code>, <code>tabBarBadgeStyle</code>, <code>tabBarActiveTintColor</code>, <code>tabBarInactiveTintColor</code>, <code>tabBarLabelStyle</code>, <code>tabBarAccessibilityLabel</code>, <code>tabBarButtonTestID</code>, <code>tabBarHideOnKeyboard</code> and <code>tabBarStyle: { display: 'none' }</code>, and emits <code>tabPress</code> and <code>tabLongPress</code>.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>search</code></td><td></td><td>Adds a search button after the bar that morphs into a field with a close button. The tabs fade out and the bar rises above the keyboard. Takes <code>placeholder</code>, <code>value</code>, <code>onChangeText</code>, <code>onSubmit</code>, <code>expanded</code>, <code>defaultExpanded</code>, <code>onExpandedChange</code>. Replaces <code>accessory</code>.</td></tr>
+      <tr><td><code>accessory</code></td><td></td><td>Any element in a separate glass circle after the bar. Wrap it in a <code>Pressable</code>.</td></tr>
+      <tr><td><code>glassStyle</code></td><td><code>'clear'</code></td><td><code>'regular'</code> or <code>'clear'</code>.</td></tr>
+      <tr><td><code>glassTintColor</code></td><td>theme frost</td><td>Tints the glass. Defaults to <code>colors.tabBarGlass</code>.</td></tr>
+      <tr><td><code>blur</code></td><td><code>0.8</code></td><td>Frosts the content under the bar, from 0 (clear) to 1.</td></tr>
+      <tr><td><code>selectionColor</code></td><td>theme pill</td><td>Color of the resting pill behind the focused tab.</td></tr>
+      <tr><td><code>activeTintColor</code> / <code>inactiveTintColor</code></td><td></td><td>Override the screen options.</td></tr>
+      <tr><td><code>lens</code></td><td><code>true</code></td><td>Lifts the liquid drop while pressing and dragging.</td></tr>
+      <tr><td><code>colorScheme</code></td><td><code>'system'</code></td><td><code>'system'</code>, <code>'light'</code> or <code>'dark'</code>.</td></tr>
+      <tr><td><code>height</code></td><td><code>62</code></td><td>Height of the capsule.</td></tr>
+      <tr><td><code>horizontalMargin</code></td><td><code>20</code></td><td>Distance from the screen edges.</td></tr>
+      <tr><td><code>bottomOffset</code></td><td>safe area</td><td>Distance from the bottom edge.</td></tr>
+      <tr><td><code>style</code></td><td></td><td>Style of the capsule.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="top-tabs">
+  <h2>Top tab bar</h2>
+  <p>A floating segmented bar for <code>@react-navigation/material-top-tabs</code>, with the same drop and the same frosted look as the bottom bar. While swiping pages, the pill and the label colors follow the pager position natively.</p>
+  <div class="media-row">
+    <figure class="gif"><img src="media/toptabs.gif" alt="Swiping pages moves the pill; dragging the bar lifts the drop" width="360" height="269" loading="lazy"><figcaption>Swipe pages or drag the bar.</figcaption></figure>
+    <figure><img src="media/toptabs-themes.jpg" alt="The top tab bar in light and dark mode" width="900" height="358" loading="lazy"><figcaption>Same frost and pill as the bottom bar.</figcaption></figure>
+  </div>
+<pre><code><span class="kw">import</span> { createMaterialTopTabNavigator } <span class="kw">from</span> <span class="str">'@react-navigation/material-top-tabs'</span>;
+<span class="kw">import</span> {
+  createLiquidTopTabBar,
+  LIQUID_TOP_TAB_BAR_HEIGHT,
+} <span class="kw">from</span> <span class="str">'@mohamedabdelnaby/react-native-liquid'</span>;
+
+<span class="kw">const</span> TopTab = createMaterialTopTabNavigator();
+<span class="kw">const</span> tabBar = createLiquidTopTabBar();
+
+&lt;<span class="tag">TopTab.Navigator</span> tabBar={tabBar}&gt;
+  &lt;<span class="tag">TopTab.Screen</span> name=<span class="str">"Photos"</span> component={Photos} /&gt;
+  &lt;<span class="tag">TopTab.Screen</span> name=<span class="str">"Albums"</span> component={Albums} /&gt;
+&lt;/<span class="tag">TopTab.Navigator</span>&gt;
+
+<span class="cm">// The bar floats over the pages: pad their content.</span>
+&lt;<span class="tag">FlatList</span> contentContainerStyle={{ paddingTop: LIQUID_TOP_TAB_BAR_HEIGHT }} … /&gt;</code></pre>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Option</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>floating</code></td><td><code>true</code></td><td>Floats the bar over the pages so content scrolls under the glass. Pad content with <code>LIQUID_TOP_TAB_BAR_HEIGHT</code> (60).</td></tr>
+      <tr><td><code>glassStyle</code></td><td><code>'clear'</code></td><td><code>'regular'</code> or <code>'clear'</code>.</td></tr>
+      <tr><td><code>glassTintColor</code></td><td>theme frost</td><td>Same frost as the bottom tab bar by default.</td></tr>
+      <tr><td><code>blur</code></td><td><code>0.8</code></td><td>Frosts the content under the bar, from 0 to 1.</td></tr>
+      <tr><td><code>selectionColor</code></td><td>theme pill</td><td>Color of the pill behind the focused tab.</td></tr>
+      <tr><td><code>lensTintColor</code></td><td>theme</td><td>Tints the glass of the drop.</td></tr>
+      <tr><td><code>activeTintColor</code> / <code>inactiveTintColor</code></td><td></td><td>Override the screen options. The drop uses the active color too.</td></tr>
+      <tr><td><code>lens</code></td><td><code>true</code></td><td>Lifts the drop while pressing.</td></tr>
+      <tr><td><code>colorScheme</code></td><td><code>'system'</code></td><td>Forces light or dark.</td></tr>
+      <tr><td><code>height</code></td><td><code>44</code></td><td>Height of the capsule.</td></tr>
+      <tr><td><code>style</code> / <code>containerStyle</code></td><td></td><td>Style of the capsule / of the view around it.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="header">
+  <h2>Header</h2>
+  <p>A glass header for native-stack, stack, bottom-tabs and drawer navigators.</p>
+<pre><code><span class="kw">import</span> { createNativeStackNavigator } <span class="kw">from</span> <span class="str">'@react-navigation/native-stack'</span>;
+<span class="kw">import</span> { createLiquidHeader } <span class="kw">from</span> <span class="str">'@mohamedabdelnaby/react-native-liquid'</span>;
+
+<span class="kw">const</span> Stack = createNativeStackNavigator();
+<span class="kw">const</span> header = createLiquidHeader(); <span class="cm">// or createLiquidHeader({ variant: 'bar' })</span>
+
+&lt;<span class="tag">Stack.Navigator</span> screenOptions={{ header, headerTransparent: <span class="kw">true</span> }}&gt;
+  …
+&lt;/<span class="tag">Stack.Navigator</span>&gt;</code></pre>
+  <ul>
+    <li><code>variant: 'floating'</code> (default): a round glass back button, the title, and <code>headerRight</code> in a glass capsule, over the content like iOS 26.</li>
+    <li><code>variant: 'bar'</code>: a full-width glass bar.</li>
+  </ul>
+  <p>With <code>headerTransparent: true</code> the content scrolls under the glass; pad it with <code>useLiquidHeaderHeight()</code> (safe area + <code>LIQUID_HEADER_HEIGHT</code>, 56). Options read: <code>title</code>, <code>headerTitle</code>, <code>headerTitleAlign</code>, <code>headerTitleStyle</code>, <code>headerTintColor</code>, <code>headerLeft</code>, <code>headerRight</code>, <code>headerBackTitle</code>. Config: <code>variant</code>, <code>glassStyle</code>, <code>glassTintColor</code>, <code>colorScheme</code>, <code>style</code>.</p>
+</section>
+
+<section id="glass-view">
+  <h2>Glass view &amp; container</h2>
+<pre><code><span class="kw">import</span> { LiquidGlassView, LiquidGlassContainer } <span class="kw">from</span> <span class="str">'@mohamedabdelnaby/react-native-liquid'</span>;
+
+&lt;<span class="tag">LiquidGlassView</span> cornerRadius={24} style={{ padding: 16 }}&gt;
+  &lt;<span class="tag">Text</span>&gt;On glass&lt;/<span class="tag">Text</span>&gt;
+&lt;/<span class="tag">LiquidGlassView</span>&gt;
+
+<span class="cm">// Neighbouring glass merges and morphs (iOS 26).</span>
+&lt;<span class="tag">LiquidGlassContainer</span> spacing={8} style={{ flexDirection: <span class="str">'row'</span>, gap: 16 }}&gt;
+  &lt;<span class="tag">LiquidGlassView</span> morph interactive cornerRadius={22} style={{ width: wide ? 104 : 44, height: 44 }} /&gt;
+  &lt;<span class="tag">LiquidGlassView</span> morph interactive cornerRadius={22} style={{ width: 44, height: 44 }} /&gt;
+&lt;/<span class="tag">LiquidGlassContainer</span>&gt;</code></pre>
+  <figure class="gif"><img src="media/menu.gif" alt="Two glass buttons morph into a toolbar and its menu opens" width="340" height="254" loading="lazy"><figcaption>Morphing glass in a container, and a <code>bare</code> <code>LiquidMenu</code> inside it.</figcaption></figure>
+  <div class="note">Keep a container's <code>spacing</code> below the gap between its children. The shapes then fuse only while they morph and rest apart. A larger spacing makes them bulge toward each other.</div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Prop</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>glassStyle</code></td><td><code>'regular'</code></td><td><code>'clear'</code> is more transparent, for media.</td></tr>
+      <tr><td><code>tintColor</code></td><td></td><td>Tints the glass.</td></tr>
+      <tr><td><code>interactive</code></td><td><code>false</code></td><td>Native interactive glass on iOS 26; a press highlight on Android.</td></tr>
+      <tr><td><code>cornerRadius</code></td><td><code>style.borderRadius</code></td><td>Above half the shortest side gives a capsule.</td></tr>
+      <tr><td><code>morph</code></td><td><code>false</code></td><td>Animates size and position changes as a liquid morph.</td></tr>
+      <tr><td><code>colorScheme</code></td><td><code>'system'</code></td><td>Forces the light or dark material.</td></tr>
+      <tr><td><code>blurRadius</code></td><td><code>8</code> (clear: <code>2</code>)</td><td>Android: backdrop blur in dp.</td></tr>
+      <tr><td><code>refractionHeight</code> / <code>refractionAmount</code></td><td><code>12</code> / <code>24</code></td><td>Android 13+: lens refraction in dp.</td></tr>
+      <tr><td><code>chromaticAberration</code>, <code>depthEffect</code></td><td><code>false</code></td><td>Android 13+: lens options.</td></tr>
+      <tr><td><code>highlight</code>, <code>shadow</code></td><td><code>true</code></td><td>Android: rim highlight and drop shadow.</td></tr>
+      <tr><td><code>spacing</code> (container)</td><td><code>0</code></td><td>Distance at which glass children start blending (iOS 26).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="button">
+  <h2>Buttons</h2>
+<pre><code>&lt;<span class="tag">LiquidButton</span> title=<span class="str">"Continue"</span> variant=<span class="str">"prominent"</span> onPress={next} /&gt;
+&lt;<span class="tag">LiquidIconButton</span> accessibilityLabel=<span class="str">"Add"</span> onPress={add}&gt;&lt;<span class="tag">PlusIcon</span> /&gt;&lt;/<span class="tag">LiquidIconButton</span>&gt;</code></pre>
+  <p><code>LiquidButton</code>: <code>title</code>, <code>icon</code>, <code>variant</code> (<code>'glass'</code> or <code>'prominent'</code>), <code>tintColor</code>, <code>size</code> (<code>'small' | 'regular' | 'large'</code>), <code>textStyle</code>, plus the glass and press props. <code>LiquidIconButton</code>: <code>children</code> and <code>size</code> (diameter, 44).</p>
+</section>
+
+<section id="toggle">
+  <figure class="gif"><img src="media/controls.gif" alt="Segmented control, toggle, slider and expandable search in use" width="300" height="453" loading="lazy"><figcaption>Segmented control, toggle, slider and expandable search.</figcaption></figure>
+  <h2>Toggle</h2>
+<pre><code>&lt;<span class="tag">LiquidToggle</span> value={enabled} onValueChange={setEnabled} /&gt;</code></pre>
+  <p>A <code>UISwitch</code> on iOS (glass thumb on iOS 26) and a port of the AndroidLiquidGlass toggle on Android. Props: <code>value</code>, <code>onValueChange</code>, <code>disabled</code>, <code>onTintColor</code>, <code>colorScheme</code>, <code>style</code>, <code>accessibilityLabel</code>, <code>testID</code>. Horizontal drags are not stolen by a parent scroll view.</p>
+</section>
+
+<section id="slider">
+  <h2>Slider</h2>
+<pre><code>&lt;<span class="tag">LiquidSlider</span> value={volume} onValueChange={setVolume} step={0.1} /&gt;</code></pre>
+  <p>Props: <code>value</code>, <code>minimumValue</code> (0), <code>maximumValue</code> (1), <code>step</code> (0 = continuous), <code>onValueChange</code>, <code>onSlidingStart</code>, <code>onSlidingComplete</code>, <code>disabled</code>, <code>tintColor</code>, <code>colorScheme</code>, <code>style</code>.</p>
+</section>
+
+<section id="segmented">
+  <h2>Segmented control</h2>
+<pre><code>&lt;<span class="tag">LiquidSegmentedControl</span> segments={[<span class="str">'Day'</span>, <span class="str">'Week'</span>, <span class="str">'Month'</span>]} selectedIndex={i} onChange={setI} /&gt;</code></pre>
+  <p>Props: <code>segments</code>, <code>selectedIndex</code>, <code>onChange</code>, <code>height</code> (36), <code>glassStyle</code>, <code>colorScheme</code>, <code>activeTintColor</code>, <code>inactiveTintColor</code>, <code>selectionColor</code>, <code>disabled</code>, <code>style</code>, <code>textStyle</code>.</p>
+</section>
+
+<section id="search">
+  <h2>Search</h2>
+  <h3>LiquidSearchBar</h3>
+<pre><code>&lt;<span class="tag">LiquidSearchBar</span> value={query} onChangeText={setQuery} placeholder=<span class="str">"Search"</span> /&gt;</code></pre>
+  <p>A glass search field. Takes the <code>TextInput</code> props plus <code>glassStyle</code>, <code>colorScheme</code>, <code>height</code> (44), <code>inputStyle</code> and <code>onClear</code>.</p>
+  <h3>LiquidExpandableSearch</h3>
+<pre><code>&lt;<span class="tag">LiquidExpandableSearch</span> value={query} onChangeText={setQuery} placeholder=<span class="str">"Search settings"</span>&gt;
+  &lt;<span class="tag">Text</span>&gt;Controls&lt;/<span class="tag">Text</span>&gt;   <span class="cm">{/* shown next to the button while collapsed */}</span>
+&lt;/<span class="tag">LiquidExpandableSearch</span>&gt;</code></pre>
+  <p>A round glass button that morphs into a field with a separate close button, 16&nbsp;pt apart. Props: <code>expanded</code> / <code>defaultExpanded</code> / <code>onExpandedChange</code>, <code>value</code>, <code>onChangeText</code>, <code>onSubmit</code>, <code>placeholder</code>, <code>height</code> (44), <code>glassStyle</code>, <code>glassTintColor</code>, <code>colorScheme</code>, <code>style</code>. The bottom tab bar's <code>search</code> option uses it.</p>
+</section>
+
+<section id="menu">
+  <h2>Menu</h2>
+<pre><code>&lt;<span class="tag">LiquidMenu</span>
+  title=<span class="str">"Photo"</span>
+  items={[
+    { title: <span class="str">'Share'</span>, systemImage: <span class="str">'square.and.arrow.up'</span>, onPress: share },
+    { title: <span class="str">'Pause'</span>, children: [{ title: <span class="str">'1 hour'</span> }, { title: <span class="str">'Until tomorrow'</span> }] },
+    { title: <span class="str">'Delete'</span>, systemImage: <span class="str">'trash'</span>, destructive: <span class="kw">true</span> },
+  ]}
+&gt;
+  &lt;<span class="tag">Text</span>&gt;•••&lt;/<span class="tag">Text</span>&gt;
+&lt;/<span class="tag">LiquidMenu</span>&gt;</code></pre>
+  <p>On iOS the glass button morphs into the system menu; on Android it morphs into a glass panel. Use <code>bare</code> to put the trigger inside another glass shape, such as a toolbar capsule.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Prop</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>items</code></td><td></td><td><code>{ id?, title, subtitle?, systemImage?, destructive?, disabled?, checked?, onPress?, children?, inline? }[]</code>. <code>children</code> makes a submenu; <code>inline</code> shows it as a section (iOS).</td></tr>
+      <tr><td><code>title</code></td><td></td><td>Shown at the top of the menu.</td></tr>
+      <tr><td><code>bare</code></td><td><code>false</code></td><td>No glass behind the trigger.</td></tr>
+      <tr><td><code>size</code></td><td><code>44</code></td><td>Button diameter when <code>style</code> sets no size.</td></tr>
+      <tr><td><code>menuWidth</code></td><td><code>250</code></td><td>Android: width of the panel.</td></tr>
+      <tr><td><code>onSelect</code> / <code>onOpenChange</code></td><td></td><td>Called with the item id / the open state.</td></tr>
+      <tr><td><code>glassStyle</code>, <code>colorScheme</code>, <code>style</code></td><td></td><td>Appearance.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="theme">
+  <h2>Theme &amp; utilities</h2>
+<pre><code><span class="kw">const</span> { scheme, colors } = useLiquidColors(<span class="str">'system'</span>);
+<span class="kw">if</span> (isLiquidGlassSupported) { … }</code></pre>
+  <ul>
+    <li><code>useLiquidColors(setting?)</code> returns the scheme and the palette used by the components: <code>label</code>, <code>secondaryLabel</code>, <code>tint</code>, <code>success</code>, <code>selection</code>, <code>tabSelection</code>, <code>tabBarGlass</code>, <code>topTabLens</code>, <code>track</code>, <code>thumb</code>.</li>
+    <li><code>getLiquidColors(scheme)</code> and <code>useLiquidColorScheme(setting)</code> for use outside components.</li>
+    <li><code>isLiquidGlassSupported</code>: <code>true</code> on iOS 26+ and Android 12+.</li>
+    <li><code>createLiquidBottomTabBar</code>, <code>createLiquidTopTabBar</code>, <code>createLiquidHeader</code> return render functions; create them once outside of render.</li>
+  </ul>
+  <h3>Android library version</h3>
+  <p>The library uses <code>io.github.kyant0:backdrop:1.0.6</code>, which works with Kotlin 2.2. Apps on Kotlin 2.4+ can opt into 2.x:</p>
+<pre><code><span class="cm">// android/build.gradle</span>
+buildscript {
+  ext {
+    liquidBackdropVersion = <span class="str">"2.0.1"</span>
+  }
+}</code></pre>
+</section>
+
+<section id="troubleshooting">
+  <h2>Troubleshooting</h2>
+  <h3>"No member named … in …Props" when building iOS</h3>
+  <p>The native props changed. Run <code>pod install</code> again to regenerate codegen, then rebuild.</p>
+  <h3>"Unable to load script" on an Android phone</h3>
+  <p>The phone lost its connection to Metro, often after a USB reconnect. Forward the Metro port again:</p>
+<pre><code>adb reverse tcp:8081 tcp:8081</code></pre>
+  <h3>Content does not show through the glass on Android</h3>
+  <p>Views drawn in their own surface (<code>SurfaceView</code>, some video and map views) cannot be sampled. Place glass over regular views.</p>
+  <h3>Glass is blank after navigating back on Android</h3>
+  <p>Update to the latest version: glass views keep their composition while react-native-screens detaches them.</p>
+</section>
+
+<footer>
+  MIT licensed. AndroidLiquidGlass by Kyant0 is licensed under Apache 2.0.
+</footer>
+
+</main>
+</div>
+
+<script>
+(function () {
+  // Theme switch, remembered per browser when storage is available.
+  var root = document.documentElement;
+  try {
+    var saved = localStorage.getItem('liquid-docs-theme');
+    if (saved) root.setAttribute('data-theme', saved);
+  } catch (e) {}
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var dark = root.getAttribute('data-theme')
+      ? root.getAttribute('data-theme') === 'dark'
+      : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var next = dark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('liquid-docs-theme', next); } catch (e) {}
+  });
+
+  // Navigation drawer at phone width.
+  var side = document.getElementById('side');
+  var menuBtn = document.getElementById('menuBtn');
+  menuBtn.addEventListener('click', function () {
+    var open = side.classList.toggle('open');
+    menuBtn.setAttribute('aria-expanded', String(open));
+  });
+  side.addEventListener('click', function (event) {
+    if (event.target.tagName === 'A') {
+      side.classList.remove('open');
+      menuBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  // Highlight the section in view.
+  var links = Array.prototype.slice.call(side.querySelectorAll('a'));
+  var byId = {};
+  links.forEach(function (link) { byId[link.getAttribute('href').slice(1)] = link; });
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section[id]'));
+  function markActive() {
+    // The last section whose top has passed the upper third of the screen.
+    var current = sections[0];
+    sections.forEach(function (s) {
+      if (s.getBoundingClientRect().top < window.innerHeight / 3) current = s;
+    });
+    links.forEach(function (l) { l.classList.toggle('active', l === byId[current.id]); });
+  }
+  window.addEventListener('scroll', markActive, { passive: true });
+  window.addEventListener('hashchange', markActive);
+  markActive();
+
+  // Copy buttons on code blocks.
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var button = document.createElement('button');
+    button.className = 'copy';
+    button.type = 'button';
+    button.textContent = 'Copy';
+    button.addEventListener('click', function () {
+      var text = pre.querySelector('code').innerText;
+      navigator.clipboard.writeText(text).then(function () {
+        button.textContent = 'Copied';
+        setTimeout(function () { button.textContent = 'Copy'; }, 1400);
+      }, function () { button.textContent = 'Select and copy'; });
+    });
+    pre.appendChild(button);
+  });
+
+  // Gallery: light and dark screenshots.
+  var shotButtons = Array.prototype.slice.call(document.querySelectorAll('[data-shots]'));
+  shotButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var mode = button.getAttribute('data-shots');
+      shotButtons.forEach(function (b) { b.classList.toggle('on', b === button); });
+      document.querySelectorAll('[data-shot]').forEach(function (img) {
+        img.src = 'media/' + img.getAttribute('data-shot') + '-' + mode + '.jpg';
+      });
+    });
+  });
+
+  // Demo tab bar: the pill springs to the clicked tab.
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.demo-tab'));
+  var pill = document.getElementById('demoPill');
+  tabs.forEach(function (tab, index) {
+    tab.addEventListener('click', function () {
+      tabs.forEach(function (t) { t.classList.remove('on'); });
+      tab.classList.add('on');
+      pill.style.transform = 'translateX(' + index * 100 + '%)';
+    });
+  });
+})();
+</script>
+</body>
+</html>

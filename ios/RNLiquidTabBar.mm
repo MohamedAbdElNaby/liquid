@@ -25,7 +25,7 @@ static const double kSettleStiffness = 1100;
 /// Extra scale of every tab while the lens is lifted.
 static const CGFloat kTabLiftScale = 0;
 /// Extra scale of the tab right under the lens.
-static const CGFloat kTabMagnification = 0.12;
+static const CGFloat kTabMagnification = 0.16;
 /// How many rendered frames the lens stays lifted over its tab before settling.
 /// Counted in frames, so a main-thread stall (mounting the new screen) doesn't
 /// use up the hold and squeeze the settle into a jump.
@@ -57,6 +57,12 @@ static const CGFloat kBarStretch = 0.45;
   UIView *_tintView;
   UIColor *_focusedTintColor;
   UIVisualEffectView *_lensView;
+  // Specular reflections drawn over the lens, so it reads as a thick drop of liquid.
+  UIView *_sheenView;
+  CAGradientLayer *_rimLayer;
+  CAShapeLayer *_rimMask;
+  CAGradientLayer *_glossLayer;
+  CAShapeLayer *_glossMask;
   UIColor *_lensTintColor;
   CADisplayLink *_displayLink;
 
@@ -141,6 +147,31 @@ static const CGFloat kBarStretch = 0.45;
     _lensView.hidden = YES;
     [self addSubview:_lensView];
     [self addSubview:_tintView];
+
+    _sheenView = [UIView new];
+    _sheenView.userInteractionEnabled = NO;
+    _sheenView.hidden = YES;
+    // A bright rim that catches the light at two opposite corners, like a thick glass edge.
+    _rimLayer = [CAGradientLayer layer];
+    _rimLayer.type = kCAGradientLayerConic;
+    _rimLayer.startPoint = CGPointMake(0.5, 0.5);
+    // Angle 0 points at the top-left corner.
+    _rimLayer.endPoint = CGPointMake(0, 0);
+    _rimLayer.locations = @[ @0, @0.14, @0.36, @0.5, @0.64, @0.86, @1 ];
+    _rimMask = [CAShapeLayer layer];
+    _rimMask.fillColor = UIColor.clearColor.CGColor;
+    _rimMask.strokeColor = UIColor.blackColor.CGColor;
+    _rimLayer.mask = _rimMask;
+    [_sheenView.layer addSublayer:_rimLayer];
+    // A soft gloss across the upper part, like a reflection on a curved surface.
+    _glossLayer = [CAGradientLayer layer];
+    // Fades to transparent white: fading to clearColor (transparent black) turns the middle gray.
+    _glossLayer.colors =
+        @[ (id)[UIColor colorWithWhite:1 alpha:0.35].CGColor, (id)[UIColor colorWithWhite:1 alpha:0].CGColor ];
+    _glossMask = [CAShapeLayer layer];
+    _glossLayer.mask = _glossMask;
+    [_sheenView.layer addSublayer:_glossLayer];
+    [self addSubview:_sheenView];
 
     _awaitingIndex = -1;
     _pendingSelect = -1;
@@ -492,8 +523,33 @@ static const CGFloat kBarStretch = 0.45;
   _frostView.alpha = amount;
 }
 
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection
+{
+  [super traitCollectionDidChange:previousTraitCollection];
+  [self updateRimColors];
+}
+
+/// Bright corners on both themes. Between them the rim is a faint white in
+/// dark mode and a faint dark line in light mode, where white would vanish
+/// against the bar.
+- (void)updateRimColors
+{
+  BOOL dark = self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
+  UIColor *bright = [UIColor colorWithWhite:1 alpha:0.95];
+  UIColor *second = [UIColor colorWithWhite:1 alpha:0.7];
+  UIColor *dim = dark ? [UIColor colorWithWhite:1 alpha:0.12] : [UIColor colorWithWhite:0 alpha:0.07];
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  _rimLayer.colors = @[
+    (id)bright.CGColor, (id)dim.CGColor, (id)dim.CGColor, (id)second.CGColor, (id)dim.CGColor, (id)dim.CGColor,
+    (id)bright.CGColor,
+  ];
+  [CATransaction commit];
+}
+
 - (void)applyLensTint:(UIColor *)tint
 {
+  [self updateRimColors];
   _lensTintColor = tint;
   if (@available(iOS 26.0, *)) {
     // Clear glass with a light fill: a dense drop that mutes the reflections of the glass.
@@ -640,6 +696,27 @@ static const CGFloat kBarStretch = 0.45;
   }
   if (_lensView.clipsToBounds) {
     _lensView.layer.cornerRadius = restFrame.size.height / 2;
+  }
+
+  _sheenView.hidden = _lensView.hidden;
+  if (!_sheenView.hidden) {
+    CGRect bounds = _lensView.bounds;
+    _sheenView.bounds = bounds;
+    _sheenView.center = _lensView.center;
+    _sheenView.transform = _lensView.transform;
+    _sheenView.alpha = _lensView.alpha;
+    CGFloat radius = bounds.size.height / 2;
+    _rimLayer.frame = bounds;
+    _rimMask.frame = bounds;
+    _rimMask.lineWidth = 2;
+    _rimMask.path = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(bounds, 1, 1) cornerRadius:radius - 1].CGPath;
+    CGRect gloss = CGRectMake(radius * 0.45, bounds.size.height * 0.1, bounds.size.width - radius * 0.9,
+                              bounds.size.height * 0.38);
+    _glossLayer.frame = bounds;
+    _glossLayer.startPoint = CGPointMake(0.5, CGRectGetMinY(gloss) / bounds.size.height);
+    _glossLayer.endPoint = CGPointMake(0.5, CGRectGetMaxY(gloss) / bounds.size.height);
+    _glossMask.frame = bounds;
+    _glossMask.path = [UIBezierPath bezierPathWithRoundedRect:gloss cornerRadius:gloss.size.height / 2].CGPath;
   }
 
   // Lift every tab a little and magnify the one under the lens.

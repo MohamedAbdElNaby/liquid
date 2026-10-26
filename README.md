@@ -9,7 +9,7 @@ Liquid Glass UI components for React Native, built to drop into React Navigation
 - New Architecture (Fabric) only.
 - Every animation (the tab bar drop, morphs, toggles, sliders) runs natively, not on the JS thread.
 
-Full documentation with every prop: open [`docs/index.html`](docs/index.html) in a browser. For copy-paste recipes of every component, see [`USAGE.md`](USAGE.md) (it ships with the package).
+**Documentation: https://mohamedabdelnaby.github.io/liquid/** (every prop, GIFs, light and dark screenshots). For copy-paste recipes of every component, see [`USAGE.md`](USAGE.md) (it ships with the package).
 
 ## Preview
 

@@ -1,19 +1,19 @@
-# Using @mohamedabdelnaby/react-native-liquid
+# Using @mohamed_abd_elnaby/react-native-liquid
 
 A copy-paste guide to every component. It ships with the package, so you can
-find it at `node_modules/@mohamedabdelnaby/react-native-liquid/USAGE.md`, and
+find it at `node_modules/@mohamed_abd_elnaby/react-native-liquid/USAGE.md`, and
 point an AI coding assistant at it.
 
 Everything is imported from one place:
 
 ```tsx
-import { LiquidToggle, createLiquidBottomTabBar /* ... */ } from '@mohamedabdelnaby/react-native-liquid';
+import { LiquidToggle, createLiquidBottomTabBar /* ... */ } from '@mohamed_abd_elnaby/react-native-liquid';
 ```
 
 ## 1. Setup
 
 ```sh
-yarn add @mohamedabdelnaby/react-native-liquid react-native-safe-area-context
+yarn add @mohamed_abd_elnaby/react-native-liquid react-native-safe-area-context
 # Only the navigators you use:
 yarn add @react-navigation/native @react-navigation/bottom-tabs @react-navigation/material-top-tabs @react-navigation/native-stack
 
@@ -37,7 +37,7 @@ Rules that apply to the whole library:
 
 ```tsx
 import { createBottomTabNavigator, useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { createLiquidBottomTabBar } from '@mohamedabdelnaby/react-native-liquid';
+import { createLiquidBottomTabBar } from '@mohamed_abd_elnaby/react-native-liquid';
 
 const Tab = createBottomTabNavigator();
 
@@ -91,7 +91,7 @@ Screen options it reads: `tabBarIcon`, `tabBarLabel`, `tabBarShowLabel`,
 
 ```tsx
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { createLiquidTopTabBar, LIQUID_TOP_TAB_BAR_HEIGHT } from '@mohamedabdelnaby/react-native-liquid';
+import { createLiquidTopTabBar, LIQUID_TOP_TAB_BAR_HEIGHT } from '@mohamed_abd_elnaby/react-native-liquid';
 
 const TopTab = createMaterialTopTabNavigator();
 const topTabBar = createLiquidTopTabBar();
@@ -114,7 +114,7 @@ Set `floating: false` to keep the bar above the pages instead of over them.
 
 ```tsx
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createLiquidHeader, useLiquidHeaderHeight } from '@mohamedabdelnaby/react-native-liquid';
+import { createLiquidHeader, useLiquidHeaderHeight } from '@mohamed_abd_elnaby/react-native-liquid';
 
 const Stack = createNativeStackNavigator();
 const header = createLiquidHeader(); // floating controls, or createLiquidHeader({ variant: 'bar' })

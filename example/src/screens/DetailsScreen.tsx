@@ -6,7 +6,7 @@ import {
   LiquidIconButton,
   useLiquidColors,
   useLiquidHeaderHeight,
-} from '@mohamedabdelnaby/react-native-liquid';
+} from '@mohamed_abd_elnaby/react-native-liquid';
 import type { RootStackParamList } from '../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Details'>;

@@ -11,7 +11,7 @@ import {
   LiquidSegmentedControl,
   LiquidSlider,
   LiquidToggle,
-} from '@mohamedabdelnaby/react-native-liquid';
+} from '@mohamed_abd_elnaby/react-native-liquid';
 
 const BACKGROUND = 'https://picsum.photos/id/1015/1200/2000';
 

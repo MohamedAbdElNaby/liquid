@@ -5,7 +5,7 @@ import {
   LiquidGlassView,
   createLiquidTopTabBar,
   useLiquidColors,
-} from '@mohamedabdelnaby/react-native-liquid';
+} from '@mohamed_abd_elnaby/react-native-liquid';
 import { PHOTOS } from '../data';
 
 const TopTab = createMaterialTopTabNavigator();

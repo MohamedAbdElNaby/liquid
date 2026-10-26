@@ -1,5 +1,5 @@
 {
-  "name": "@mohamedabdelnaby/react-native-liquid",
+  "name": "@mohamed_abd_elnaby/react-native-liquid",
   "version": "1.0.0",
   "description": "Liquid glass UI components for React Native and React Navigation: bottom tabs, top tabs, headers, toggles and more",
   "main": "./lib/module/index.js",
@@ -35,7 +35,7 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace @mohamedabdelnaby/react-native-liquid-example",
+    "example": "yarn workspace @mohamed_abd_elnaby/react-native-liquid-example",
     "clean": "del-cli lib",
     "prepare": "bob build",
     "typecheck": "tsc",

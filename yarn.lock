@@ -3078,9 +3078,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mohamedabdelnaby/react-native-liquid-example@workspace:example":
+"@mohamed_abd_elnaby/react-native-liquid-example@workspace:example":
   version: 0.0.0-use.local
-  resolution: "@mohamedabdelnaby/react-native-liquid-example@workspace:example"
+  resolution: "@mohamed_abd_elnaby/react-native-liquid-example@workspace:example"
   dependencies:
     "@expo/metro-runtime": "npm:~58.0.14"
     "@react-navigation/bottom-tabs": "npm:^7.21.0"
@@ -3101,9 +3101,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@mohamedabdelnaby/react-native-liquid@workspace:.":
+"@mohamed_abd_elnaby/react-native-liquid@workspace:.":
   version: 0.0.0-use.local
-  resolution: "@mohamedabdelnaby/react-native-liquid@workspace:."
+  resolution: "@mohamed_abd_elnaby/react-native-liquid@workspace:."
   dependencies:
     "@commitlint/config-conventional": "npm:^21.2.4"
     "@eslint/compat": "npm:^2.1.1"

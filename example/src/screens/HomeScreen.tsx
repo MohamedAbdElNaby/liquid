@@ -15,7 +15,7 @@ import {
   LiquidGlassView,
   isLiquidGlassSupported,
   useLiquidColors,
-} from '@mohamedabdelnaby/react-native-liquid';
+} from '@mohamed_abd_elnaby/react-native-liquid';
 import { PHOTOS, type Photo } from '../data';
 import type { RootStackParamList } from '../App';
 

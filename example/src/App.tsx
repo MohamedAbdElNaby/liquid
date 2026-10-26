@@ -7,7 +7,7 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { createLiquidHeader } from '@mohamedabdelnaby/react-native-liquid';
+import { createLiquidHeader } from '@mohamed_abd_elnaby/react-native-liquid';
 import { Tabs } from './Tabs';
 import { DetailsScreen } from './screens/DetailsScreen';
 

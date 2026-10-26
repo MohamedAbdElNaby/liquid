@@ -1,6 +1,6 @@
-name: Publish
+name: Publish to npm
 
-# Publishes to npm (public, anyone can install) and to GitHub Packages.
+# Publishes to npm (public, anyone can install).
 # Needs a repository secret named NPM_TOKEN (an npm Automation token).
 on:
   release:
@@ -11,14 +11,9 @@ on:
         description: Publish to npm
         type: boolean
         default: true
-      github-packages:
-        description: Publish to GitHub Packages
-        type: boolean
-        default: true
 
 permissions:
   contents: read
-  packages: write
   id-token: write
 
 jobs:
@@ -45,12 +40,3 @@ jobs:
           npm publish --access public --registry https://registry.npmjs.org --provenance --ignore-scripts --userconfig "$RUNNER_TEMP/npm.npmrc"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish to GitHub Packages
-        if: ${{ github.event_name == 'release' || inputs.github-packages }}
-        continue-on-error: true
-        run: |
-          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" > "$RUNNER_TEMP/gh.npmrc"
-          npm publish --registry https://npm.pkg.github.com --ignore-scripts --userconfig "$RUNNER_TEMP/gh.npmrc"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

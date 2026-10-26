@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "@mohamedabdelnaby/react-native-liquid": ["./src/index"]
+      "@mohamed_abd_elnaby/react-native-liquid": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

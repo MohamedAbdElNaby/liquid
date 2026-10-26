@@ -4,7 +4,7 @@ import {
   createLiquidBottomTabBar,
   createLiquidHeader,
   useLiquidColors,
-} from '@mohamedabdelnaby/react-native-liquid';
+} from '@mohamed_abd_elnaby/react-native-liquid';
 import { HomeScreen } from './screens/HomeScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { ControlsScreen } from './screens/ControlsScreen';

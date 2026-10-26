@@ -1,4 +1,4 @@
-# @mohamedabdelnaby/react-native-liquid
+# @mohamed_abd_elnaby/react-native-liquid
 
 ![React Native Liquid](docs/media/banner.jpg)
 
@@ -43,7 +43,7 @@ Liquid Glass UI components for React Native, built to drop into React Navigation
 ## Installation
 
 ```sh
-yarn add @mohamedabdelnaby/react-native-liquid react-native-safe-area-context
+yarn add @mohamed_abd_elnaby/react-native-liquid react-native-safe-area-context
 ```
 
 For the navigation components, install the navigators you use (`@react-navigation/bottom-tabs`, `@react-navigation/material-top-tabs`, `@react-navigation/native-stack`, ...).
@@ -62,7 +62,7 @@ Then rebuild the native app (`npx pod-install`, or `npx expo prebuild` / `npx ex
 
 ```tsx
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { LiquidBottomTabBar } from '@mohamedabdelnaby/react-native-liquid';
+import { LiquidBottomTabBar } from '@mohamed_abd_elnaby/react-native-liquid';
 
 const Tab = createBottomTabNavigator();
 
@@ -119,7 +119,7 @@ import { createMaterialTopTabNavigator } from '@react-navigation/material-top-ta
 import {
   createLiquidTopTabBar,
   LIQUID_TOP_TAB_BAR_HEIGHT,
-} from '@mohamedabdelnaby/react-native-liquid';
+} from '@mohamed_abd_elnaby/react-native-liquid';
 
 const TopTab = createMaterialTopTabNavigator();
 const tabBar = createLiquidTopTabBar();
@@ -152,7 +152,7 @@ The bar floats over the pages, so pad their content with `LIQUID_TOP_TAB_BAR_HEI
 
 ```tsx
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createLiquidHeader } from '@mohamedabdelnaby/react-native-liquid';
+import { createLiquidHeader } from '@mohamed_abd_elnaby/react-native-liquid';
 
 const Stack = createNativeStackNavigator();
 const header = createLiquidHeader(); // or createLiquidHeader({ variant: 'bar' })
@@ -172,7 +172,7 @@ It reads `title`, `headerTitle`, `headerTitleAlign`, `headerTitleStyle`, `header
 ### Glass view
 
 ```tsx
-import { LiquidGlassView, LiquidGlassContainer } from '@mohamedabdelnaby/react-native-liquid';
+import { LiquidGlassView, LiquidGlassContainer } from '@mohamed_abd_elnaby/react-native-liquid';
 
 <LiquidGlassView style={{ borderRadius: 24, padding: 16 }}>
   <Text>On glass</Text>

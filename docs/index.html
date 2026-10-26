@@ -345,7 +345,7 @@ figcaption { margin-top: 8px; font-size: 14px; color: var(--muted); text-align: 
 
 <section id="overview">
   <h2>Overview</h2>
-  <p class="lead"><code>@mohamedabdelnaby/react-native-liquid</code> gives React Native apps the iOS 26 Liquid Glass look on both platforms, with components shaped to drop into React Navigation as custom tab bars and headers.</p>
+  <p class="lead"><code>@mohamed_abd_elnaby/react-native-liquid</code> gives React Native apps the iOS 26 Liquid Glass look on both platforms, with components shaped to drop into React Navigation as custom tab bars and headers.</p>
   <div class="grid">
     <div class="card"><a href="#bottom-tabs"><b>LiquidBottomTabBar</b><span>Floating bar with a liquid drop, search and keyboard lift.</span></a></div>
     <div class="card"><a href="#top-tabs"><b>LiquidTopTabBar</b><span>Floating segmented bar that follows the pager while swiping.</span></a></div>
@@ -376,7 +376,7 @@ figcaption { margin-top: 8px; font-size: 14px; color: var(--muted); text-align: 
 
 <section id="install">
   <h2>Installation</h2>
-<pre><code>yarn add @mohamedabdelnaby/react-native-liquid react-native-safe-area-context</code></pre>
+<pre><code>yarn add @mohamed_abd_elnaby/react-native-liquid react-native-safe-area-context</code></pre>
   <p>Install the navigators you use, for example <code>@react-navigation/bottom-tabs</code>, <code>@react-navigation/material-top-tabs</code> or <code>@react-navigation/native-stack</code>. They are optional peer dependencies.</p>
   <p>Then rebuild the native app:</p>
 <pre><code>cd ios &amp;&amp; pod install &amp;&amp; cd ..
@@ -417,7 +417,7 @@ npx react-native run-android</code></pre>
   <h2>Bottom tab bar</h2>
   <p>A floating glass bar for <code>@react-navigation/bottom-tabs</code>. Pressing lifts a glass drop out of the pill. The drop follows your finger, stretches with its speed, magnifies the tabs and melts back into the pill. In light mode the bar is frosted white with a soft gray pill; in dark mode it is frosted dark gray with a darker pill.</p>
 <pre><code><span class="kw">import</span> { createBottomTabNavigator } <span class="kw">from</span> <span class="str">'@react-navigation/bottom-tabs'</span>;
-<span class="kw">import</span> { createLiquidBottomTabBar } <span class="kw">from</span> <span class="str">'@mohamedabdelnaby/react-native-liquid'</span>;
+<span class="kw">import</span> { createLiquidBottomTabBar } <span class="kw">from</span> <span class="str">'@mohamed_abd_elnaby/react-native-liquid'</span>;
 
 <span class="kw">const</span> Tab = createBottomTabNavigator();
 <span class="cm">// Create the tabBar function once, outside of render.</span>
@@ -470,7 +470,7 @@ npx react-native run-android</code></pre>
 <span class="kw">import</span> {
   createLiquidTopTabBar,
   LIQUID_TOP_TAB_BAR_HEIGHT,
-} <span class="kw">from</span> <span class="str">'@mohamedabdelnaby/react-native-liquid'</span>;
+} <span class="kw">from</span> <span class="str">'@mohamed_abd_elnaby/react-native-liquid'</span>;
 
 <span class="kw">const</span> TopTab = createMaterialTopTabNavigator();
 <span class="kw">const</span> tabBar = createLiquidTopTabBar();
@@ -504,7 +504,7 @@ npx react-native run-android</code></pre>
   <h2>Header</h2>
   <p>A glass header for native-stack, stack, bottom-tabs and drawer navigators.</p>
 <pre><code><span class="kw">import</span> { createNativeStackNavigator } <span class="kw">from</span> <span class="str">'@react-navigation/native-stack'</span>;
-<span class="kw">import</span> { createLiquidHeader } <span class="kw">from</span> <span class="str">'@mohamedabdelnaby/react-native-liquid'</span>;
+<span class="kw">import</span> { createLiquidHeader } <span class="kw">from</span> <span class="str">'@mohamed_abd_elnaby/react-native-liquid'</span>;
 
 <span class="kw">const</span> Stack = createNativeStackNavigator();
 <span class="kw">const</span> header = createLiquidHeader(); <span class="cm">// or createLiquidHeader({ variant: 'bar' })</span>
@@ -521,7 +521,7 @@ npx react-native run-android</code></pre>
 
 <section id="glass-view">
   <h2>Glass view &amp; container</h2>
-<pre><code><span class="kw">import</span> { LiquidGlassView, LiquidGlassContainer } <span class="kw">from</span> <span class="str">'@mohamedabdelnaby/react-native-liquid'</span>;
+<pre><code><span class="kw">import</span> { LiquidGlassView, LiquidGlassContainer } <span class="kw">from</span> <span class="str">'@mohamed_abd_elnaby/react-native-liquid'</span>;
 
 &lt;<span class="tag">LiquidGlassView</span> cornerRadius={24} style={{ padding: 16 }}&gt;
   &lt;<span class="tag">Text</span>&gt;On glass&lt;/<span class="tag">Text</span>&gt;

@@ -82,7 +82,7 @@ static const CGFloat kBarStretch = 0.45;
   // After a tap the pager is still scrolling to the new page; its position is
   // ignored until it gets there so the pill doesn't jump back.
   NSInteger _awaitingIndex;
-  // Tab chosen on release, reported once the lens arrives over it (see flushPendingSelect).
+  // Tab chosen on release, reported right away (see flushPendingSelect).
   NSInteger _pendingSelect;
   CFTimeInterval _awaitingSince;
 
@@ -373,6 +373,8 @@ static const CGFloat kBarStretch = 0.45;
       _releasePending = YES;
       [self startAnimating];
       _pendingSelect = index;
+      // Navigate right away: React renders the new screen while the lens is still travelling.
+      [self flushPendingSelect];
       break;
     }
     case UIGestureRecognizerStateCancelled:
@@ -397,9 +399,8 @@ static const CGFloat kBarStretch = 0.45;
   }
 }
 
-/// Reports the tab chosen on release. This waits until the lens has arrived
-/// over the tab: mounting the new screen blocks the main thread, and doing it
-/// while the lens holds still keeps its travel smooth.
+/// Reports the tab chosen on release, as soon as the finger lifts, so the
+/// screen switches without waiting for the lens to finish travelling.
 - (void)flushPendingSelect
 {
   NSInteger index = _pendingSelect;

@@ -129,7 +129,7 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
   // After a tap the pager is still scrolling to the new page; ignore its position until it gets
   // there so the pill doesn't jump back.
   private var awaitingIndex = -1
-  // Tab chosen on release, reported once the lens arrives over it (see flushPendingSelect).
+  // Tab chosen on release, reported right away (see flushPendingSelect).
   private var pendingSelect = -1
   private var awaitingSince = 0L
   private var hasSelection = false
@@ -304,6 +304,8 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
         startAnimating()
         if (!longPressed) {
           pendingSelect = index
+          // Navigate right away: React renders the new screen while the lens is still travelling.
+          flushPendingSelect()
         }
       }
       MotionEvent.ACTION_CANCEL -> {
@@ -319,9 +321,8 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
   }
 
   /**
-   * Reports the tab chosen on release. This waits until the lens has arrived over the tab:
-   * mounting the new screen blocks the main thread, and doing it while the lens holds still keeps
-   * its travel smooth.
+   * Reports the tab chosen on release, as soon as the finger lifts, so the screen switches without
+   * waiting for the lens to finish travelling.
    */
   private fun flushPendingSelect() {
     val index = pendingSelect

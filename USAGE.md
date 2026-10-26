@@ -271,7 +271,46 @@ if (isLiquidGlassSupported) {
 }
 ```
 
-## 13. Common problems
+## 13. Light, dark or follow the system
+
+Every component defaults to `colorScheme="system"`, so the simplest way to
+switch the whole app is React Native's `Appearance` API:
+
+```tsx
+import { Appearance } from 'react-native';
+
+Appearance.setColorScheme('dark');  // force dark
+Appearance.setColorScheme('light'); // force light
+Appearance.setColorScheme('auto');  // follow the system again
+```
+
+A ready-made switch:
+
+```tsx
+const MODES = ['system', 'light', 'dark'] as const;
+
+function AppearanceSwitch() {
+  const [mode, setMode] = useState<(typeof MODES)[number]>('system');
+
+  return (
+    <LiquidSegmentedControl
+      segments={['System', 'Light', 'Dark']}
+      selectedIndex={MODES.indexOf(mode)}
+      onChange={(index) => {
+        const next = MODES[index]!;
+        setMode(next);
+        Appearance.setColorScheme(next === 'system' ? 'auto' : next);
+      }}
+    />
+  );
+}
+```
+
+Pass `colorScheme="light"` or `"dark"` to a single component to pin it
+regardless of the app theme. Use `useColorScheme()` for your own colors and
+your `NavigationContainer` theme so the rest of the app follows too.
+
+## 14. Common problems
 
 | Problem | Fix |
 | --- | --- |

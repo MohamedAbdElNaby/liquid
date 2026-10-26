@@ -160,7 +160,13 @@ export function LiquidBottomTabBar({
     search?.defaultExpanded ?? false
   );
   const searching = search != null && (search.expanded ?? ownSearchExpanded);
-  const bottom = bottomOffset ?? Math.max(insets.bottom - 8, 12);
+  // iOS tucks the bar into the home indicator area. On Android the system bar (buttons or
+  // gesture pill) is a solid strip, so the bar sits fully above it.
+  const bottom =
+    bottomOffset ??
+    (Platform.OS === 'android'
+      ? insets.bottom + 12
+      : Math.max(insets.bottom - 8, 12));
   const containerRef = useRef<ComponentRef<typeof View>>(null);
   const lift = useKeyboardLift(searching, containerRef, bottom);
 

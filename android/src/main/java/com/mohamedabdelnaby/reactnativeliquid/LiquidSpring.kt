@@ -8,7 +8,7 @@ import kotlin.math.sqrt
  * `spring(dampingRatio, stiffness)` and the iOS implementation, so both platforms move alike.
  */
 internal class LiquidSpring(
-  private val dampingRatio: Float,
+  var dampingRatio: Float,
   var stiffness: Float,
   private val threshold: Float,
 ) {

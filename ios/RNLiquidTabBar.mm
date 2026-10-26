@@ -24,7 +24,7 @@ static const double kDragStiffness = 1000;
 static const double kSettleStiffness = 1100;
 /// The drop returns to its normal size faster than it melts, so it is still
 /// liquid, at tab size, for a moment before it becomes the pill.
-static const double kSettleScaleStiffness = 1700;
+static const double kSettleScaleStiffness = 1300;
 /// Extra scale of every tab while the lens is lifted.
 static const CGFloat kTabLiftScale = 0;
 /// Extra scale of the tab right under the lens.
@@ -474,6 +474,9 @@ static const CGFloat kBarStretch = 0.45;
     [self captureTintedItems];
   }
   _press.target = 1;
+  // A little bounce on the way up, like a drop of liquid.
+  _scaleX.dampingRatio = 0.85;
+  _scaleY.dampingRatio = 0.9;
   _scaleX.stiffness = 600;
   _scaleY.stiffness = 600;
   _scaleX.target = kPressedScaleX;
@@ -581,6 +584,9 @@ static const CGFloat kBarStretch = 0.45;
   // The drop first loses its reflections and shrinks back to tab size while
   // still liquid, then melts into the pill.
   _press.stiffness = kSettleStiffness;
+  // Critically damped on the way back, so the size eases in without a wobble.
+  _scaleX.dampingRatio = 1;
+  _scaleY.dampingRatio = 1;
   _scaleX.stiffness = kSettleScaleStiffness;
   _scaleY.stiffness = kSettleScaleStiffness;
   _press.target = 0;
@@ -725,8 +731,9 @@ static const CGFloat kBarStretch = 0.45;
     _sheenView.center = _lensView.center;
     _sheenView.transform = _lensView.transform;
     // Reflections fade out during the first part of the settle, before the drop melts.
-    CGFloat reflect = MIN(MAX((press - 0.45) / 0.55, 0.0), 1.0);
-    reflect = reflect * reflect * (3 - 2 * reflect);
+    // Spread over most of the settle and eased with smootherstep, so it fades gently.
+    CGFloat reflect = MIN(MAX((press - 0.2) / 0.8, 0.0), 1.0);
+    reflect = reflect * reflect * reflect * (reflect * (reflect * 6 - 15) + 10);
     _sheenView.alpha = _lensView.alpha * reflect;
     CGFloat radius = bounds.size.height / 2;
     _rimLayer.frame = bounds;

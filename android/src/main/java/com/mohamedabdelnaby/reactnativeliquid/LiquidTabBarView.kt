@@ -58,7 +58,7 @@ private const val SETTLE_STIFFNESS = 1100f
  * The drop returns to its normal size faster than it melts, so it is still liquid, at tab size,
  * for a moment before it becomes the pill.
  */
-private const val SETTLE_SCALE_STIFFNESS = 1700f
+private const val SETTLE_SCALE_STIFFNESS = 1300f
 
 /** Spring stiffness of the lens travelling to a tapped tab, and following a finger. */
 private const val TAP_TRAVEL_STIFFNESS = 330f
@@ -348,6 +348,9 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
   private fun lift() {
     // Lift quickly, settle a little softer, like the iOS bar.
     press.stiffness = 1400f
+    // A little bounce on the way up, like a drop of liquid.
+    scaleX.dampingRatio = 0.85f
+    scaleY.dampingRatio = 0.9f
     scaleX.stiffness = 600f
     scaleY.stiffness = 600f
     press.target = 1f
@@ -359,6 +362,9 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
     // The drop first loses its reflections and shrinks back to tab size while still liquid, then
     // melts into the pill.
     press.stiffness = SETTLE_STIFFNESS
+    // Critically damped on the way back, so the size eases in without a wobble.
+    scaleX.dampingRatio = 1f
+    scaleY.dampingRatio = 1f
     scaleX.stiffness = SETTLE_SCALE_STIFFNESS
     scaleY.stiffness = SETTLE_SCALE_STIFFNESS
     press.target = 0f
@@ -549,7 +555,8 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
         },
         // Reflections fade out during the first part of the settle, before the drop melts.
         highlight = {
-          val reflect = ((state.press - 0.45f) / 0.55f).coerceIn(0f, 1f).let { it * it * (3f - 2f * it) }
+          // Spread over most of the settle and eased with smootherstep, so it fades gently.
+          val reflect = ((state.press - 0.2f) / 0.8f).coerceIn(0f, 1f).let { it * it * it * (it * (it * 6f - 15f) + 10f) }
           Highlight.Default.copy(width = 1.5.dp, alpha = reflect)
         },
         shadow = null,

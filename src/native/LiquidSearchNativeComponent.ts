@@ -20,6 +20,15 @@ export interface NativeProps extends ViewProps {
   glassStyle?: CodegenTypes.WithDefault<'regular' | 'clear', 'regular'>;
   glassTintColor?: ColorValue;
   colorScheme?: CodegenTypes.WithDefault<'system' | 'light' | 'dark', 'system'>;
+  /**
+   * `button`: a round button that morphs into the field. `bar`: a full-width
+   * field under a header row (the children) that rises into that row.
+   */
+  variant?: CodegenTypes.WithDefault<'button' | 'bar', 'button'>;
+  /** Height of the header row in the `bar` variant. */
+  headerHeight?: CodegenTypes.WithDefault<CodegenTypes.Float, 52>;
+  /** Height of the field in the `bar` variant. */
+  fieldHeight?: CodegenTypes.WithDefault<CodegenTypes.Float, 44>;
   onExpandedChange?: CodegenTypes.DirectEventHandler<ExpandedEvent>;
   onChangeText?: CodegenTypes.DirectEventHandler<TextEvent>;
   onSearchSubmit?: CodegenTypes.DirectEventHandler<TextEvent>;

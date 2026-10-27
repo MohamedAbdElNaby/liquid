@@ -208,9 +208,7 @@ export function LiquidBottomTabBar({
       keyboardVisible &&
       !searching);
 
-  if (hidden) {
-    return null;
-  }
+  const hide = useHideAnimation(hidden);
 
   const bar = (
     <NativeLiquidTabBar
@@ -257,7 +255,7 @@ export function LiquidBottomTabBar({
   return (
     <View
       ref={containerRef}
-      pointerEvents="box-none"
+      pointerEvents={hidden ? 'none' : 'box-none'}
       onLayout={(event) => onHeightChange?.(event.nativeEvent.layout.height)}
       style={[
         styles.container,
@@ -270,7 +268,20 @@ export function LiquidBottomTabBar({
     >
       <Animated.View
         pointerEvents="box-none"
-        style={{ transform: [{ translateY: lift }] }}
+        style={{
+          transform: [
+            {
+              // Hidden bars sink below the screen edge.
+              translateY: Animated.add(
+                lift,
+                hide.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, height + bottom + 24],
+                })
+              ),
+            },
+          ],
+        }}
       >
         {search != null ? (
           <LiquidExpandableSearch
@@ -502,6 +513,23 @@ function useKeyboardLift(
   }, [enabled, bottom, containerRef, lift]);
 
   return lift;
+}
+
+/** 1 while the bar is hidden (`tabBarStyle: { display: 'none' }`), sprung natively. */
+function useHideAnimation(hidden: boolean) {
+  const hide = useRef(new Animated.Value(hidden ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(hide, {
+      toValue: hidden ? 1 : 0,
+      stiffness: 320,
+      damping: 34,
+      mass: 1,
+      useNativeDriver: true,
+    }).start();
+  }, [hidden, hide]);
+
+  return hide;
 }
 
 function useKeyboardVisible() {

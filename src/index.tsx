@@ -45,6 +45,10 @@ export {
   type LiquidExpandableSearchProps,
 } from './components/LiquidExpandableSearch';
 export {
+  LiquidSearchHeader,
+  type LiquidSearchHeaderProps,
+} from './components/LiquidSearchHeader';
+export {
   LiquidMenu,
   type LiquidMenuItem,
   type LiquidMenuProps,

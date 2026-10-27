@@ -10,11 +10,19 @@
 using namespace facebook::react;
 
 static const CGFloat kGap = 16;
+// Bar variant: distance between the field and its close button, and the icon size.
+static const CGFloat kBarGap = 8;
+static const CGFloat kBarIconSize = 18;
 
 // A round glass search button that morphs into a search field. The field and
 // the close button live in a glass container, so while they separate the
 // glass stretches between them like liquid. React children are the content
 // shown next to the button while collapsed; they fade out on expand.
+//
+// The bar variant is a full-width field under a header row (the children).
+// Expanding fades the row up and away, raises the field into it, slides the
+// close button in from the trailing edge and moves the icon and placeholder
+// from the center to the leading edge.
 @interface RNLiquidSearch () <UITextFieldDelegate>
 @end
 
@@ -29,6 +37,9 @@ static const CGFloat kGap = 16;
   UIButton *_closeButton;
   BOOL _expanded;
   BOOL _hasProps;
+  BOOL _bar;
+  CGFloat _headerHeight;
+  CGFloat _fieldHeight;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -41,6 +52,8 @@ static const CGFloat kGap = 16;
   if (self = [super initWithFrame:frame]) {
     static const auto defaultProps = std::make_shared<const RNLiquidSearchProps>();
     _props = defaultProps;
+    _headerHeight = 52;
+    _fieldHeight = 44;
 
     _collapsedContentView = [UIView new];
     [self addSubview:_collapsedContentView];
@@ -132,8 +145,6 @@ static const CGFloat kGap = 16;
            oldLayoutMetrics:(LayoutMetrics const &)oldLayoutMetrics
 {
   [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
-  _collapsedContentView.frame = self.bounds;
-  _containerView.frame = self.bounds;
   [self layoutForExpanded:_expanded];
 }
 
@@ -149,6 +160,21 @@ static const CGFloat kGap = 16;
   NSString *text = RCTNSStringFromString(newProps.text);
   if (![_textField.text isEqualToString:text]) {
     _textField.text = text;
+  }
+
+  BOOL bar = newProps.variant == RNLiquidSearchVariant::Bar;
+  CGFloat headerHeight = newProps.headerHeight > 0 ? newProps.headerHeight : 52;
+  CGFloat fieldHeight = newProps.fieldHeight > 0 ? newProps.fieldHeight : 44;
+  if (bar != _bar || !_hasProps) {
+    _bar = bar;
+    [self applyVariant];
+  }
+  if (headerHeight != _headerHeight || fieldHeight != _fieldHeight) {
+    _headerHeight = headerHeight;
+    _fieldHeight = fieldHeight;
+    if (newProps.expanded == _expanded) {
+      [self layoutForExpanded:_expanded];
+    }
   }
 
   if (newProps.expanded != _expanded || !_hasProps) {
@@ -192,10 +218,32 @@ static const CGFloat kGap = 16;
   }
 }
 
+- (void)applyVariant
+{
+  UIImageSymbolConfiguration *symbol =
+      _bar ? [UIImageSymbolConfiguration configurationWithPointSize:15 weight:UIImageSymbolWeightMedium]
+           : [UIImageSymbolConfiguration configurationWithPointSize:17 weight:UIImageSymbolWeightSemibold];
+  _searchIcon.image = [UIImage systemImageNamed:@"magnifyingglass" withConfiguration:symbol];
+  if (@available(iOS 26.0, *)) {
+    // The bar's field and close button stay apart; the button's fuse while separating.
+    ((UIGlassContainerEffect *)_containerView.effect).spacing = _bar ? 0 : kGap / 2;
+  }
+  [self layoutForExpanded:_expanded];
+}
+
 #pragma mark - Morph
 
 - (void)layoutForExpanded:(BOOL)expanded
 {
+  if (_bar) {
+    [self layoutBarForExpanded:expanded];
+    return;
+  }
+  _containerView.frame = self.bounds;
+  // Bounds and center, since the content may be scaled.
+  _collapsedContentView.bounds = self.bounds;
+  _collapsedContentView.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
+
   CGSize size = self.bounds.size;
   CGFloat h = size.height;
   if (size.width <= 0 || h <= 0) {
@@ -232,6 +280,60 @@ static const CGFloat kGap = 16;
   _collapsedContentView.transform = expanded ? CGAffineTransformMakeScale(0.92, 0.92) : CGAffineTransformIdentity;
 }
 
+- (void)layoutBarForExpanded:(BOOL)expanded
+{
+  CGFloat w = self.bounds.size.width;
+  CGFloat fh = _fieldHeight;
+  CGFloat hh = _headerHeight;
+  if (w <= 0) {
+    return;
+  }
+
+  // Wide enough to hold the close button while it is outside the view.
+  _containerView.frame = CGRectMake(0, 0, w + fh + kBarGap * 4, MAX(self.bounds.size.height, hh + fh));
+
+  CGFloat fieldY = expanded ? (hh - fh) / 2 : hh;
+  CGRect field = CGRectMake(0, fieldY, expanded ? w - fh - kBarGap : w, fh);
+  // Slides in from beyond the trailing edge, level with the field.
+  CGRect close = CGRectMake(expanded ? w - fh : w + kBarGap * 2, fieldY, fh, fh);
+  _fieldView.frame = field;
+  _closeView.frame = close;
+  _closeView.alpha = expanded ? 1 : 0;
+  _closeButton.frame = _closeView.bounds;
+  if (@available(iOS 26.0, *)) {
+    // Capsule corner configurations follow the frames.
+  } else {
+    _fieldView.layer.cornerRadius = fh / 2;
+    _closeView.layer.cornerRadius = fh / 2;
+  }
+
+  // The icon and placeholder rest in the center and move to the leading edge
+  // while searching.
+  CGFloat pad = round(fh * 0.3);
+  CGFloat iconGap = 6;
+  CGFloat x = pad;
+  if (!expanded && _textField.text.length == 0) {
+    NSString *placeholder = _textField.placeholder ?: @"";
+    CGFloat textWidth = ceil([placeholder sizeWithAttributes:@{NSFontAttributeName : _textField.font}].width);
+    x = MAX(pad, round((field.size.width - kBarIconSize - iconGap - textWidth) / 2));
+  }
+  _searchIcon.frame = CGRectMake(x, (fh - kBarIconSize) / 2, kBarIconSize, kBarIconSize);
+  _searchIcon.tintColor = UIColor.secondaryLabelColor;
+  CGFloat textX = x + kBarIconSize + iconGap;
+  _textField.frame = CGRectMake(textX, 0, MAX(field.size.width - textX - pad, 0), fh);
+  _textField.alpha = 1;
+  _fieldButton.frame = _fieldView.bounds;
+  _fieldButton.hidden = expanded;
+
+  // The header row drifts up and shrinks as it fades.
+  _collapsedContentView.bounds = CGRectMake(0, 0, w, hh);
+  _collapsedContentView.center = CGPointMake(w / 2, hh / 2);
+  _collapsedContentView.alpha = expanded ? 0 : 1;
+  _collapsedContentView.transform = expanded
+      ? CGAffineTransformScale(CGAffineTransformMakeTranslation(0, -hh * 0.35), 0.9, 0.9)
+      : CGAffineTransformIdentity;
+}
+
 - (void)setExpanded:(BOOL)expanded animated:(BOOL)animated
 {
   if (!animated) {
@@ -243,8 +345,9 @@ static const CGFloat kGap = 16;
     [self layoutForExpanded:expanded];
   };
   if (@available(iOS 17.0, *)) {
-    [UIView animateWithSpringDuration:0.5
-                               bounce:0.22
+    // The bar settles quickly with little bounce, like the system search bar.
+    [UIView animateWithSpringDuration:_bar ? 0.42 : 0.5
+                               bounce:_bar ? 0.08 : 0.22
                 initialSpringVelocity:0
                                 delay:0
                               options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
@@ -276,6 +379,11 @@ static const CGFloat kGap = 16;
 
 - (void)requestCollapse
 {
+  if (_bar && _textField.text.length > 0) {
+    // Closing the bar ends the search, like the system search bar's Cancel.
+    _textField.text = @"";
+    [self textChanged];
+  }
   [self emitExpanded:NO];
 }
 

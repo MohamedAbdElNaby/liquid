@@ -20,6 +20,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LiquidGlassContainer } from '../LiquidGlassView';
 import { MorphGlass } from '../components/LiquidButton';
 import { ChevronLeftIcon } from '../internal/icons';
 import { useLiquidColors, type LiquidColorSchemeSetting } from '../theme';
@@ -193,6 +194,12 @@ export function useLiquidNavigationHeader(
 }
 
 const SLOT_SIZE = 44;
+const SLOT_GAP = 8;
+/**
+ * Glass closer than this fuses. Below the gap, so buttons rest apart and
+ * melt together only when one slides into its neighbour.
+ */
+const MERGE_SPACING = 6;
 
 function FloatingHeader({
   header,
@@ -235,18 +242,28 @@ function FloatingHeader({
             <HeaderButton item={left} colorScheme={colorScheme} />
           ) : null}
         </Presence>
-        <View pointerEvents="box-none" style={styles.right}>
+        <LiquidGlassContainer
+          pointerEvents="box-none"
+          spacing={MERGE_SPACING}
+          style={styles.right}
+        >
           {Array.from({ length: slotCount.current }, (_, i) => {
             const item = right[i - firstSlot];
             return (
-              <Presence key={i} style={styles.rightSlot}>
+              <Presence
+                key={i}
+                style={styles.rightSlot}
+                // Every button but the outermost slides into its right-hand
+                // neighbour as it goes, so their glass melts together.
+                slide={i < slotCount.current - 1 ? SLOT_SIZE + SLOT_GAP : 0}
+              >
                 {item != null ? (
                   <HeaderButton item={item} colorScheme={colorScheme} />
                 ) : null}
               </Presence>
             );
           })}
-        </View>
+        </LiquidGlassContainer>
       </View>
       <View
         pointerEvents="box-none"
@@ -345,9 +362,12 @@ function HeaderButton({
 function Presence({
   children,
   style,
+  slide = 0,
 }: {
   children: ReactElement | null;
   style?: StyleProp<ViewStyle>;
+  /** Horizontal distance the child moves while hidden. */
+  slide?: number;
 }) {
   const visible = children != null;
   const last = useRef(children);
@@ -385,6 +405,12 @@ function Presence({
         style,
         {
           transform: [
+            {
+              translateX: progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [slide, 0],
+              }),
+            },
             {
               scale: progress.interpolate({
                 inputRange: [0, 1],
@@ -454,7 +480,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rightSlot: {
-    marginLeft: 8,
+    marginLeft: SLOT_GAP,
   },
   titleLayer: {
     position: 'absolute',

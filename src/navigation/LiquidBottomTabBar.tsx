@@ -72,7 +72,7 @@ export type LiquidBottomTabBarOptions = {
   glassStyle?: LiquidGlassStyle;
   /** Tints the glass of the bar. */
   glassTintColor?: ColorValue;
-  /** Frosts the content under the bar, from 0 to 1. @default 0.8 */
+  /** Frosts the content under the bar, from 0 to 1. @default 0.55 */
   blur?: number;
   /** @default 'system' */
   colorScheme?: LiquidColorSchemeSetting;
@@ -138,7 +138,7 @@ export function LiquidBottomTabBar({
   insets,
   glassStyle = 'clear',
   glassTintColor: glassTintColorProp,
-  blur = 0.8,
+  blur = 0.55,
   colorScheme = 'system',
   activeTintColor,
   inactiveTintColor,

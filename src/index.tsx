@@ -79,6 +79,14 @@ export {
   type LiquidHeaderNavigationProps,
 } from './navigation/LiquidHeader';
 export {
+  LiquidHeaderProvider,
+  useLiquidNavigationHeader,
+  type LiquidHeaderItem,
+  type LiquidHeaderNavigation,
+  type LiquidHeaderProviderProps,
+  type LiquidNavigationHeaderOptions,
+} from './navigation/LiquidNavigationHeader';
+export {
   createLiquidBottomTabBar,
   createLiquidTopTabBar,
 } from './navigation/factories';

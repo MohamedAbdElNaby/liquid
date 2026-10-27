@@ -8,10 +8,58 @@
 
 using namespace facebook::react;
 
+/// Blur radius of content as it blurs out and in during a morph.
+static const CGFloat kContentBlur = 8;
+
+/// Blurs `layer` from one radius to another with Core Animation's gaussian
+/// blur filter, which UIKit uses for the same transition. Private API: does
+/// nothing when the filter is unavailable, leaving the plain fade.
+static void RNLiquidAnimateBlur(CALayer *layer, CGFloat from, CGFloat to, CFTimeInterval duration)
+{
+  Class filterClass = NSClassFromString(@"CAFilter");
+  SEL make = NSSelectorFromString(@"filterWithType:");
+  if (filterClass == nil || ![filterClass respondsToSelector:make]) {
+    return;
+  }
+  id filter = ((id (*)(id, SEL, id))[filterClass methodForSelector:make])(filterClass, make, @"gaussianBlur");
+  if (filter == nil) {
+    return;
+  }
+  @try {
+    [filter setValue:@"gaussianBlur" forKey:@"name"];
+    [filter setValue:@(to) forKey:@"inputRadius"];
+    layer.filters = @[ filter ];
+    CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:@"filters.gaussianBlur.inputRadius"];
+    animation.fromValue = @(from);
+    animation.toValue = @(to);
+    animation.duration = duration;
+    animation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+    [layer addAnimation:animation forKey:@"liquidBlur"];
+  } @catch (NSException *exception) {
+    layer.filters = nil;
+  }
+}
+
+/// Runs UIView animations even inside `performWithoutAnimation`, which
+/// navigation libraries use while pushing screens: the glass should still
+/// morph while a screen is pushed under it.
+static void RNLiquidAnimate(void (^animations)(void))
+{
+  BOOL enabled = UIView.areAnimationsEnabled;
+  [UIView setAnimationsEnabled:YES];
+  animations();
+  [UIView setAnimationsEnabled:enabled];
+}
+
 @implementation RNLiquidGlassView {
   UIVisualEffectView *_effectView;
   CGFloat _cornerRadius;
   BOOL _morph;
+  BOOL _laidOut;
+  // Set when a morphing view's children change, until the next layout: the
+  // content then crossfades with a blur and stays in place while the glass
+  // moves, instead of fading in after it.
+  BOOL _contentSwapped;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -41,11 +89,74 @@ using namespace facebook::react;
 - (void)mountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
 {
   [_effectView.contentView insertSubview:childComponentView atIndex:index];
+  if ([self animatesContentChanges]) {
+    [self markContentSwapped];
+    // The new content sharpens and grows into place.
+    childComponentView.alpha = 0;
+    childComponentView.transform = CGAffineTransformMakeScale(0.85, 0.85);
+    RNLiquidAnimateBlur(childComponentView.layer, kContentBlur, 0, 0.32);
+    RNLiquidAnimate(^{
+      [UIView animateWithDuration:0.32
+          delay:0.04
+          options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionAllowUserInteraction
+          animations:^{
+            childComponentView.alpha = 1;
+            childComponentView.transform = CGAffineTransformIdentity;
+          }
+          completion:^(BOOL finished) {
+            childComponentView.layer.filters = nil;
+          }];
+    });
+  }
 }
 
 - (void)unmountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
 {
+  if ([self animatesContentChanges]) {
+    // The old content blurs away from a snapshot, since React reuses the view.
+    UIView *snapshot = [childComponentView snapshotViewAfterScreenUpdates:NO];
+    if (snapshot != nil) {
+      [self markContentSwapped];
+      snapshot.frame = childComponentView.frame;
+      snapshot.userInteractionEnabled = NO;
+      [_effectView.contentView addSubview:snapshot];
+      RNLiquidAnimateBlur(snapshot.layer, 0, kContentBlur, 0.22);
+      RNLiquidAnimate(^{
+        [UIView animateWithDuration:0.22
+            delay:0
+            options:UIViewAnimationOptionCurveEaseIn
+            animations:^{
+              snapshot.alpha = 0;
+              snapshot.transform = CGAffineTransformMakeScale(0.85, 0.85);
+            }
+            completion:^(BOOL finished) {
+              [snapshot removeFromSuperview];
+            }];
+      });
+    }
+  }
+  childComponentView.alpha = 1;
+  childComponentView.transform = CGAffineTransformIdentity;
+  childComponentView.layer.filters = nil;
   [childComponentView removeFromSuperview];
+}
+
+/// Content changes animate only on a morphing view that is already on screen.
+- (BOOL)animatesContentChanges
+{
+  return _morph && _laidOut && self.window != nil;
+}
+
+- (void)markContentSwapped
+{
+  if (_contentSwapped) {
+    return;
+  }
+  _contentSwapped = YES;
+  // Cleared after this mount transaction, in case the size does not change.
+  dispatch_async(dispatch_get_main_queue(), ^{
+    self->_contentSwapped = NO;
+  });
 }
 
 #pragma mark - Props
@@ -134,10 +245,22 @@ using namespace facebook::react;
 {
   BOOL morphing = _morph && self.window != nil && oldLayoutMetrics.frame.size.width > 0 &&
       layoutMetrics.frame != oldLayoutMetrics.frame;
+  if (layoutMetrics.frame.size.width > 0) {
+    _laidOut = YES;
+  }
   if (!morphing) {
     [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
     _effectView.frame = self.bounds;
     return;
+  }
+
+  // New content is laid out for the final frame at once. Keep it there on
+  // screen while the glass moves, so it doesn't slide with the glass's edge.
+  UIView *content = _effectView.contentView;
+  if (_contentSwapped) {
+    content.transform = CGAffineTransformMakeTranslation(
+        layoutMetrics.frame.origin.x - oldLayoutMetrics.frame.origin.x,
+        layoutMetrics.frame.origin.y - oldLayoutMetrics.frame.origin.y);
   }
 
   // Let the glass flow into its new frame. Inside a glass container, iOS
@@ -145,39 +268,46 @@ using namespace facebook::react;
   void (^changes)(void) = ^{
     [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
     self->_effectView.frame = self.bounds;
+    content.transform = CGAffineTransformIdentity;
     [self applyCornerRadius];
     [self layoutIfNeeded];
   };
   UIViewAnimationOptions options =
       UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction;
-  if (@available(iOS 17.0, *)) {
-    [UIView animateWithSpringDuration:0.55
-                               bounce:0.28
-                initialSpringVelocity:0
-                                delay:0
-                              options:options
-                           animations:changes
-                           completion:nil];
-  } else {
-    [UIView animateWithDuration:0.55
-                          delay:0
-         usingSpringWithDamping:0.72
-          initialSpringVelocity:0
-                        options:options
-                     animations:changes
-                     completion:nil];
-  }
+  RNLiquidAnimate(^{
+    if (@available(iOS 17.0, *)) {
+      [UIView animateWithSpringDuration:0.55
+                                 bounce:0.28
+                  initialSpringVelocity:0
+                                  delay:0
+                                options:options
+                             animations:changes
+                             completion:nil];
+    } else {
+      [UIView animateWithDuration:0.55
+                            delay:0
+           usingSpringWithDamping:0.72
+            initialSpringVelocity:0
+                          options:options
+                       animations:changes
+                       completion:nil];
+    }
+  });
 
+  if (_contentSwapped) {
+    return;
+  }
   // The content jumps to its new layout, so fade it in as the glass settles.
-  UIView *content = _effectView.contentView;
   content.alpha = 0;
-  [UIView animateWithDuration:0.3
-                        delay:0.12
-                      options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionAllowUserInteraction
-                   animations:^{
-                     content.alpha = 1;
-                   }
-                   completion:nil];
+  RNLiquidAnimate(^{
+    [UIView animateWithDuration:0.3
+                          delay:0.12
+                        options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionAllowUserInteraction
+                     animations:^{
+                       content.alpha = 1;
+                     }
+                     completion:nil];
+  });
 }
 
 - (void)layoutSubviews

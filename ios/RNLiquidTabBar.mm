@@ -583,13 +583,15 @@ static UIView *RNLiquidLensContent(UIView *item)
 - (void)updateRimColors
 {
   BOOL dark = self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
-  UIColor *bright = [UIColor colorWithWhite:1 alpha:dark ? 0.5 : 0.7];
-  UIColor *second = [UIColor colorWithWhite:1 alpha:dark ? 0.3 : 0.45];
-  UIColor *dim = dark ? [UIColor colorWithWhite:1 alpha:0.08] : [UIColor colorWithWhite:0 alpha:0.045];
+  // Like the system tab bar: a thin, even edge that is a little brighter at two corners.
+  UIColor *bright = [UIColor colorWithWhite:1 alpha:dark ? 0.45 : 0.9];
+  UIColor *second = [UIColor colorWithWhite:1 alpha:dark ? 0.3 : 0.75];
+  UIColor *dim = dark ? [UIColor colorWithWhite:1 alpha:0.14] : [UIColor colorWithWhite:0 alpha:0.09];
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
   _glossLayer.colors = @[
-    (id)[UIColor colorWithWhite:1 alpha:dark ? 0.12 : 0.35].CGColor, (id)[UIColor colorWithWhite:1 alpha:0].CGColor
+    // No gloss band: the system drop is fully clear in the middle.
+    (id)[UIColor colorWithWhite:1 alpha:0].CGColor, (id)[UIColor colorWithWhite:1 alpha:0].CGColor
   ];
   _rimLayer.colors = @[
     (id)bright.CGColor, (id)dim.CGColor, (id)dim.CGColor, (id)second.CGColor, (id)dim.CGColor, (id)dim.CGColor,
@@ -610,7 +612,7 @@ static UIView *RNLiquidLensContent(UIView *item)
   // A light body in light mode, a dark body in dark mode to match the bar.
   _lensFill.backgroundColor = tint ?: [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *traits) {
     return traits.userInterfaceStyle == UIUserInterfaceStyleDark ? [UIColor colorWithRed:0.07 green:0.07 blue:0.08 alpha:0.62]
-                                                                 : [UIColor colorWithWhite:1 alpha:0.22];
+                                                                 : UIColor.clearColor;
   }];
 }
 
@@ -741,13 +743,44 @@ static UIView *RNLiquidLensContent(UIView *item)
       restFrame.size.width * scaleX,
       restFrame.size.height * scaleY);
   for (UIView *tintView in @[ _tintUnderView, _tintView ]) {
-    tintView.hidden = !_lensEnabled || press < 0.01;
+    // Only the sharp copy over the glass: the copy under it is blurred by the glass and smears.
+    tintView.hidden = !_lensEnabled || press < 0.01 || tintView == _tintUnderView;
     if (!tintView.hidden) {
       CGRect maskRect = [tintView convertRect:lensRect fromView:self];
       ((CAShapeLayer *)tintView.layer.mask).path =
           [UIBezierPath bezierPathWithRoundedRect:maskRect cornerRadius:maskRect.size.height / 2].CGPath;
       tintView.alpha = press;
     }
+  }
+
+  // Inside the drop the glass blurs whatever is under it, so the tabs are cut out there and
+  // only the sharp copy on top shows, like the system tab bar.
+  if (_lensEnabled && press >= 0.01 && _tintView.subviews.count > 0) {
+    // The mask is the bar with a hole for the drop, and the hole fills back in as the drop
+    // melts, so the tabs return as the sharp copy fades.
+    CALayer *mask = _itemsView.layer.mask;
+    if (mask == nil || mask.sublayers.count != 2) {
+      mask = [CALayer layer];
+      CAShapeLayer *outside = [CAShapeLayer layer];
+      outside.fillRule = kCAFillRuleEvenOdd;
+      [mask addSublayer:outside];
+      [mask addSublayer:[CAShapeLayer layer]];
+      _itemsView.layer.mask = mask;
+    }
+    CAShapeLayer *outside = (CAShapeLayer *)mask.sublayers[0];
+    CAShapeLayer *inside = (CAShapeLayer *)mask.sublayers[1];
+    CGRect hole = [_itemsView convertRect:lensRect fromView:self];
+    UIBezierPath *holePath = [UIBezierPath bezierPathWithRoundedRect:hole cornerRadius:hole.size.height / 2];
+    UIBezierPath *path = [UIBezierPath bezierPathWithRect:CGRectInset(_itemsView.bounds, -200, -200)];
+    [path appendPath:holePath];
+    mask.frame = _itemsView.bounds;
+    outside.frame = mask.bounds;
+    inside.frame = mask.bounds;
+    outside.path = path.CGPath;
+    inside.path = holePath.CGPath;
+    inside.opacity = 1 - press;
+  } else if (_itemsView.layer.mask != nil) {
+    _itemsView.layer.mask = nil;
   }
   if (_lensView.clipsToBounds) {
     _lensView.layer.cornerRadius = restFrame.size.height / 2;
@@ -773,7 +806,7 @@ static UIView *RNLiquidLensContent(UIView *item)
     CGFloat radius = bounds.size.height / 2;
     _rimLayer.frame = bounds;
     _rimMask.frame = bounds;
-    _rimMask.lineWidth = 1.5;
+    _rimMask.lineWidth = 1;
     _rimMask.path = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(bounds, 1, 1) cornerRadius:radius - 1].CGPath;
     CGRect gloss = CGRectMake(radius * 0.45, bounds.size.height * 0.1, bounds.size.width - radius * 0.9,
                               bounds.size.height * 0.38);

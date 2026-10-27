@@ -1,5 +1,7 @@
 #import "RNLiquidTabBar.h"
 
+#import <objc/message.h>
+
 #import <QuartzCore/QuartzCore.h>
 #import <React/RCTConversions.h>
 
@@ -71,6 +73,21 @@ static const CGFloat kBarStretch = 0.45;
   UIColor *_lensTintColor;
   CADisplayLink *_displayLink;
 
+  // Apple's own lens (the one inside UITabBar), used on iOS 26 when available.
+  // Our drop above is the fallback.
+  UIView *_systemLens;
+  // Holds the bar glass; the lifted lens floats here, above the glass.
+  UIView *_glassHost;
+  // Holds, in order: the focused copies, the lens, and the tabs.
+  UIView *_lensContainer;
+  // The focused copy of every tab, which the lens shows inside itself.
+  UIView *_selectedContent;
+  // Fills the selected content at rest, so the lens reads as the selection pill.
+  UIView *_restingBackground;
+  BOOL _systemLensLifted;
+  // While the lens animates its lift, its size belongs to that animation.
+  BOOL _systemLensResizing;
+
   // Position of the lens, in tabs.
   RNLiquidSpring _value;
   // 0 when resting as the pill, 1 when lifted.
@@ -132,15 +149,28 @@ static const CGFloat kBarStretch = 0.45;
     _frostView.hidden = YES;
     [self addSubview:_frostView];
 
+    _glassHost = [UIView new];
+    [self addSubview:_glassHost];
     _barView = [[UIVisualEffectView alloc] initWithEffect:nil];
-    [self addSubview:_barView];
+    [_glassHost addSubview:_barView];
 
     _pillView = [UIView new];
     _pillView.userInteractionEnabled = NO;
     [_barView.contentView addSubview:_pillView];
 
+    _lensContainer = [UIView new];
+    _lensContainer.userInteractionEnabled = YES;
+    [_barView.contentView addSubview:_lensContainer];
+    _selectedContent = [UIView new];
+    _selectedContent.userInteractionEnabled = NO;
+    [_lensContainer addSubview:_selectedContent];
+    _restingBackground = [UIView new];
+    _restingBackground.userInteractionEnabled = NO;
+    [_selectedContent addSubview:_restingBackground];
+
     _itemsView = [UIView new];
-    [_barView.contentView addSubview:_itemsView];
+    [_lensContainer addSubview:_itemsView];
+    [self setUpSystemLens];
 
     _tintUnderView = [self makeTintView];
     [_barView.contentView addSubview:_tintUnderView];
@@ -222,6 +252,9 @@ static const CGFloat kBarStretch = 0.45;
 - (void)mountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
 {
   [_itemsView insertSubview:childComponentView atIndex:index];
+  if (_systemLens != nil) {
+    [self captureTintedItemsSoon];
+  }
   [self render];
 }
 
@@ -240,8 +273,12 @@ static const CGFloat kBarStretch = 0.45;
   // Keep the bar's own transform out of the frame calculation.
   CGAffineTransform transform = _barView.transform;
   _barView.transform = CGAffineTransformIdentity;
+  _glassHost.frame = self.bounds;
   _barView.frame = self.bounds;
   _barView.transform = transform;
+  _lensContainer.frame = self.bounds;
+  _selectedContent.frame = self.bounds;
+  _restingBackground.frame = self.bounds;
   _frostView.transform = CGAffineTransformIdentity;
   _frostView.frame = self.bounds;
   _frostView.transform = transform;
@@ -250,6 +287,9 @@ static const CGFloat kBarStretch = 0.45;
   _tintView.transform = CGAffineTransformIdentity;
   _tintView.frame = self.bounds;
   _tintView.transform = transform;
+  if (_systemLens != nil && layoutMetrics.frame.size != oldLayoutMetrics.frame.size) {
+    [self captureTintedItemsSoon];
+  }
   [self render];
 }
 
@@ -262,6 +302,7 @@ static const CGFloat kBarStretch = 0.45;
   [self applyGlassWithProps:newViewProps];
   _pillView.backgroundColor = RCTUIColorFromSharedColor(newViewProps.selectionColor)
       ?: [UIColor colorWithWhite:0.5 alpha:0.15];
+  _restingBackground.backgroundColor = _pillView.backgroundColor;
 
   _lensEnabled = newViewProps.lensEnabled;
   [self applyFrost:newViewProps.backdropBlur];
@@ -481,6 +522,7 @@ static const CGFloat kBarStretch = 0.45;
   _scaleY.stiffness = 600;
   _scaleX.target = kPressedScaleX;
   _scaleY.target = kPressedScaleY;
+  [self setSystemLensLifted:YES];
 }
 
 /// The focused copy of a tab that JS renders for the lens (see LIQUID_LENS_CONTENT_ID).
@@ -500,9 +542,11 @@ static UIView *RNLiquidLensContent(UIView *item)
 /// color when there is none.
 - (void)captureTintedItems
 {
-  for (UIView *tintView in @[ _tintUnderView, _tintView ]) {
+  for (UIView *tintView in @[ _tintUnderView, _tintView, _selectedContent ]) {
     for (UIView *view in tintView.subviews) {
-      [view removeFromSuperview];
+      if (view != _restingBackground) {
+        [view removeFromSuperview];
+      }
     }
   }
   for (UIView *item in _itemsView.subviews) {
@@ -538,7 +582,7 @@ static UIView *RNLiquidLensContent(UIView *item)
     } else {
       image = [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     }
-    for (UIView *tintView in @[ _tintUnderView, _tintView ]) {
+    for (UIView *tintView in @[ _tintUnderView, _tintView, _selectedContent ]) {
       UIImageView *copy = [[UIImageView alloc] initWithImage:image];
       copy.tintColor = _focusedTintColor;
       copy.bounds = bounds;
@@ -546,6 +590,109 @@ static UIView *RNLiquidLensContent(UIView *item)
       [tintView addSubview:copy];
     }
   }
+}
+
+#pragma mark - System lens
+
+/// Calls a setter that takes a C scalar, which -performSelector cannot pass.
+static void RNLiquidSetInt(UIView *view, NSString *name, int value)
+{
+  SEL selector = NSSelectorFromString(name);
+  if ([view respondsToSelector:selector]) {
+    ((void (*)(id, SEL, int))[view methodForSelector:selector])(view, selector, value);
+  }
+}
+
+static void RNLiquidSetBool(UIView *view, NSString *name, BOOL value)
+{
+  SEL selector = NSSelectorFromString(name);
+  if ([view respondsToSelector:selector]) {
+    ((void (*)(id, SEL, BOOL))[view methodForSelector:selector])(view, selector, value);
+  }
+}
+
+/// Uses `_UILiquidLensView`, the lens UIKit's own tab bar and segmented control
+/// use on iOS 26, so the drop, its reflections and its animation match the
+/// system exactly. Private API: every call is guarded, and when the class or a
+/// selector is missing the bar keeps using its own drop.
+- (void)setUpSystemLens
+{
+  if (@available(iOS 26.0, *)) {
+    Class lensClass = NSClassFromString(@"_UILiquidLensView");
+    SEL initSelector = NSSelectorFromString(@"initWithRestingBackground:");
+    if (lensClass == nil || ![lensClass instancesRespondToSelector:initSelector] ||
+        ![lensClass instancesRespondToSelector:NSSelectorFromString(@"setLifted:animated:alongsideAnimations:completion:")]) {
+      return;
+    }
+    UIView *lens = ((id (*)(id, SEL, id))objc_msgSend)([lensClass alloc], initSelector, [UIView new]);
+    if (![lens isKindOfClass:[UIView class]]) {
+      return;
+    }
+    lens.userInteractionEnabled = NO;
+    _systemLens = lens;
+    _glassHost.layer.zPosition = 1;
+    lens.layer.zPosition = 10;
+    [_lensContainer insertSubview:lens aboveSubview:_selectedContent];
+
+    [lens performSelector:NSSelectorFromString(@"setLiftedContainerView:") withObject:_glassHost];
+    [lens performSelector:NSSelectorFromString(@"setLiftedContentView:") withObject:_selectedContent];
+    [lens performSelector:NSSelectorFromString(@"setOverridePunchoutView:") withObject:_itemsView];
+    RNLiquidSetInt(lens, @"setLiftedContentMode:", 1);
+    RNLiquidSetInt(lens, @"setStyle:", 1);
+    RNLiquidSetBool(lens, @"setWarpsContentBelow:", YES);
+
+    // The system lens replaces our drop and pill.
+    _pillView.hidden = YES;
+    // Puts the lens in its resting state; it draws nothing until told it is not lifted.
+    SEL liftSelector = NSSelectorFromString(@"setLifted:animated:alongsideAnimations:completion:");
+    ((void (*)(id, SEL, BOOL, BOOL, void (^)(void), void (^)(void)))[lens methodForSelector:liftSelector])(
+        lens, liftSelector, NO, NO, ^{}, nil);
+  }
+}
+
+/// Lifts or settles the system lens with the system's own animation.
+- (void)setSystemLensLifted:(BOOL)lifted
+{
+  if (_systemLens == nil || _systemLensLifted == lifted) {
+    return;
+  }
+  _systemLensLifted = lifted;
+  _systemLensResizing = YES;
+  CGSize size = [self systemLensSizeLifted:lifted];
+  __weak RNLiquidTabBar *weakSelf = self;
+  __weak UIView *lens = _systemLens;
+  void (^alongside)(void) = ^{
+    CGPoint center = lens.center;
+    lens.bounds = CGRectMake(0, 0, size.width, size.height);
+    lens.center = center;
+  };
+  void (^completion)(void) = ^{
+    RNLiquidTabBar *strongSelf = weakSelf;
+    if (strongSelf != nil) {
+      strongSelf->_systemLensResizing = NO;
+    }
+  };
+  SEL selector = NSSelectorFromString(@"setLifted:animated:alongsideAnimations:completion:");
+  ((void (*)(id, SEL, BOOL, BOOL, void (^)(void), void (^)(void)))[_systemLens methodForSelector:selector])(
+      _systemLens, selector, lifted, self.window != nil, alongside, completion);
+}
+
+/// Resting: the pill. Lifted: the pill grown on every side, like UITabBar.
+- (CGSize)systemLensSizeLifted:(BOOL)lifted
+{
+  CGSize size = self.bounds.size;
+  CGSize pill = CGSizeMake([self tabWidth], size.height - kInset * 2);
+  CGFloat grow = lifted ? (kInset + 4) * 2 : 0;
+  return CGSizeMake(pill.width + grow, pill.height + grow);
+}
+
+/// React renders tabs after they mount; snapshot them once that has landed.
+- (void)captureTintedItemsSoon
+{
+  __weak RNLiquidTabBar *weakSelf = self;
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    [weakSelf captureTintedItems];
+  });
 }
 
 - (UIView *)makeTintView
@@ -629,6 +776,7 @@ static UIView *RNLiquidLensContent(UIView *item)
   _press.target = 0;
   _scaleX.target = 1;
   _scaleY.target = 1;
+  [self setSystemLensLifted:NO];
 }
 
 - (void)startAnimating
@@ -685,6 +833,38 @@ static UIView *RNLiquidLensContent(UIView *item)
   }
 }
 
+/// The system lens animates its own shape, reflections and lift; we only move it
+/// and magnify the tabs, the way UITabBar does.
+- (void)renderSystemLensWithPosition:(double)position clamped:(double)clamped press:(CGFloat)press
+{
+  CGSize size = self.bounds.size;
+  CGFloat tabWidth = [self tabWidth];
+  _systemLens.hidden = !_lensEnabled;
+  // Like UITabBar, the pill's tint fades while the lens is lifted and clear.
+  _restingBackground.alpha = 1 - press;
+  _systemLens.center = CGPointMake(kInset + (position + 0.5) * tabWidth, size.height / 2);
+  if (!_systemLensResizing) {
+    CGSize lensSize = [self systemLensSizeLifted:_systemLensLifted];
+    _systemLens.bounds = CGRectMake(0, 0, lensSize.width, lensSize.height);
+  }
+  for (UIView *view in @[ _lensView, _lensFill, _sheenView, _tintView, _tintUnderView ]) {
+    view.hidden = YES;
+  }
+  _itemsView.layer.mask = nil;
+
+  // Every tab grows a little while the lens is lifted, the one under it most.
+  NSArray<UIView *> *items = _itemsView.subviews;
+  for (NSUInteger i = 0; i < items.count; i++) {
+    double proximity = MAX(0.0, 1.0 - std::fabs(clamped - (double)i));
+    CGFloat scale = 1 + kTabMagnification * proximity * press;
+    items[i].transform = CGAffineTransformMakeScale(scale, scale);
+    // The resting background is the first subview; the copies follow in tab order.
+    if (i + 1 < _selectedContent.subviews.count) {
+      _selectedContent.subviews[i + 1].transform = items[i].transform;
+    }
+  }
+}
+
 - (void)render
 {
   CGSize size = self.bounds.size;
@@ -703,6 +883,14 @@ static UIView *RNLiquidLensContent(UIView *item)
 
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
+
+  if (_systemLens != nil) {
+    _frostView.layer.cornerRadius = size.height / 2;
+    _frostView.layer.cornerCurve = kCACornerCurveContinuous;
+    [self renderSystemLensWithPosition:_value.value clamped:clamped press:press];
+    [CATransaction commit];
+    return;
+  }
 
   // The bar grows slightly while pressed.
   // It also stretches toward a finger pulled past its ends.

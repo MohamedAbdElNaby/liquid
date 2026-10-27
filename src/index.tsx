@@ -49,6 +49,20 @@ export {
   type LiquidSearchHeaderProps,
 } from './components/LiquidSearchHeader';
 export {
+  LiquidProfileHeader,
+  getLiquidProfileHeaderLayout,
+  useLiquidProfileEntrance,
+  useLiquidProfileHeaderHeight,
+  useLiquidProfileSnapOffsets,
+  type LiquidProfileAction,
+  type LiquidProfileEntrance,
+  type LiquidProfileHeaderProps,
+} from './components/LiquidProfileHeader';
+export {
+  LiquidStickyView,
+  type LiquidStickyViewProps,
+} from './components/LiquidStickyView';
+export {
   LiquidMenu,
   type LiquidMenuItem,
   type LiquidMenuProps,

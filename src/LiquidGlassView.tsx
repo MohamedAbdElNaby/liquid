@@ -35,6 +35,12 @@ export type LiquidGlassViewProps = ViewProps & {
    */
   morph?: boolean;
   /**
+   * iOS: fades the glass out over this many points at its bottom edge, like
+   * a bar that melts into the content under it.
+   * @default 0
+   */
+  fadeBottom?: number;
+  /**
    * Forces the light or dark material.
    * @default 'system'
    */

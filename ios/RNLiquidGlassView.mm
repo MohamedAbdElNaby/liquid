@@ -56,6 +56,10 @@ static void RNLiquidAnimate(void (^animations)(void))
   CGFloat _cornerRadius;
   BOOL _morph;
   BOOL _laidOut;
+  CGFloat _fadeBottom;
+  // Masks the effect so it fades out at the bottom (see fadeBottom).
+  UIView *_fadeMask;
+  CAGradientLayer *_fadeGradient;
   // Set when a morphing view's children change, until the next layout: the
   // content then crossfades with a blur and stays in place while the glass
   // moves, instead of fading in after it.
@@ -174,6 +178,10 @@ static void RNLiquidAnimate(void (^animations)(void))
   }
 
   _morph = newViewProps.morph;
+  if (_fadeBottom != newViewProps.fadeBottom) {
+    _fadeBottom = newViewProps.fadeBottom;
+    [self applyFade];
+  }
 
   if (oldViewProps.cornerRadius != newViewProps.cornerRadius) {
     _cornerRadius = newViewProps.cornerRadius;
@@ -314,6 +322,39 @@ static void RNLiquidAnimate(void (^animations)(void))
 {
   [super layoutSubviews];
   [self applyCornerRadius];
+  [self applyFade];
+}
+
+/// A gradient mask on the effect view: opaque, then clear over the last
+/// `fadeBottom` points. Effect views take masks through `maskView`.
+- (void)applyFade
+{
+  if (_fadeBottom <= 0) {
+    if (_fadeMask != nil) {
+      _effectView.maskView = nil;
+      _fadeMask = nil;
+      _fadeGradient = nil;
+    }
+    return;
+  }
+  if (_fadeMask == nil) {
+    _fadeMask = [UIView new];
+    _fadeGradient = [CAGradientLayer layer];
+    _fadeGradient.colors = @[
+      (id)UIColor.blackColor.CGColor, (id)UIColor.blackColor.CGColor, (id)[UIColor colorWithWhite:0 alpha:0].CGColor
+    ];
+    [_fadeMask.layer addSublayer:_fadeGradient];
+    _effectView.maskView = _fadeMask;
+  }
+  CGRect bounds = _effectView.bounds;
+  CGFloat height = MAX(bounds.size.height, 1);
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  _fadeMask.frame = bounds;
+  _fadeGradient.frame = CGRectMake(0, 0, bounds.size.width, bounds.size.height);
+  CGFloat start = MAX(0, 1 - _fadeBottom / height);
+  _fadeGradient.locations = @[ @0, @(start), @1 ];
+  [CATransaction commit];
 }
 
 @end

@@ -19,6 +19,8 @@ export interface NativeProps extends ViewProps {
   cornerRadius?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
   /** Animates size and position changes as a liquid morph. */
   morph?: CodegenTypes.WithDefault<boolean, false>;
+  /** iOS: fades the glass out over this many points at its bottom edge. */
+  fadeBottom?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
   /** Forces the light or dark appearance of the material. */
   colorScheme?: CodegenTypes.WithDefault<'system' | 'light' | 'dark', 'system'>;
 

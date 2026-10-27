@@ -12,6 +12,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LiquidGlassView } from '../LiquidGlassView';
 import { LIQUID_HEADER_HEIGHT } from '../navigation/LiquidHeader';
 import { useLiquidColors, type LiquidColorSchemeSetting } from '../theme';
 
@@ -64,8 +65,6 @@ const HEADER_INSET = 16;
 /** Steps of the blur that fades in at the bottom of the photo. */
 const BLUR_STEPS = 8;
 const BLUR_HEIGHT = 190;
-/** Steps of the fade over the content at the top once collapsed. */
-const EDGE_STEPS = 12;
 /** Size of the name once it is in the bar. */
 const BAR_TITLE_SCALE = 0.66;
 
@@ -181,7 +180,6 @@ export function LiquidProfileHeader({
   const M = MORPH_DISTANCE;
   const D = Math.max(layout.collapseDistance, M + 1);
   const edge = edgeHeight ?? layout.collapsedHeight + 60;
-  const edgeColor = scheme === 'dark' ? '0, 0, 0' : '242, 242, 247';
 
   // Reports collapsing from the scroll position.
   const onCollapsed = useRef(onCollapsedChange);
@@ -241,21 +239,31 @@ export function LiquidProfileHeader({
 
   return (
     <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, style]}>
+      {/* The collapsed bar: glass over the content that fades out at its
+          bottom. It slides in instead of fading, since glass stops drawing under
+          a fading parent. */}
       <Animated.View
         pointerEvents="none"
-        style={[styles.edge, { height: edge, opacity: collapsedShow }]}
+        style={[
+          styles.edge,
+          {
+            height: edge,
+            transform: [{ translateY: clampScroll([D * 0.7, D], [-edge, 0]) }],
+          },
+        ]}
       >
-        {Array.from({ length: EDGE_STEPS }, (_, i) => (
-          <View
-            key={i}
-            style={{
-              height: edge / EDGE_STEPS,
-              backgroundColor: `rgba(${edgeColor}, ${
-                0.92 * (1 - i / EDGE_STEPS) ** 1.6
-              })`,
-            }}
-          />
-        ))}
+        <LiquidGlassView
+          glassStyle="regular"
+          colorScheme={scheme}
+          tintColor={
+            scheme === 'dark'
+              ? 'rgba(0, 0, 0, 0.3)'
+              : 'rgba(255, 255, 255, 0.35)'
+          }
+          // Melts into the content below the bar.
+          fadeBottom={edge - layout.collapsedHeight + 12}
+          style={{ height: edge }}
+        />
       </Animated.View>
       <Animated.View
         pointerEvents="box-none"

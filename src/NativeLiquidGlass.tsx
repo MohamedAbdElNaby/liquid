@@ -10,6 +10,7 @@ import type { NativeProps as SearchProps } from './native/LiquidSearchNativeComp
 // Fallbacks for platforms without the native components (e.g. web).
 
 export function NativeLiquidGlassView({
+  fadeBottom: _fadeBottom,
   glassStyle,
   glassTintColor,
   cornerRadius,

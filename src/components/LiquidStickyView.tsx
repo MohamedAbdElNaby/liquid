@@ -49,10 +49,12 @@ export function LiquidStickyView({
             },
           ],
         },
-        style,
       ]}
     >
-      {children}
+      {/* Its own view, so a transform in `style` can't replace the pinning. */}
+      <Animated.View pointerEvents="box-none" style={style}>
+        {children}
+      </Animated.View>
     </Animated.View>
   );
 }

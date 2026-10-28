@@ -128,8 +128,8 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
     child.alpha = 0f
     child.scaleX = 0.85f
     child.scaleY = 0.85f
-    child.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(40).setDuration(320).start()
-    animateBlur(child, from = CONTENT_BLUR_DP, to = 0f, durationMs = 320) {}
+    child.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(60).setDuration(380).start()
+    animateBlur(child, from = CONTENT_BLUR_DP, to = 0f, durationMs = 380) {}
   }
 
   /** Old content blurs away. It keeps drawing while it animates, then is let go. */
@@ -142,7 +142,7 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
     contentSwappedAt = SystemClock.uptimeMillis()
     startViewTransition(child)
     super.removeViewAt(index)
-    child.animate().alpha(0f).scaleX(0.85f).scaleY(0.85f).setStartDelay(0).setDuration(220)
+    child.animate().alpha(0f).scaleX(0.85f).scaleY(0.85f).setStartDelay(0).setDuration(260)
       .withEndAction {
         endViewTransition(child)
         child.alpha = 1f
@@ -150,7 +150,7 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
         child.scaleY = 1f
       }
       .start()
-    animateBlur(child, from = 0f, to = CONTENT_BLUR_DP, durationMs = 220) {}
+    animateBlur(child, from = 0f, to = CONTENT_BLUR_DP, durationMs = 260) {}
   }
 
   /** Animates a gaussian blur on [view] (Android 12+). */
@@ -262,13 +262,14 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
     // Small buttons swell the most: a 44 dp circle to about 1.45, a wide field barely.
     val grow = minOf(0.45f, 20f * resources.displayMetrics.density / size)
     if (down) {
-      pressSpring.dampingRatio = 0.7f
-      pressSpring.stiffness = 520f
+      // Matches iOS 26: the glass takes about 0.3 s to swell.
+      pressSpring.dampingRatio = 0.82f
+      pressSpring.stiffness = 170f
       pressSpring.target = 1f + grow
     } else {
       // Underdamped, so it dips below its size and wobbles back like a drop.
-      pressSpring.dampingRatio = 0.42f
-      pressSpring.stiffness = 360f
+      pressSpring.dampingRatio = 0.5f
+      pressSpring.stiffness = 210f
       pressSpring.target = 1f
     }
     if (!pressScheduled) {

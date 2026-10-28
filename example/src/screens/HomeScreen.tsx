@@ -140,11 +140,16 @@ export function HomeScreen() {
               : 'This OS version renders the fallback material.'}
           </Text>
           <AppearanceSwitch style={styles.appearance} />
-          <LiquidButton
-            title="Glass Lab"
-            onPress={() => navigation.navigate('GlassLab')}
-            style={styles.labButton}
-          />
+          <View style={styles.homeButtons}>
+            <LiquidButton
+              title="Glass Lab"
+              onPress={() => navigation.navigate('GlassLab')}
+            />
+            <LiquidButton
+              title="Merge example"
+              onPress={() => navigation.navigate('Merge')}
+            />
+          </View>
         </View>
       }
     />
@@ -175,8 +180,9 @@ const styles = StyleSheet.create({
   appearance: {
     marginTop: 16,
   },
-  labButton: {
-    alignSelf: 'flex-start',
+  homeButtons: {
+    flexDirection: 'row',
+    gap: 10,
     marginTop: 12,
   },
   card: {

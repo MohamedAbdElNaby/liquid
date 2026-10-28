@@ -16,6 +16,7 @@ import { BarHeaderScreen } from './src/screens/BarHeaderScreen';
 import { GlassLabScreen } from './src/screens/GlassLabScreen';
 import { EditProfileScreen } from './src/screens/EditProfileScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { MergeScreen } from './src/screens/MergeScreen';
 
 export type RootStackParamList = {
   Tabs: undefined;
@@ -24,6 +25,7 @@ export type RootStackParamList = {
   GlassLab: undefined;
   EditProfile: undefined;
   Profile: { title: string; image: string };
+  Merge: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -58,11 +60,16 @@ export default function App() {
             <Stack.Screen
               name="GlassLab"
               component={GlassLabScreen}
-              options={{ title: 'Glass Lab' }}
+              options={{ headerShown: false }}
             />
             <Stack.Screen
               name="EditProfile"
               component={EditProfileScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Merge"
+              component={MergeScreen}
               options={{ headerShown: false }}
             />
             <Stack.Screen

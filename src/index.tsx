@@ -96,6 +96,7 @@ export {
   LiquidHeaderProvider,
   useLiquidNavigationHeader,
   type LiquidHeaderItem,
+  type LiquidHeaderSearch,
   type LiquidHeaderNavigation,
   type LiquidHeaderProviderProps,
   type LiquidNavigationHeaderOptions,

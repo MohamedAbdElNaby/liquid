@@ -11,6 +11,8 @@ import android.view.ViewConfiguration
 import android.view.ViewTreeObserver
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.facebook.react.uimanager.ThemedReactContext
@@ -65,14 +67,25 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
     touchableReactChildrenBelow: Boolean = false,
     content: @Composable () -> Unit,
   ): ComposeView {
+    // React detaches and reattaches views when an ancestor changes (for example a tab bar whose
+    // options change). After that, Compose stops re-reading the graphicsLayer blocks of the
+    // content, so animated layers freeze. Rebuilding the content on reattach restores them.
+    val attachGeneration = mutableIntStateOf(0)
     val view = ComposeView(context).apply {
       lifecycleOwner.install(this)
       setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
       clipChildren = false
       importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-      setContent(content)
+      setContent { key(attachGeneration.intValue) { content() } }
+      var attachedBefore = false
       addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
-        override fun onViewAttachedToWindow(view: View) = layoutComposeViews()
+        override fun onViewAttachedToWindow(view: View) {
+          if (attachedBefore) {
+            attachGeneration.intValue++
+          }
+          attachedBefore = true
+          layoutComposeViews()
+        }
 
         override fun onViewDetachedFromWindow(view: View) = Unit
       })

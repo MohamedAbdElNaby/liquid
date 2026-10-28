@@ -206,7 +206,17 @@ internal class ViewTreeBackdrop(
     if (view !is ViewGroup || isComposeManaged(view) ||
       (!glass && !GlassRegistry.containsGlass(view))
     ) {
-      view.draw(canvas)
+      // Like View.updateDisplayListIfDirty: content is drawn shifted by the view's own scroll, so
+      // a scrolled list shows what is on screen instead of its top.
+      if (view.scrollX != 0 || view.scrollY != 0) {
+        val saveCount = canvas.save()
+        canvas.translate(-view.scrollX.toFloat(), -view.scrollY.toFloat())
+        canvas.clipRect(view.scrollX, view.scrollY, view.scrollX + view.width, view.scrollY + view.height)
+        view.draw(canvas)
+        canvas.restoreToCount(saveCount)
+      } else {
+        view.draw(canvas)
+      }
       return
     }
 

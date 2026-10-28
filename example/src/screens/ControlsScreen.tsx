@@ -4,7 +4,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   useColorScheme,
   View,
 } from 'react-native';
@@ -26,7 +25,7 @@ import {
   useLiquidNavigationHeader,
 } from '@mohamed_abd_elnaby/react-native-liquid';
 import type { RootStackParamList } from '../../App';
-import { QrIcon, SearchIcon } from '../HeaderIcons';
+import { QrIcon } from '../HeaderIcons';
 
 const BACKGROUND = 'https://picsum.photos/id/1015/1200/2000';
 
@@ -57,88 +56,22 @@ export function ControlsScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { colors } = useLiquidColors();
 
-  const [editing, setEditing] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [settingsQuery, setSettingsQuery] = useState('');
 
-  const stopSearching = () => {
-    setSearching(false);
-    setSettingsQuery('');
-  };
-
-  // Telegram's Settings header: QR on the left, search and Edit on the right.
-  // Edit melts search and Edit into one blue ✓ and QR becomes X. Search
-  // stretches the circle into a field, Edit becomes X and QR shrinks away.
-  // Neither leaves the screen.
+  // Settings header: QR on the left, search on the right. The search circle
+  // morphs into a field with a separate close button, and QR fades out.
   useLiquidNavigationHeader(navigation, {
     backButton: false,
-    left: searching
-      ? undefined
-      : editing
-      ? {
-          key: 'cancel',
-          accessibilityLabel: 'Cancel',
-          icon: (
-            <Text style={[styles.headerGlyph, { color: colors.label }]}>✕</Text>
-          ),
-          onPress: () => setEditing(false),
-        }
-      : {
-          key: 'qr',
-          accessibilityLabel: 'QR code',
-          icon: <QrIcon color={colors.label} />,
-        },
-    right: searching
-      ? [
-          {
-            key: 'search-field',
-            stretch: true,
-            accessibilityLabel: 'Search',
-            content: (
-              <View style={styles.searchField}>
-                <SearchIcon color={colors.secondaryLabel} size={18} />
-                <TextInput
-                  autoFocus
-                  value={settingsQuery}
-                  onChangeText={setSettingsQuery}
-                  placeholder="Search"
-                  placeholderTextColor={colors.secondaryLabel}
-                  returnKeyType="search"
-                  style={[styles.searchInput, { color: colors.label }]}
-                />
-              </View>
-            ),
-          },
-          {
-            key: 'close-search',
-            accessibilityLabel: 'Close search',
-            icon: (
-              <Text style={[styles.headerGlyph, { color: colors.label }]}>
-                ✕
-              </Text>
-            ),
-            onPress: stopSearching,
-          },
-        ]
-      : editing
-      ? [
-          {
-            key: 'done',
-            accessibilityLabel: 'Done',
-            tintColor: '#0A84FF',
-            icon: <Text style={[styles.headerGlyph, styles.doneGlyph]}>✓</Text>,
-            onPress: () => setEditing(false),
-          },
-        ]
-      : [
-          {
-            key: 'search',
-            accessibilityLabel: 'Search',
-            icon: <SearchIcon color={colors.label} />,
-            onPress: () => setSearching(true),
-          },
-          { key: 'edit', title: 'Edit', onPress: () => setEditing(true) },
-        ],
+    left: {
+      key: 'qr',
+      accessibilityLabel: 'QR code',
+      icon: <QrIcon color={colors.label} />,
+    },
+    search: {
+      value: settingsQuery,
+      onChangeText: setSettingsQuery,
+      placeholder: 'Search',
+    },
   });
   const [query, setQuery] = useState('');
   const [wifi, setWifi] = useState(true);
@@ -289,25 +222,6 @@ export function ControlsScreen() {
 }
 
 const styles = StyleSheet.create({
-  searchField: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 17,
-    marginLeft: 6,
-    paddingVertical: 0,
-  },
-  headerGlyph: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  doneGlyph: {
-    color: '#FFFFFF',
-    fontSize: 20,
-  },
   pushButton: {
     alignSelf: 'flex-start',
     marginTop: 12,

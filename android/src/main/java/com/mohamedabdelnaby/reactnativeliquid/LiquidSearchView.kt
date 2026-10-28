@@ -323,7 +323,7 @@ private fun SearchBarMorph(
   LaunchedEffect(Unit) {
     snapshotFlow { state.expanded }.collectLatest { expanded ->
       launch {
-        progress.animateTo(if (expanded) 1f else 0f, spring(0.92f, 380f)) {
+        progress.animateTo(if (expanded) 1f else 0f, spring(0.92f, 224f)) {
           onProgress(value.coerceIn(0f, 1f))
         }
       }

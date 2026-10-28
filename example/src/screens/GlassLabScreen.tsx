@@ -22,9 +22,12 @@ import {
   type LiquidColorSchemeSetting,
   type LiquidGlassStyle,
   useLiquidHeaderHeight,
+  useLiquidColors,
+  useLiquidNavigationHeader,
 } from '@mohamed_abd_elnaby/react-native-liquid';
 import type { RootStackParamList } from '../../App';
 import { MorphToolbar } from './MorphToolbar';
+import { CheckIcon, ComposeIcon, PlusIcon } from '../HeaderIcons';
 
 const BACKGROUND = 'https://picsum.photos/id/1069/1200/2400';
 const TINTS = [undefined, '#0A84FF', '#FF375F', '#30D158'];
@@ -40,6 +43,52 @@ export function GlassLabScreen() {
   const headerHeight = useLiquidHeaderHeight();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors: themeColors } = useLiquidColors();
+  // Which circle was pressed. The other merges into it; the new button takes
+  // the pressed one's place and keeps its color (clear or blue).
+  const [pressed, setPressed] = useState<'add' | 'compose' | null>(null);
+  const BLUE = '#0A84FF';
+
+  useLiquidNavigationHeader(navigation, {
+    title: 'Glass Lab',
+    right:
+      pressed === 'add'
+        ? [
+            {
+              key: 'add-done',
+              accessibilityLabel: 'Done',
+              icon: <CheckIcon color={themeColors.label} />,
+              onPress: () => setPressed(null),
+            },
+            null,
+          ]
+        : pressed === 'compose'
+        ? [
+            null,
+            {
+              key: 'compose-done',
+              accessibilityLabel: 'Done',
+              tintColor: BLUE,
+              icon: <CheckIcon color="#FFFFFF" />,
+              onPress: () => setPressed(null),
+            },
+          ]
+        : [
+            {
+              key: 'add',
+              accessibilityLabel: 'Add',
+              icon: <PlusIcon color={themeColors.label} />,
+              onPress: () => setPressed('add'),
+            },
+            {
+              key: 'compose',
+              accessibilityLabel: 'Compose',
+              tintColor: BLUE,
+              icon: <ComposeIcon color="#FFFFFF" />,
+              onPress: () => setPressed('compose'),
+            },
+          ],
+  });
 
   const [style, setStyle] = useState(0);
   const [tint, setTint] = useState(0);
@@ -52,7 +101,7 @@ export function GlassLabScreen() {
   const [chromatic, setChromatic] = useState(false);
   const [depth, setDepth] = useState(false);
   const [merged, setMerged] = useState(true);
-const mode = useColorScheme()??'light';
+  const mode = useColorScheme() ?? 'light';
   const glassStyle: LiquidGlassStyle = style === 0 ? 'regular' : 'clear';
 
   return (
@@ -87,7 +136,11 @@ const mode = useColorScheme()??'light';
           <Text style={styles.previewText}>LiquidGlassView</Text>
         </LiquidGlassView>
 
-        <LiquidGlassView colorScheme={mode} cornerRadius={28} style={styles.panel}>
+        <LiquidGlassView
+          colorScheme={mode}
+          cornerRadius={28}
+          style={styles.panel}
+        >
           <Label>Style</Label>
           <LiquidSegmentedControl
             colorScheme={mode}
@@ -150,7 +203,11 @@ const mode = useColorScheme()??'light';
           </View>
         </LiquidGlassView>
 
-        <LiquidGlassView colorScheme={mode} cornerRadius={28} style={styles.panel}>
+        <LiquidGlassView
+          colorScheme={mode}
+          cornerRadius={28}
+          style={styles.panel}
+        >
           <View style={styles.row}>
             <Label>LiquidGlassContainer (iOS merge)</Label>
             <LiquidToggle value={merged} onValueChange={setMerged} />
@@ -159,7 +216,7 @@ const mode = useColorScheme()??'light';
             spacing={merged ? 24 : 0}
             style={styles.containerDemo}
           >
-            {[0, 1, 2].map((i) => (
+            {[0, 1, 2].map(i => (
               <LiquidGlassView
                 key={i}
                 interactive

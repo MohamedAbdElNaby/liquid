@@ -23,6 +23,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LiquidGlassContainer } from '../LiquidGlassView';
 import { MorphGlass } from '../components/LiquidButton';
+import {
+  LiquidExpandableSearch,
+  type LiquidExpandableSearchProps,
+} from '../components/LiquidExpandableSearch';
 import { ChevronLeftIcon } from '../internal/icons';
 import { useLiquidColors, type LiquidColorSchemeSetting } from '../theme';
 import { LIQUID_HEADER_HEIGHT } from './LiquidHeader';
@@ -67,7 +71,23 @@ export type LiquidNavigationHeaderOptions = {
   right?: (LiquidHeaderItem | null)[];
   /** Defaults to `navigation.canGoBack()`. */
   backButton?: boolean;
+  /**
+   * A search circle at the trailing edge that morphs into a field with a
+   * close button, like `LiquidExpandableSearch`. The other buttons and the
+   * title fade out while searching.
+   */
+  search?: LiquidHeaderSearch;
 };
+
+export type LiquidHeaderSearch = Pick<
+  LiquidExpandableSearchProps,
+  | 'expanded'
+  | 'onExpandedChange'
+  | 'value'
+  | 'onChangeText'
+  | 'onSubmit'
+  | 'placeholder'
+>;
 
 /** The parts of a React Navigation `navigation` object the header uses. */
 export type LiquidHeaderNavigation = {
@@ -227,6 +247,9 @@ function FloatingHeader({
   const insets = useSafeAreaInsets();
   const { colors } = useLiquidColors(colorScheme);
   const options = header?.options;
+  const search = options?.search;
+  const [ownSearching, setOwnSearching] = useState(false);
+  const searching = search != null && (search.expanded ?? ownSearching);
   const right = options?.right ?? [];
   // Keeps a place for every button seen, so removed ones can animate out.
   // Buttons fill the places from the right: when there are fewer, the
@@ -241,17 +264,33 @@ function FloatingHeader({
     (_, i) => (explicit ? right[i] : right[i - firstSlot]) ?? null
   );
   const slideDistance = SLOT_SIZE + SLOT_GAP;
-  // A button that goes away slides into the neighbour that stays (the
-  // pressed one), and one that comes back grows out of it.
-  const slideFor = (i: number) => {
-    if (slots[i + 1] != null) {
-      return slideDistance;
+  // A button that goes away slides into a neighbour that stays (the pressed
+  // one), and one that comes back grows out of a neighbour that was already
+  // there. Buttons that all come back together grow in place. The direction
+  // is decided when a button comes or goes, so later renders can't change it
+  // mid-animation.
+  const previousSlots = useRef<(LiquidHeaderItem | null)[]>([]);
+  const slides = useRef<number[]>([]);
+  slots.forEach((item, i) => {
+    const before = previousSlots.current[i] ?? null;
+    if ((before == null) === (item == null)) {
+      return;
     }
-    if (slots[i - 1] != null) {
-      return -slideDistance;
+    const stays = (j: number) =>
+      slots[j] != null && (item == null || previousSlots.current[j] != null);
+    if (stays(i + 1)) {
+      slides.current[i] = slideDistance;
+    } else if (stays(i - 1)) {
+      slides.current[i] = -slideDistance;
+    } else if (item == null) {
+      // Everything goes: slide toward the trailing edge while shrinking.
+      slides.current[i] = i < slotCount.current - 1 ? slideDistance : 0;
+    } else {
+      slides.current[i] = 0;
     }
-    return i < slotCount.current - 1 ? slideDistance : 0;
-  };
+  });
+  previousSlots.current = slots;
+  const slideFor = (i: number) => slides.current[i] ?? 0;
 
   const left: LiquidHeaderItem | undefined = header?.back
     ? {
@@ -262,6 +301,40 @@ function FloatingHeader({
       }
     : options?.left;
 
+  const buttons = (
+    <>
+      <Presence float>
+        {left != null ? (
+          <HeaderButton item={left} colorScheme={colorScheme} />
+        ) : null}
+      </Presence>
+      <LiquidGlassContainer
+        pointerEvents="box-none"
+        spacing={MERGE_SPACING}
+        style={styles.right}
+      >
+        {slots.map((item, i) => {
+          return (
+            <Presence
+              key={i}
+              style={[
+                styles.rightSlot,
+                item?.stretch ? styles.stretchSlot : null,
+              ]}
+              // Slides into a neighbour as it goes, so their glass melts.
+              slide={slideFor(i)}
+              keepSpace={explicit && item == null}
+            >
+              {item != null ? (
+                <HeaderButton item={item} colorScheme={colorScheme} />
+              ) : null}
+            </Presence>
+          );
+        })}
+      </LiquidGlassContainer>
+    </>
+  );
+
   return (
     <View
       pointerEvents="box-none"
@@ -271,35 +344,23 @@ function FloatingHeader({
       ]}
     >
       <View pointerEvents="box-none" style={styles.bar}>
-        <Presence float>
-          {left != null ? (
-            <HeaderButton item={left} colorScheme={colorScheme} />
-          ) : null}
-        </Presence>
-        <LiquidGlassContainer
-          pointerEvents="box-none"
-          spacing={MERGE_SPACING}
-          style={styles.right}
-        >
-          {slots.map((item, i) => {
-            return (
-              <Presence
-                key={i}
-                style={[
-                  styles.rightSlot,
-                  item?.stretch ? styles.stretchSlot : null,
-                ]}
-                // Slides into a neighbour as it goes, so their glass melts.
-                slide={slideFor(i)}
-                keepSpace={explicit && item == null}
-              >
-                {item != null ? (
-                  <HeaderButton item={item} colorScheme={colorScheme} />
-                ) : null}
-              </Presence>
-            );
-          })}
-        </LiquidGlassContainer>
+        {search != null ? (
+          <LiquidExpandableSearch
+            {...search}
+            expanded={searching}
+            onExpandedChange={(next) => {
+              setOwnSearching(next);
+              search.onExpandedChange?.(next);
+            }}
+            height={SLOT_SIZE}
+            colorScheme={colorScheme}
+            style={styles.searchBar}
+          >
+            {buttons}
+          </LiquidExpandableSearch>
+        ) : (
+          buttons
+        )}
       </View>
       <View
         pointerEvents="box-none"
@@ -330,7 +391,7 @@ function FloatingHeader({
             </MorphGlass>
           ) : null}
         </Presence>
-        {options?.subtitle == null && options?.title != null ? (
+        {options?.subtitle == null && options?.title != null && !searching ? (
           <FadeIn key={options.title}>
             <Text
               accessibilityRole="header"
@@ -435,8 +496,8 @@ function Presence({
     Animated.spring(progress, {
       toValue: visible ? 1 : 0,
       // Slower on Android, so the stretching drop can be seen.
-      stiffness: liquid ? 130 : 200,
-      damping: liquid ? 22 : 26,
+      stiffness: Platform.OS === 'android' ? 110 : 200,
+      damping: Platform.OS === 'android' ? 21 : 26,
       mass: 1,
       useNativeDriver: true,
     }).start(({ finished }) => {
@@ -444,7 +505,7 @@ function Presence({
         setMounted(false);
       }
     });
-  }, [visible, progress, liquid]);
+  }, [visible, progress]);
 
   if (!visible && !mounted) {
     return keepSpace ? <View style={[style, styles.emptySlot]} /> : null;
@@ -559,6 +620,9 @@ const styles = StyleSheet.create({
   emptySlot: {
     width: SLOT_SIZE,
     height: SLOT_SIZE,
+  },
+  searchBar: {
+    flex: 1,
   },
   floating: {
     position: 'absolute',

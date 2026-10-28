@@ -102,11 +102,12 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
     top.snapTo(from.top)
     right.snapTo(from.right - state.widthPx)
     bottom.snapTo(from.bottom - state.heightPx)
-    // Slightly different springs per edge make the glass stretch like liquid.
-    launch { left.animateTo(0f, spring(0.7f, 260f)) }
-    launch { right.animateTo(0f, spring(0.66f, 210f)) }
-    launch { top.animateTo(0f, spring(0.75f, 320f)) }
-    launch { bottom.animateTo(0f, spring(0.75f, 300f)) }
+    // Slightly different springs per edge make the glass stretch like liquid. About 0.55 s, like
+    // the iOS 26 morph.
+    launch { left.animateTo(0f, spring(0.72f, 135f)) }
+    launch { right.animateTo(0f, spring(0.68f, 115f)) }
+    launch { top.animateTo(0f, spring(0.76f, 160f)) }
+    launch { bottom.animateTo(0f, spring(0.76f, 150f)) }
   }
 
   Box(

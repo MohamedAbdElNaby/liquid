@@ -107,3 +107,18 @@ export function CloseIcon({ color, size = 18 }: IconProps) {
     </Svg>
   );
 }
+
+export function CheckIcon({ color, size = 20 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="m5 12.5 4.5 4.5L19 7.5"
+        fill="none"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}

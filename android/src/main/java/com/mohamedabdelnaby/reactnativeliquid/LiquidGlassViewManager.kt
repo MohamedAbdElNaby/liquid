@@ -63,6 +63,11 @@ class LiquidGlassViewManager : ReactViewManager() {
     view.glass { interactive = value }
   }
 
+  @ReactProp(name = "fadeBottom")
+  fun setFadeBottom(view: ReactViewGroup, value: Float) {
+    view.glass { fadeBottom = value }
+  }
+
   @ReactProp(name = "morph")
   fun setMorph(view: ReactViewGroup, value: Boolean) {
     view.glass { morph = value }

@@ -42,6 +42,11 @@ export type LiquidHeaderItem = {
   /** Tints the glass, like a prominent compose button. */
   tintColor?: ColorValue;
   accessibilityLabel?: string;
+  /**
+   * Takes the free width of the bar, like a search field. Changing a circle
+   * in the same place into a stretched item makes it stretch out.
+   */
+  stretch?: boolean;
 };
 
 export type LiquidNavigationHeaderOptions = {
@@ -239,7 +244,7 @@ function FloatingHeader({
       ]}
     >
       <View pointerEvents="box-none" style={styles.bar}>
-        <Presence>
+        <Presence float>
           {left != null ? (
             <HeaderButton item={left} colorScheme={colorScheme} />
           ) : null}
@@ -254,7 +259,10 @@ function FloatingHeader({
             return (
               <Presence
                 key={i}
-                style={styles.rightSlot}
+                style={[
+                  styles.rightSlot,
+                  item?.stretch ? styles.stretchSlot : null,
+                ]}
                 // Every button but the outermost slides into its right-hand
                 // neighbour as it goes, so their glass melts together.
                 slide={i < slotCount.current - 1 ? SLOT_SIZE + SLOT_GAP : 0}
@@ -331,10 +339,15 @@ function HeaderButton({
       contentKey={item.key ?? item.title ?? ''}
       onPress={item.onPress}
       accessibilityLabel={item.accessibilityLabel ?? item.title}
+      style={item.stretch ? styles.stretchSlot : undefined}
       contentStyle={[
         styles.button,
         item.title != null ? styles.capsule : null,
-        item.content != null ? styles.filled : null,
+        item.stretch
+          ? styles.stretched
+          : item.content != null
+            ? styles.filled
+            : null,
       ]}
     >
       {item.content}
@@ -365,9 +378,15 @@ function Presence({
   children,
   style,
   slide = 0,
+  float = false,
 }: {
   children: ReactElement | null;
   style?: StyleProp<ViewStyle>;
+  /**
+   * Leaves the layout as soon as it starts to go, so its neighbours take the
+   * space in the same motion instead of after it is gone.
+   */
+  float?: boolean;
   /** Horizontal distance the child moves while hidden. */
   slide?: number;
 }) {
@@ -405,6 +424,7 @@ function Presence({
       pointerEvents={visible ? 'box-none' : 'none'}
       style={[
         style,
+        float && !visible ? styles.floating : null,
         {
           transform: [
             // First it slides into its neighbour at full size, so their
@@ -487,6 +507,18 @@ const styles = StyleSheet.create({
   },
   rightSlot: {
     marginLeft: SLOT_GAP,
+  },
+  stretchSlot: {
+    flex: 1,
+  },
+  floating: {
+    position: 'absolute',
+    left: 16,
+  },
+  stretched: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 14,
   },
   titleLayer: {
     position: 'absolute',

@@ -24,7 +24,11 @@ import androidx.compose.ui.unit.Constraints
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.unit.dp
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.Backdrop
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.drawBackdrop
@@ -53,6 +57,8 @@ internal class GlassState {
   var depthEffect by mutableStateOf(false)
   var highlight by mutableStateOf(true)
   var shadow by mutableStateOf(true)
+  /** Fades the glass out over this many dp at its bottom edge. */
+  var fadeBottom by mutableFloatStateOf(0f)
 
   /** Animate layout changes as a liquid morph. */
   var morph = false
@@ -116,6 +122,22 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
         val placeable = measurable.measure(Constraints.fixed(w, h))
         layout(width, height) { placeable.place(x.roundToInt(), y.roundToInt()) }
       }
+      .then(
+        if (state.fadeBottom > 0f) {
+          Modifier
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+              drawContent()
+              val start = (1f - state.fadeBottom.dp.toPx() / size.height).coerceIn(0f, 1f)
+              drawRect(
+                Brush.verticalGradient(0f to Color.Black, start to Color.Black, 1f to Color.Transparent),
+                blendMode = BlendMode.DstIn,
+              )
+            }
+        } else {
+          Modifier
+        },
+      )
       .drawBackdrop(
         backdrop = backdrop,
         shape = {

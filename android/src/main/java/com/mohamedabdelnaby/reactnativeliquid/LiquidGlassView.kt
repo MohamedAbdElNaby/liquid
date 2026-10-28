@@ -1,7 +1,11 @@
 package com.mohamedabdelnaby.reactnativeliquid
 
+import android.animation.ValueAnimator
 import android.content.Context
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.os.Build
+import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewTreeObserver
@@ -87,7 +91,10 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
         (previous.bottom - top).toFloat(),
       )
       glassState.morphGeneration++
-      fadeInContent()
+      // A content swap animates itself (see onViewAdded); only fade a plain relayout.
+      if (SystemClock.uptimeMillis() - contentSwappedAt > 100) {
+        fadeInContent()
+      }
     }
     lastFrame = android.graphics.Rect(left, top, right, bottom)
     layoutComposeView()
@@ -101,6 +108,76 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
       child.alpha = 0f
       child.animate().alpha(alpha).setStartDelay(120).setDuration(300).start()
     }
+  }
+
+  // When React last swapped this morphing view's content, see onViewAdded.
+  private var contentSwappedAt = 0L
+
+  /** Content changes animate only on a morphing view that is already on screen. */
+  private val animatesContentChanges: Boolean
+    get() = glassState.morph && isAttachedToWindow && lastFrame != null
+
+  /** New content sharpens and grows into place, like iOS 26. */
+  override fun onViewAdded(child: View) {
+    super.onViewAdded(child)
+    if (child === composeView || !animatesContentChanges) {
+      return
+    }
+    contentSwappedAt = SystemClock.uptimeMillis()
+    child.alpha = 0f
+    child.scaleX = 0.85f
+    child.scaleY = 0.85f
+    child.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(40).setDuration(320).start()
+    animateBlur(child, from = CONTENT_BLUR_DP, to = 0f, durationMs = 320) {}
+  }
+
+  /** Old content blurs away. It keeps drawing while it animates, then is let go. */
+  override fun removeViewAt(index: Int) {
+    val child = getChildAt(index)
+    if (child == null || child === composeView || !animatesContentChanges) {
+      super.removeViewAt(index)
+      return
+    }
+    contentSwappedAt = SystemClock.uptimeMillis()
+    startViewTransition(child)
+    super.removeViewAt(index)
+    child.animate().alpha(0f).scaleX(0.85f).scaleY(0.85f).setStartDelay(0).setDuration(220)
+      .withEndAction {
+        endViewTransition(child)
+        child.alpha = 1f
+        child.scaleX = 1f
+        child.scaleY = 1f
+      }
+      .start()
+    animateBlur(child, from = 0f, to = CONTENT_BLUR_DP, durationMs = 220) {}
+  }
+
+  /** Animates a gaussian blur on [view] (Android 12+). */
+  private fun animateBlur(view: View, from: Float, to: Float, durationMs: Long, end: () -> Unit) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+      return
+    }
+    val density = resources.displayMetrics.density
+    ValueAnimator.ofFloat(from, to).apply {
+      duration = durationMs
+      addUpdateListener {
+        val radius = (it.animatedValue as Float) * density
+        view.setRenderEffect(
+          if (radius < 0.5f) null else RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.DECAL),
+        )
+      }
+      doOnEnd {
+        if (to == 0f) view.setRenderEffect(null)
+        end()
+      }
+      start()
+    }
+  }
+
+  private fun ValueAnimator.doOnEnd(action: () -> Unit) {
+    addListener(object : android.animation.AnimatorListenerAdapter() {
+      override fun onAnimationEnd(animation: android.animation.Animator) = action()
+    })
   }
 
   private var layoutPosted = false
@@ -161,5 +238,7 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
 
   companion object {
     const val RESERVED_CHILDREN = 1
+    /** Blur radius of content as it blurs out and in during a morph, in dp. */
+    private const val CONTENT_BLUR_DP = 8f
   }
 }

@@ -194,6 +194,8 @@ export function useLiquidNavigationHeader(
 }
 
 const SLOT_SIZE = 44;
+/** Point of a button's exit where it has merged into its neighbour. */
+const MERGED = 0.45;
 const SLOT_GAP = 8;
 /**
  * Glass closer than this fuses. Below the gap, so buttons rest apart and
@@ -383,8 +385,8 @@ function Presence({
     }
     Animated.spring(progress, {
       toValue: visible ? 1 : 0,
-      stiffness: 320,
-      damping: 30,
+      stiffness: 200,
+      damping: 26,
       mass: 1,
       useNativeDriver: true,
     }).start(({ finished }) => {
@@ -405,16 +407,20 @@ function Presence({
         style,
         {
           transform: [
+            // First it slides into its neighbour at full size, so their
+            // glass visibly melts together, then the merged drop shrinks.
             {
               translateX: progress.interpolate({
-                inputRange: [0, 1],
+                inputRange: [MERGED, 1],
                 outputRange: [slide, 0],
+                extrapolate: 'clamp',
               }),
             },
             {
               scale: progress.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.01, 1],
+                inputRange: [0, MERGED, 1],
+                outputRange: [0.01, 0.92, 1],
+                extrapolate: 'clamp',
               }),
             },
           ],

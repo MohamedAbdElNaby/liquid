@@ -32,12 +32,16 @@ Liquid Glass UI components for React Native, built to drop into React Navigation
 | `LiquidBottomTabBar` | Floating glass tab bar for `@react-navigation/bottom-tabs`, with a liquid drop and an optional search. |
 | `LiquidTopTabBar` | Floating segmented glass bar for `@react-navigation/material-top-tabs`. |
 | `LiquidHeader` | Glass header for native-stack, stack, bottom-tabs and drawer navigators. |
+| `LiquidHeaderProvider`, `useLiquidNavigationHeader` | One floating header over a navigator whose glass buttons morph and merge between screens (Edit → back, two circles → one). |
+| `LiquidProfileHeader` | Profile header with a photo hero that turns into a round avatar, then a glass bar, as you scroll. |
+| `LiquidStickyView` | Scrolls with the content, then stays under a header. |
 | `LiquidButton`, `LiquidIconButton` | Glass and tinted (`prominent`) buttons that bulge when pressed. |
 | `LiquidToggle` | iOS 26 style switch whose thumb turns into glass while pressed. |
 | `LiquidSlider` | Slider with a glass thumb while dragging. |
 | `LiquidSegmentedControl` | Glass segmented control with a sliding selection pill. |
 | `LiquidSearchBar` | Glass search field. |
 | `LiquidExpandableSearch` | Round search button that morphs into a field with a close button. |
+| `LiquidSearchHeader` | Header row with a search field under it that rises into the row. |
 | `LiquidMenu` | Glass button that morphs into a menu, with submenus. |
 
 ## Installation

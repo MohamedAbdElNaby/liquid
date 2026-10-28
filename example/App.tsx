@@ -6,15 +6,24 @@ import {
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { createLiquidHeader } from '@mohamed_abd_elnaby/react-native-liquid';
+import {
+  LiquidHeaderProvider,
+  createLiquidHeader,
+} from '@mohamed_abd_elnaby/react-native-liquid';
 import { Tabs } from './src/Tabs';
 import { DetailsScreen } from './src/screens/DetailsScreen';
 import { BarHeaderScreen } from './src/screens/BarHeaderScreen';
+import { GlassLabScreen } from './src/screens/GlassLabScreen';
+import { EditProfileScreen } from './src/screens/EditProfileScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
 
 export type RootStackParamList = {
   Tabs: undefined;
   Details: { title: string; image: string };
   BarHeader: undefined;
+  GlassLab: undefined;
+  EditProfile: undefined;
+  Profile: { title: string; image: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -27,25 +36,43 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack.Navigator
-          screenOptions={{ header: floatingHeader, headerTransparent: true }}
-        >
-          <Stack.Screen
-            name="Tabs"
-            component={Tabs}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Details"
-            component={DetailsScreen}
-            options={({ route }) => ({ title: route.params.title })}
-          />
-          <Stack.Screen
-            name="BarHeader"
-            component={BarHeaderScreen}
-            options={{ title: 'Bar header', header: barHeader }}
-          />
-        </Stack.Navigator>
+        <LiquidHeaderProvider>
+          <Stack.Navigator
+            screenOptions={{ header: floatingHeader, headerTransparent: true }}
+          >
+            <Stack.Screen
+              name="Tabs"
+              component={Tabs}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Details"
+              component={DetailsScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="BarHeader"
+              component={BarHeaderScreen}
+              options={{ title: 'Bar header', header: barHeader }}
+            />
+            <Stack.Screen
+              name="GlassLab"
+              component={GlassLabScreen}
+              options={{ title: 'Glass Lab' }}
+            />
+            <Stack.Screen
+              name="EditProfile"
+              component={EditProfileScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              // The profile grows out of the chat's header instead of sliding in.
+              options={{ headerShown: false, animation: 'fade' }}
+            />
+          </Stack.Navigator>
+        </LiquidHeaderProvider>
       </NavigationContainer>
     </SafeAreaProvider>
   );

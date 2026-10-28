@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
@@ -22,6 +21,7 @@ import {
   isLiquidGlassSupported,
   type LiquidColorSchemeSetting,
   type LiquidGlassStyle,
+  useLiquidHeaderHeight,
 } from '@mohamed_abd_elnaby/react-native-liquid';
 import type { RootStackParamList } from '../../App';
 import { MorphToolbar } from './MorphToolbar';
@@ -36,7 +36,8 @@ function Label({ children }: { children: ReactNode }) {
 
 export function GlassLabScreen() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
+  // Pushed on the stack under the floating glass header.
+  const headerHeight = useLiquidHeaderHeight();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -60,7 +61,7 @@ const mode = useColorScheme()??'light';
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 16, paddingBottom: tabBarHeight + 16 },
+          { paddingTop: headerHeight + 8, paddingBottom: insets.bottom + 16 },
         ]}
       >
         <MorphToolbar />

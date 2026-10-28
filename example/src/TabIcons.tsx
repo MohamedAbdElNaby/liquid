@@ -57,3 +57,26 @@ export function LabIcon({ color, size, focused }: IconProps) {
     </Svg>
   );
 }
+
+export function ContactsIcon({ color, size, focused }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle
+        cx={12}
+        cy={12}
+        r={9}
+        fill={focused ? color : 'none'}
+        stroke={color}
+        strokeWidth={1.8}
+      />
+      <Circle cx={12} cy={10} r={3} fill={focused ? '#FFFFFF' : color} />
+      <Path
+        d="M6.8 18.2c1.2-2 3-3 5.2-3s4 1 5.2 3"
+        stroke={focused ? '#FFFFFF' : color}
+        strokeWidth={1.8}
+        fill="none"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}

@@ -4,11 +4,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   useColorScheme,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   LiquidButton,
   LiquidGlassContainer,
@@ -19,7 +21,12 @@ import {
   LiquidSegmentedControl,
   LiquidSlider,
   LiquidToggle,
+  useLiquidColors,
+  useLiquidHeaderHeight,
+  useLiquidNavigationHeader,
 } from '@mohamed_abd_elnaby/react-native-liquid';
+import type { RootStackParamList } from '../../App';
+import { QrIcon, SearchIcon } from '../HeaderIcons';
 
 const BACKGROUND = 'https://picsum.photos/id/1015/1200/2000';
 
@@ -44,8 +51,95 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 export function ControlsScreen() {
-  const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  const headerHeight = useLiquidHeaderHeight();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useLiquidColors();
+
+  const [editing, setEditing] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [settingsQuery, setSettingsQuery] = useState('');
+
+  const stopSearching = () => {
+    setSearching(false);
+    setSettingsQuery('');
+  };
+
+  // Telegram's Settings header: QR on the left, search and Edit on the right.
+  // Edit melts search and Edit into one blue ✓ and QR becomes X. Search
+  // stretches the circle into a field, Edit becomes X and QR shrinks away.
+  // Neither leaves the screen.
+  useLiquidNavigationHeader(navigation, {
+    backButton: false,
+    left: searching
+      ? undefined
+      : editing
+      ? {
+          key: 'cancel',
+          accessibilityLabel: 'Cancel',
+          icon: (
+            <Text style={[styles.headerGlyph, { color: colors.label }]}>✕</Text>
+          ),
+          onPress: () => setEditing(false),
+        }
+      : {
+          key: 'qr',
+          accessibilityLabel: 'QR code',
+          icon: <QrIcon color={colors.label} />,
+        },
+    right: searching
+      ? [
+          {
+            key: 'search-field',
+            stretch: true,
+            accessibilityLabel: 'Search',
+            content: (
+              <View style={styles.searchField}>
+                <SearchIcon color={colors.secondaryLabel} size={18} />
+                <TextInput
+                  autoFocus
+                  value={settingsQuery}
+                  onChangeText={setSettingsQuery}
+                  placeholder="Search"
+                  placeholderTextColor={colors.secondaryLabel}
+                  returnKeyType="search"
+                  style={[styles.searchInput, { color: colors.label }]}
+                />
+              </View>
+            ),
+          },
+          {
+            key: 'close-search',
+            accessibilityLabel: 'Close search',
+            icon: (
+              <Text style={[styles.headerGlyph, { color: colors.label }]}>
+                ✕
+              </Text>
+            ),
+            onPress: stopSearching,
+          },
+        ]
+      : editing
+      ? [
+          {
+            key: 'done',
+            accessibilityLabel: 'Done',
+            tintColor: '#0A84FF',
+            icon: <Text style={[styles.headerGlyph, styles.doneGlyph]}>✓</Text>,
+            onPress: () => setEditing(false),
+          },
+        ]
+      : [
+          {
+            key: 'search',
+            accessibilityLabel: 'Search',
+            icon: <SearchIcon color={colors.label} />,
+            onPress: () => setSearching(true),
+          },
+          { key: 'edit', title: 'Edit', onPress: () => setEditing(true) },
+        ],
+  });
   const [query, setQuery] = useState('');
   const [wifi, setWifi] = useState(true);
   const [bluetooth, setBluetooth] = useState(false);
@@ -54,14 +148,14 @@ export function ControlsScreen() {
   const [segment, setSegment] = useState(0);
   const [count, setCount] = useState(0);
   const [status, setStatus] = useState('Active');
-  const mode = useColorScheme()??'light';
+  const mode = useColorScheme() ?? 'light';
   return (
     <View style={styles.background}>
       <Image source={{ uri: BACKGROUND }} style={StyleSheet.absoluteFill} />
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 16, paddingBottom: tabBarHeight + 16 },
+          { paddingTop: headerHeight + 8, paddingBottom: tabBarHeight + 16 },
         ]}
       >
         <LiquidExpandableSearch
@@ -90,7 +184,7 @@ export function ControlsScreen() {
               {
                 title: 'Pause notifications',
                 systemImage: 'bell.slash',
-                children: PAUSE_OPTIONS.map((option) => ({
+                children: PAUSE_OPTIONS.map(option => ({
                   title: option,
                   onPress: () => setStatus(`Paused for ${option}`),
                 })),
@@ -102,6 +196,13 @@ export function ControlsScreen() {
             <Text style={styles.avatar}>M</Text>
           </LiquidMenu>
         </LiquidExpandableSearch>
+        <LiquidButton
+          title="Edit profile (push)"
+          size="small"
+          colorScheme={mode}
+          onPress={() => navigation.navigate('EditProfile')}
+          style={styles.pushButton}
+        />
         {query.length > 0 ? (
           <Text style={styles.queryText}>Searching for “{query}”</Text>
         ) : null}
@@ -156,17 +257,17 @@ export function ControlsScreen() {
             <LiquidButton
               title="Glass"
               colorScheme={mode}
-              onPress={() => setCount((value) => value + 1)}
+              onPress={() => setCount(value => value + 1)}
             />
             <LiquidButton
               title="Prominent"
               variant="prominent"
-              onPress={() => setCount((value) => value + 1)}
+              onPress={() => setCount(value => value + 1)}
             />
             <LiquidIconButton
               accessibilityLabel="Add"
               colorScheme={mode}
-              onPress={() => setCount((value) => value + 1)}
+              onPress={() => setCount(value => value + 1)}
             >
               <Text style={styles.plus}>+</Text>
             </LiquidIconButton>
@@ -188,6 +289,29 @@ export function ControlsScreen() {
 }
 
 const styles = StyleSheet.create({
+  searchField: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 17,
+    marginLeft: 6,
+    paddingVertical: 0,
+  },
+  headerGlyph: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  doneGlyph: {
+    color: '#FFFFFF',
+    fontSize: 20,
+  },
+  pushButton: {
+    alignSelf: 'flex-start',
+    marginTop: 12,
+  },
   background: {
     flex: 1,
     backgroundColor: '#203040',

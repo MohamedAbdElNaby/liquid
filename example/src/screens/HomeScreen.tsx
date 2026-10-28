@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState } from 'react';
 import {
   FlatList,
   Image,
@@ -8,19 +8,22 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
+  LiquidButton,
   LiquidGlassView,
   LiquidMenu,
   isLiquidGlassSupported,
   useLiquidColors,
+  useLiquidHeaderHeight,
+  useLiquidNavigationHeader,
 } from '@mohamed_abd_elnaby/react-native-liquid';
 import { PHOTOS, type Photo } from '../data';
 import { AppearanceSwitch } from '../AppearanceSwitch';
 import type { RootStackParamList } from '../../App';
+import { ComposeIcon, PlusIcon } from '../HeaderIcons';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
 
@@ -31,7 +34,7 @@ const PhotoCard = memo(function PhotoCardContent({
   photo: Photo;
   onPress: (photo: Photo) => void;
 }) {
-const mode = useColorScheme()??'light';
+  const mode = useColorScheme() ?? 'light';
 
   return (
     <Pressable onPress={() => onPress(photo)} style={styles.card}>
@@ -50,10 +53,36 @@ const mode = useColorScheme()??'light';
 });
 
 export function HomeScreen() {
-  const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<Navigation>();
   const { colors } = useLiquidColors();
+  const headerHeight = useLiquidHeaderHeight();
+  const [editing, setEditing] = useState(false);
+
+  // Telegram's Chats header: Edit becomes Done and the circles blur away while
+  // editing; pushing a photo morphs Edit into the back button.
+  useLiquidNavigationHeader(navigation, {
+    title: 'Liquid',
+    backButton: false,
+    left: {
+      title: editing ? 'Done' : 'Edit',
+      onPress: () => setEditing(value => !value),
+    },
+    right: editing
+      ? []
+      : [
+          {
+            key: 'add',
+            accessibilityLabel: 'New story',
+            icon: <PlusIcon color={colors.label} />,
+          },
+          {
+            key: 'compose',
+            accessibilityLabel: 'Compose',
+            icon: <ComposeIcon color={colors.label} />,
+          },
+        ],
+  });
 
   const openPhoto = useCallback(
     (photo: Photo) =>
@@ -61,16 +90,16 @@ export function HomeScreen() {
         title: photo.title,
         image: photo.image,
       }),
-    [navigation]
+    [navigation],
   );
 
   return (
     <FlatList
       data={PHOTOS}
-      keyExtractor={(item) => item.id}
+      keyExtractor={item => item.id}
       renderItem={({ item }) => <PhotoCard photo={item} onPress={openPhoto} />}
       contentContainerStyle={{
-        paddingTop: insets.top + 16,
+        paddingTop: headerHeight + 8,
         paddingBottom: tabBarHeight + 16,
       }}
       ListHeaderComponent={
@@ -95,6 +124,11 @@ export function HomeScreen() {
               : 'This OS version renders the fallback material.'}
           </Text>
           <AppearanceSwitch style={styles.appearance} />
+          <LiquidButton
+            title="Glass Lab"
+            onPress={() => navigation.navigate('GlassLab')}
+            style={styles.labButton}
+          />
         </View>
       }
     />
@@ -124,6 +158,10 @@ const styles = StyleSheet.create({
   },
   appearance: {
     marginTop: 16,
+  },
+  labButton: {
+    alignSelf: 'flex-start',
+    marginTop: 12,
   },
   card: {
     marginHorizontal: 16,

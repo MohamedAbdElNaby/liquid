@@ -144,6 +144,72 @@ const headerHeight = useLiquidHeaderHeight();
 It reads `title`, `headerTitle`, `headerTitleAlign`, `headerTitleStyle`,
 `headerTintColor`, `headerLeft`, `headerRight` and `headerBackTitle`.
 
+### Morphing header
+
+One floating header drawn over the whole navigator. Its glass buttons stay on
+screen while screens are pushed and morph between them: an Edit capsule
+becomes the back button, two circles melt into one, and a removed button
+slides into its neighbour.
+
+```tsx
+<LiquidHeaderProvider>
+  <Stack.Navigator screenOptions={{ headerShown: false }}>…</Stack.Navigator>
+</LiquidHeaderProvider>
+
+// In a screen:
+useLiquidNavigationHeader(navigation, {
+  title: 'Chats',
+  left: { title: editing ? 'Done' : 'Edit', onPress: toggleEditing },
+  right: editing
+    ? []
+    : [
+        { key: 'add', icon: <PlusIcon />, onPress: add },
+        { key: 'compose', icon: <ComposeIcon />, onPress: compose },
+      ],
+});
+
+// A chat header: the title in a glass capsule and an avatar circle.
+useLiquidNavigationHeader(navigation, {
+  title: 'Liquid',
+  subtitle: '4,610 subscribers',
+  onTitlePress: openProfile,
+  right: [{ key: 'avatar', content: <Image source={avatar} style={{ width: 44, height: 44 }} />, onPress: openProfile }],
+});
+```
+
+Items: `key` (a new key in the same place blurs the content across), `title`,
+`icon`, `content`, `onPress`, `tintColor`, `stretch` (takes the free width,
+so a search circle can stretch into a field). Pad content with
+`useLiquidHeaderHeight()`.
+
+### Profile header
+
+```tsx
+const scrollY = useRef(new Animated.Value(0)).current;
+const entrance = useLiquidProfileEntrance(); // the photo grows out of the header avatar
+
+<Animated.ScrollView
+  onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+  snapToOffsets={useLiquidProfileSnapOffsets()}
+  snapToEnd={false}
+  contentContainerStyle={{ paddingTop: useLiquidProfileHeaderHeight() }}
+/>
+<LiquidProfileHeader
+  scrollY={scrollY}
+  entrance={entrance}
+  title="Liquid"
+  subtitle="3,995 subscribers"
+  collapsedSubtitle="17 photos, 124 videos"
+  image={{ uri: photo }}
+  actions={[{ key: 'mute', title: 'mute', icon: <BellIcon />, onPress: mute }]}
+  onCollapsedChange={setCollapsed}
+/>
+```
+
+It opens on the full-width photo, turns into a round avatar, then into a
+glass bar that fades into the content. `LiquidStickyView` keeps a control
+(like Media / Links) under the bar once it scrolls up to it.
+
 ## 5. Toggle
 
 ```tsx
@@ -203,6 +269,16 @@ Props: `value`, `onValueChange`, `onSlidingStart`, `onSlidingComplete`,
 `tintColor`, `size` (`'small' | 'regular' | 'large'`), `textStyle`, plus all
 `Pressable` props. `LiquidIconButton`: `children`, `size` (diameter, 44).
 
+Add `morph` to animate content changes: the glass springs to the new size
+while the old title or icon blurs out and the new one blurs in.
+
+```tsx
+<LiquidButton morph title={muted ? 'Unmute' : 'Mute'} onPress={toggle} />
+<LiquidIconButton morph contentKey={liked ? 'liked' : 'like'} onPress={like}>
+  {liked ? <HeartFilled /> : <Heart />}
+</LiquidIconButton>
+```
+
 ## 8. Segmented control
 
 ```tsx
@@ -229,6 +305,25 @@ Props: `segments`, `selectedIndex`, `onChange`, `height` (36),
 
 `LiquidExpandableSearch` can be controlled with `expanded` and
 `onExpandedChange`, or left alone with `defaultExpanded`.
+
+```tsx
+// A header row with a full-width field under it. Tapping the field raises it
+// into the row and slides in a close button, which also clears the text.
+<LiquidSearchHeader
+  value={query}
+  onChangeText={setQuery}
+  onExpandedChange={(searching) =>
+    navigation.setOptions({ tabBarStyle: searching ? { display: 'none' } : undefined })
+  }
+>
+  <LiquidButton title="Sort" size="small" />
+  <Text style={styles.title}>Contacts</Text>
+  <LiquidIconButton accessibilityLabel="Add" size={34}><PlusIcon /></LiquidIconButton>
+</LiquidSearchHeader>
+```
+
+The bottom tab bar slides away when a screen hides it with
+`tabBarStyle: { display: 'none' }`.
 
 ## 10. Menu
 
@@ -272,9 +367,13 @@ inside another glass shape, such as a toolbar.
 ```
 
 `LiquidGlassView` props: `glassStyle`, `tintColor`, `interactive`,
-`cornerRadius`, `morph`, `colorScheme`, and on Android `blurRadius`,
-`refractionHeight`, `refractionAmount`, `chromaticAberration`, `depthEffect`,
-`highlight`, `shadow`.
+`cornerRadius`, `morph`, `colorScheme`, `fadeBottom` (fades the glass out
+over this many points at its bottom edge, like a bar melting into the
+content), and on Android `blurRadius`, `refractionHeight`, `refractionAmount`,
+`chromaticAberration`, `depthEffect`, `highlight`, `shadow`.
+
+With `morph`, replacing the children (give them a new `key`) blurs the old
+content out and the new content in while the glass springs to its new size.
 
 ## 12. Theme and helpers
 

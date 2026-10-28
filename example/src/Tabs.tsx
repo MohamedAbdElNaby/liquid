@@ -6,14 +6,19 @@ import {
 import { HomeScreen } from './screens/HomeScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { ControlsScreen } from './screens/ControlsScreen';
-import { GlassLabScreen } from './screens/GlassLabScreen';
-import { ControlsIcon, DiscoverIcon, HomeIcon, LabIcon } from './TabIcons';
+import { ContactsScreen } from './screens/ContactsScreen';
+import {
+  ContactsIcon,
+  ControlsIcon,
+  DiscoverIcon,
+  HomeIcon,
+} from './TabIcons';
 
 export type TabParamList = {
+  Contacts: undefined;
   Home: undefined;
   Discover: undefined;
   Controls: undefined;
-  Lab: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -25,14 +30,22 @@ const header = createLiquidHeader({ variant: 'bar' });
 
 type IconArgs = { color: string; size: number; focused: boolean };
 
+const contactsIcon = (props: IconArgs) => <ContactsIcon {...props} />;
 const homeIcon = (props: IconArgs) => <HomeIcon {...props} />;
 const discoverIcon = (props: IconArgs) => <DiscoverIcon {...props} />;
 const controlsIcon = (props: IconArgs) => <ControlsIcon {...props} />;
-const labIcon = (props: IconArgs) => <LabIcon {...props} />;
 
 export function Tabs() {
   return (
     <Tab.Navigator tabBar={tabBar} screenOptions={{ header }}>
+      <Tab.Screen
+        name="Contacts"
+        component={ContactsScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: contactsIcon,
+        }}
+      />
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -55,14 +68,6 @@ export function Tabs() {
         options={{
           headerShown: false,
           tabBarIcon: controlsIcon,
-        }}
-      />
-      <Tab.Screen
-        name="Lab"
-        component={GlassLabScreen}
-        options={{
-          headerShown: false,
-          tabBarIcon: labIcon,
         }}
       />
     </Tab.Navigator>

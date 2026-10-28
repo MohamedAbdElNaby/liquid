@@ -23,7 +23,7 @@ import {
 import { PHOTOS, type Photo } from '../data';
 import { AppearanceSwitch } from '../AppearanceSwitch';
 import type { RootStackParamList } from '../../App';
-import { ComposeIcon, PlusIcon } from '../HeaderIcons';
+import { CloseIcon, ComposeIcon, PlusIcon } from '../HeaderIcons';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
 
@@ -58,6 +58,16 @@ export function HomeScreen() {
   const { colors } = useLiquidColors();
   const headerHeight = useLiquidHeaderHeight();
   const [editing, setEditing] = useState(false);
+  // Which circle was pressed: the other one merges into it, and it becomes a
+  // close button in the same place.
+  const [pressed, setPressed] = useState<'add' | 'compose' | null>(null);
+
+  const close = (key: string) => ({
+    key,
+    accessibilityLabel: 'Close',
+    icon: <CloseIcon color={colors.label} />,
+    onPress: () => setPressed(null),
+  });
 
   // Telegram's Chats header: Edit becomes Done and the circles blur away while
   // editing; pushing a photo morphs Edit into the back button.
@@ -70,16 +80,22 @@ export function HomeScreen() {
     },
     right: editing
       ? []
+      : pressed === 'add'
+      ? [close('add-close'), null]
+      : pressed === 'compose'
+      ? [null, close('compose-close')]
       : [
           {
             key: 'add',
             accessibilityLabel: 'New story',
             icon: <PlusIcon color={colors.label} />,
+            onPress: () => setPressed('add'),
           },
           {
             key: 'compose',
             accessibilityLabel: 'Compose',
             icon: <ComposeIcon color={colors.label} />,
+            onPress: () => setPressed('compose'),
           },
         ],
   });

@@ -94,3 +94,16 @@ export function ComposeIcon({ color, size = 20 }: IconProps) {
     </Svg>
   );
 }
+
+export function CloseIcon({ color, size = 18 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M6 6l12 12M18 6 6 18"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}

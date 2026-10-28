@@ -57,8 +57,14 @@ export type LiquidNavigationHeaderOptions = {
   onTitlePress?: () => void;
   /** Shown on the left when there is no back button, e.g. Edit. */
   left?: LiquidHeaderItem;
-  /** Glass buttons on the right, from left to right. */
-  right?: LiquidHeaderItem[];
+  /**
+   * Glass buttons on the right, from left to right. They fill the places
+   * from the right edge. A `null` keeps its place empty instead, so the
+   * buttons stay where they are: `[closeButton, null]` after pressing the
+   * first of two buttons merges the second into it and puts the new button
+   * where the pressed one was.
+   */
+  right?: (LiquidHeaderItem | null)[];
   /** Defaults to `navigation.canGoBack()`. */
   backButton?: boolean;
 };
@@ -228,6 +234,24 @@ function FloatingHeader({
   const slotCount = useRef(0);
   slotCount.current = Math.max(slotCount.current, right.length);
   const firstSlot = slotCount.current - right.length;
+  // With a null in the list, items keep their places from the left.
+  const explicit = right.includes(null);
+  const slots = Array.from(
+    { length: slotCount.current },
+    (_, i) => (explicit ? right[i] : right[i - firstSlot]) ?? null
+  );
+  const slideDistance = SLOT_SIZE + SLOT_GAP;
+  // A button that goes away slides into the neighbour that stays (the
+  // pressed one), and one that comes back grows out of it.
+  const slideFor = (i: number) => {
+    if (slots[i + 1] != null) {
+      return slideDistance;
+    }
+    if (slots[i - 1] != null) {
+      return -slideDistance;
+    }
+    return i < slotCount.current - 1 ? slideDistance : 0;
+  };
 
   const left: LiquidHeaderItem | undefined = header?.back
     ? {
@@ -257,8 +281,7 @@ function FloatingHeader({
           spacing={MERGE_SPACING}
           style={styles.right}
         >
-          {Array.from({ length: slotCount.current }, (_, i) => {
-            const item = right[i - firstSlot];
+          {slots.map((item, i) => {
             return (
               <Presence
                 key={i}
@@ -266,9 +289,9 @@ function FloatingHeader({
                   styles.rightSlot,
                   item?.stretch ? styles.stretchSlot : null,
                 ]}
-                // Every button but the outermost slides into its right-hand
-                // neighbour as it goes, so their glass melts together.
-                slide={i < slotCount.current - 1 ? SLOT_SIZE + SLOT_GAP : 0}
+                // Slides into a neighbour as it goes, so their glass melts.
+                slide={slideFor(i)}
+                keepSpace={explicit && item == null}
               >
                 {item != null ? (
                   <HeaderButton item={item} colorScheme={colorScheme} />
@@ -382,6 +405,7 @@ function Presence({
   style,
   slide = 0,
   float = false,
+  keepSpace = false,
 }: {
   children: ReactElement | null;
   style?: StyleProp<ViewStyle>;
@@ -390,6 +414,8 @@ function Presence({
    * space in the same motion instead of after it is gone.
    */
   float?: boolean;
+  /** Keeps an empty place of a button's size once gone. */
+  keepSpace?: boolean;
   /** Horizontal distance the child moves while hidden. */
   slide?: number;
 }) {
@@ -421,7 +447,7 @@ function Presence({
   }, [visible, progress, liquid]);
 
   if (!visible && !mounted) {
-    return null;
+    return keepSpace ? <View style={[style, styles.emptySlot]} /> : null;
   }
 
   return (
@@ -529,6 +555,10 @@ const styles = StyleSheet.create({
   },
   stretchSlot: {
     flex: 1,
+  },
+  emptySlot: {
+    width: SLOT_SIZE,
+    height: SLOT_SIZE,
   },
   floating: {
     position: 'absolute',

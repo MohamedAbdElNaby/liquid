@@ -86,7 +86,7 @@ class LiquidSearchView(context: Context) : LiquidComposeHost(context) {
 
   init {
     lateinit var backdrop: Backdrop
-    val overlay = addComposeView(above = true) {
+    val overlay = addComposeView(above = true, touchableReactChildrenBelow = true) {
       SearchMorph(
         state = state,
         backdrop = backdrop,

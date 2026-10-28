@@ -6,6 +6,7 @@ import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.os.Build
 import android.os.SystemClock
+import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewTreeObserver
@@ -220,11 +221,76 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
     // Track the press for the interactive effect. JS touch handling happens in the root view, so
     // claiming an otherwise unhandled gesture only makes sure the release reaches this view.
     when (ev.actionMasked) {
-      MotionEvent.ACTION_DOWN -> glassState.pressed = true
-      MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> glassState.pressed = false
+      MotionEvent.ACTION_DOWN -> {
+        glassState.pressed = true
+        press(true)
+      }
+      MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+        glassState.pressed = false
+        press(false)
+      }
     }
     val handled = super.dispatchTouchEvent(ev)
     return handled || ev.actionMasked == MotionEvent.ACTION_DOWN
+  }
+
+  // Interactive glass swells while pressed and bounces back on release, like iOS 26. The press
+  // scale multiplies the scale React sets, so transforms from JS keep working.
+  private var baseScaleX = 1f
+  private var baseScaleY = 1f
+  // Created on first use: the base constructor can set the scale before fields exist.
+  private var pressSpringOrNull: LiquidSpring? = null
+  private val pressSpring: LiquidSpring
+    get() = pressSpringOrNull ?: LiquidSpring(0.7f, 520f, 0.0005f).apply { snap(1f) }.also { pressSpringOrNull = it }
+  private var pressFrameTime = 0L
+  private var pressScheduled = false
+
+  override fun setScaleX(scaleX: Float) {
+    baseScaleX = scaleX
+    super.setScaleX(scaleX * pressScale())
+  }
+
+  override fun setScaleY(scaleY: Float) {
+    baseScaleY = scaleY
+    super.setScaleY(scaleY * pressScale())
+  }
+
+  private fun pressScale(): Float = pressSpringOrNull?.value ?: 1f
+
+  private fun press(down: Boolean) {
+    val size = maxOf(width, height).coerceAtLeast(1)
+    // Small buttons swell the most: a 44 dp circle to about 1.45, a wide field barely.
+    val grow = minOf(0.45f, 20f * resources.displayMetrics.density / size)
+    if (down) {
+      pressSpring.dampingRatio = 0.7f
+      pressSpring.stiffness = 520f
+      pressSpring.target = 1f + grow
+    } else {
+      // Underdamped, so it dips below its size and wobbles back like a drop.
+      pressSpring.dampingRatio = 0.42f
+      pressSpring.stiffness = 360f
+      pressSpring.target = 1f
+    }
+    if (!pressScheduled) {
+      pressScheduled = true
+      pressFrameTime = 0L
+      Choreographer.getInstance().postFrameCallback(pressFrame)
+    }
+  }
+
+  private val pressFrame: Choreographer.FrameCallback = object : Choreographer.FrameCallback {
+    override fun doFrame(frameTimeNanos: Long) {
+      val dt = if (pressFrameTime == 0L) 1f / 60f else ((frameTimeNanos - pressFrameTime) / 1e9f).coerceIn(1f / 240f, 1f / 30f)
+      pressFrameTime = frameTimeNanos
+      val moving = pressSpring.step(dt)
+      super@LiquidGlassView.setScaleX(baseScaleX * pressSpring.value)
+      super@LiquidGlassView.setScaleY(baseScaleY * pressSpring.value)
+      if (moving) {
+        Choreographer.getInstance().postFrameCallback(this)
+      } else {
+        pressScheduled = false
+      }
+    }
   }
 
   /** Releases the composition and the backdrop. Called when React drops the view. */

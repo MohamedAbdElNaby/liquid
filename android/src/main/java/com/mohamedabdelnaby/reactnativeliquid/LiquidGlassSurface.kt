@@ -183,7 +183,8 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
           }
 
           if (pressProgress > 0f) {
-            drawRect(Color.White.copy(alpha = (if (dark) 0.18f else 0.3f) * pressProgress))
+            // Brightens while pressed, like iOS 26 glass.
+            drawRect(Color.White.copy(alpha = (if (dark) 0.22f else 0.5f) * pressProgress))
           }
         },
       ),

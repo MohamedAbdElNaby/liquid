@@ -31,6 +31,8 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
 
   private val lifecycleOwner = GlassLifecycleOwner()
   private val composeViews = ArrayList<ComposeView>()
+  // What is laid out over the host: the ComposeViews, or the frames wrapping them.
+  private val hostedViews = ArrayList<View>()
   // Primitive so it is valid (0) when the base constructor already calls requestLayout().
   private var composeViewCount = 0
   private val backdrops = ArrayList<ViewTreeBackdrop>()
@@ -52,8 +54,17 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
     clipChildren = false
   }
 
-  /** Adds a ComposeView below ([above] = false) or above the React children. */
-  protected fun addComposeView(above: Boolean = false, content: @Composable () -> Unit): ComposeView {
+  /**
+   * Adds a ComposeView below ([above] = false) or above the React children. With
+   * [touchableReactChildrenBelow], React never picks the ComposeView as a touch target, so JS
+   * touchables under it (like buttons next to a search field) still get their presses; Compose
+   * gets the native touches it handles either way.
+   */
+  protected fun addComposeView(
+    above: Boolean = false,
+    touchableReactChildrenBelow: Boolean = false,
+    content: @Composable () -> Unit,
+  ): ComposeView {
     val view = ComposeView(context).apply {
       lifecycleOwner.install(this)
       setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -66,14 +77,23 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
         override fun onViewDetachedFromWindow(view: View) = Unit
       })
     }
+    val hosted: View = if (touchableReactChildrenBelow) {
+      NoReactTouchFrame(context).apply {
+        clipChildren = false
+        addView(view, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+      }
+    } else {
+      view
+    }
     if (above) {
-      addView(view)
+      addView(hosted)
       trailing++
     } else {
-      addView(view, leading)
+      addView(hosted, leading)
       leading++
     }
     composeViews.add(view)
+    hostedViews.add(hosted)
     composeViewCount++
     return view
   }
@@ -143,7 +163,7 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
 
   /** React lays out its own children; the ComposeViews are ours to size (once attached). */
   private fun layoutComposeViews() {
-    for (view in composeViews) {
+    for (view in hostedViews) {
       if (!view.isAttachedToWindow) {
         continue
       }
@@ -246,4 +266,12 @@ internal fun isDarkScheme(colorScheme: String): Boolean = when (colorScheme) {
   "dark" -> true
   "light" -> false
   else -> isSystemInDarkTheme()
+}
+
+/** Holds a ComposeView that React's touch targeting skips (see addComposeView). */
+private class NoReactTouchFrame(context: Context) :
+  android.widget.FrameLayout(context),
+  com.facebook.react.uimanager.ReactPointerEventsView {
+  override val pointerEvents: com.facebook.react.uimanager.PointerEvents
+    get() = com.facebook.react.uimanager.PointerEvents.NONE
 }

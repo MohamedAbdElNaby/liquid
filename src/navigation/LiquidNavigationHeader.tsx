@@ -12,6 +12,7 @@ import {
 } from 'react';
 import {
   Animated,
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -201,6 +202,8 @@ export function useLiquidNavigationHeader(
 const SLOT_SIZE = 44;
 /** Point of a button's exit where it has merged into its neighbour. */
 const MERGED = 0.45;
+/** Halfway into its neighbour, where a sliding drop is stretched most. */
+const LIQUID_PEAK = (MERGED + 1) / 2;
 const SLOT_GAP = 8;
 /**
  * Glass closer than this fuses. Below the gap, so buttons rest apart and
@@ -391,6 +394,7 @@ function Presence({
   slide?: number;
 }) {
   const visible = children != null;
+  const liquid = Platform.OS === 'android' && slide !== 0;
   const last = useRef(children);
   if (children != null) {
     last.current = children;
@@ -404,8 +408,9 @@ function Presence({
     }
     Animated.spring(progress, {
       toValue: visible ? 1 : 0,
-      stiffness: 200,
-      damping: 26,
+      // Slower on Android, so the stretching drop can be seen.
+      stiffness: liquid ? 130 : 200,
+      damping: liquid ? 22 : 26,
       mass: 1,
       useNativeDriver: true,
     }).start(({ finished }) => {
@@ -413,7 +418,7 @@ function Presence({
         setMounted(false);
       }
     });
-  }, [visible, progress]);
+  }, [visible, progress, liquid]);
 
   if (!visible && !mounted) {
     return null;
@@ -436,10 +441,24 @@ function Presence({
                 extrapolate: 'clamp',
               }),
             },
+            // Android glass can't fuse two shapes, so a sliding drop
+            // stretches along its path and squeezes, like liquid pulled into
+            // its neighbour.
             {
-              scale: progress.interpolate({
-                inputRange: [0, MERGED, 1],
-                outputRange: [0.01, 0.92, 1],
+              scaleX: progress.interpolate({
+                inputRange: [0, MERGED, 0.6, LIQUID_PEAK, 0.92, 1],
+                outputRange: liquid
+                  ? [0.01, 0.92, 1.5, 1.6, 1.2, 1]
+                  : [0.01, 0.92, 0.94, 0.96, 0.99, 1],
+                extrapolate: 'clamp',
+              }),
+            },
+            {
+              scaleY: progress.interpolate({
+                inputRange: [0, MERGED, 0.6, LIQUID_PEAK, 0.92, 1],
+                outputRange: liquid
+                  ? [0.01, 0.92, 0.8, 0.74, 0.9, 1]
+                  : [0.01, 0.92, 0.94, 0.96, 0.99, 1],
                 extrapolate: 'clamp',
               }),
             },

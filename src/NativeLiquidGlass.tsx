@@ -1,4 +1,10 @@
-import { Switch, View, type ViewProps, type ViewStyle } from 'react-native';
+import {
+  Switch,
+  View,
+  type ColorValue,
+  type ViewProps,
+  type ViewStyle,
+} from 'react-native';
 import type { NativeProps as GlassProps } from './native/LiquidGlassViewNativeComponent';
 import type { NativeProps as ContainerProps } from './native/LiquidGlassContainerViewNativeComponent';
 import type { NativeProps as SwitchProps } from './native/LiquidSwitchNativeComponent';
@@ -11,6 +17,7 @@ import type { NativeProps as SearchProps } from './native/LiquidSearchNativeComp
 
 export function NativeLiquidGlassView({
   fadeBottom: _fadeBottom,
+  fadeCurve: _fadeCurve,
   rimColor: _rimColor,
   rimWidth: _rimWidth,
   rimSideOpacity: _rimSideOpacity,
@@ -19,6 +26,11 @@ export function NativeLiquidGlassView({
   rimGradient: _rimGradient,
   sheenOpacity: _sheenOpacity,
   specularEdge: _specularEdge,
+  specularTopOpacity: _specularTopOpacity,
+  specularBottomOpacity: _specularBottomOpacity,
+  specularHairlineOpacity: _specularHairlineOpacity,
+  specularGlowHeight: _specularGlowHeight,
+  cornerReflection: _cornerReflection,
   glassStyle,
   glassTintColor,
   cornerRadius,
@@ -162,6 +174,22 @@ export function NativeLiquidScrollEdge(
   _props: ViewProps & { hideTopEdge?: boolean }
 ) {
   return null;
+}
+
+/** No progressive blur elsewhere: a plain view. */
+export function NativeLiquidProgressiveBlur({
+  maxBlurRadius: _maxBlurRadius,
+  blurTintColor: _blurTintColor,
+  fadeHeight: _fadeHeight,
+  fadeCurve: _fadeCurve,
+  ...props
+}: ViewProps & {
+  maxBlurRadius?: number;
+  blurTintColor?: ColorValue;
+  fadeHeight?: number;
+  fadeCurve?: 'linear' | 'ease';
+}) {
+  return <View {...props} />;
 }
 
 /** No scroll edge effect elsewhere: a plain view. */

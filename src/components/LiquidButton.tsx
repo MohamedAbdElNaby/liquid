@@ -208,6 +208,11 @@ export type MorphGlassProps = Omit<
   rimGradient?: LiquidGlassViewProps['rimGradient'];
   sheenOpacity?: number;
   specularEdge?: boolean;
+  specularTopOpacity?: number;
+  specularBottomOpacity?: number;
+  specularHairlineOpacity?: number;
+  specularGlowHeight?: number;
+  cornerReflection?: number;
   blurRadius?: number;
 };
 
@@ -234,6 +239,11 @@ export function MorphGlass({
   rimGradient,
   sheenOpacity,
   specularEdge,
+  specularTopOpacity,
+  specularBottomOpacity,
+  specularHairlineOpacity,
+  specularGlowHeight,
+  cornerReflection,
   blurRadius,
   ...rest
 }: MorphGlassProps) {
@@ -253,6 +263,11 @@ export function MorphGlass({
       rimGradient={rimGradient}
       sheenOpacity={sheenOpacity}
       specularEdge={specularEdge}
+      specularTopOpacity={specularTopOpacity}
+      specularBottomOpacity={specularBottomOpacity}
+      specularHairlineOpacity={specularHairlineOpacity}
+      specularGlowHeight={specularGlowHeight}
+      cornerReflection={cornerReflection}
       blurRadius={blurRadius}
       style={[style, disabled ? styles.disabled : null]}
     >

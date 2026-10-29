@@ -32,6 +32,7 @@ import {
   NativeLiquidScrollEdgeContainer,
 } from '../NativeLiquidGlass';
 import { MorphGlass } from '../components/LiquidButton';
+import { LiquidProgressiveBlur } from '../components/LiquidProgressiveBlur';
 import {
   LiquidExpandableSearch,
   type LiquidExpandableSearchProps,
@@ -90,6 +91,16 @@ export type LiquidHeaderGlass = {
   sheenOpacity?: number;
   /** The iOS 26 light-glass edge: hairline, white glow inside the top, white line along the bottom. */
   specularEdge?: boolean;
+  /** iOS: the specular edge's white glow inside the top edge, 0 to 1. @default 0.95 */
+  specularTopOpacity?: number;
+  /** iOS: the specular edge's white line along the bottom, 0 to 1. @default 0.95 */
+  specularBottomOpacity?: number;
+  /** iOS: the specular edge's grey hairline, 0 to 1. @default 1 */
+  specularHairlineOpacity?: number;
+  /** iOS: how far down the top glow reaches, as a fraction of the height. @default 0.16 */
+  specularGlowHeight?: number;
+  /** iOS: light catching the top-left and bottom-right corners, 0 (off) to 1, e.g. `0.1`. */
+  cornerReflection?: number;
   /** Android: how blurry the glass is, in dp (iOS glass has a fixed blur). */
   blurRadius?: number;
 };
@@ -100,6 +111,15 @@ export type LiquidHeaderGlass = {
  * edge of iOS 26 Photos.
  */
 export type LiquidHeaderEdgeGlass = {
+  /**
+   * `'glass'`: liquid glass that fades out. `'blur'`: the iOS 26 scroll edge
+   * of Photos and Telegram, a blur that weakens downward with `tintColor`
+   * fading out with it (`LiquidProgressiveBlur`; Android: plain glass, no
+   * lens, rim or shadow, fading along the same curve). @default 'glass'
+   */
+  style?: 'glass' | 'blur';
+  /** `style: 'blur'`, iOS: blur radius at the top, in points. @default 20 */
+  maxBlur?: number;
   /** @default 'regular' */
   glassStyle?: 'regular' | 'clear';
   /** Defaults to the provider's. */
@@ -112,6 +132,11 @@ export type LiquidHeaderEdgeGlass = {
   height?: number;
   /** How many points at the bottom fade out. @default the whole height below the status bar */
   fadeHeight?: number;
+  /**
+   * iOS: `'ease'` fades along an S-curve, melting into the content with no
+   * visible start or end; `'linear'` in a straight line. @default 'linear'
+   */
+  fadeCurve?: 'linear' | 'ease';
 };
 
 export type LiquidNavigationHeaderOptions = {
@@ -757,6 +782,11 @@ function FloatingHeader({
         rimGradient={titleGlass.rimGradient}
         sheenOpacity={titleGlass.sheenOpacity}
         specularEdge={titleGlass.specularEdge}
+        specularTopOpacity={titleGlass.specularTopOpacity}
+        specularBottomOpacity={titleGlass.specularBottomOpacity}
+        specularHairlineOpacity={titleGlass.specularHairlineOpacity}
+        specularGlowHeight={titleGlass.specularGlowHeight}
+        cornerReflection={titleGlass.cornerReflection}
         blurRadius={titleGlass.blurRadius}
         rimWidth={titleGlass.rimWidth}
         colorScheme={titleGlass.colorScheme ?? colorScheme}
@@ -923,6 +953,22 @@ function HeaderEdgeGlass({
 }) {
   const below = options.height ?? LIQUID_HEADER_HEIGHT + 30;
   const height = top + below;
+  if (options.style === 'blur') {
+    return (
+      <View pointerEvents="none" style={[styles.edge, { height }]}>
+        <LiquidProgressiveBlur
+          maxBlur={options.maxBlur}
+          tintColor={options.tintColor}
+          blurRadius={options.blurRadius}
+          colorScheme={options.colorScheme ?? colorScheme}
+          // Full under the status bar, then melts into the content.
+          fadeHeight={options.fadeHeight ?? below}
+          fadeCurve={options.fadeCurve ?? 'ease'}
+          style={{ height }}
+        />
+      </View>
+    );
+  }
   return (
     <View pointerEvents="none" style={[styles.edge, { height }]}>
       <LiquidGlassView
@@ -932,6 +978,7 @@ function HeaderEdgeGlass({
         blurRadius={options.blurRadius}
         // Solid under the status bar, then melts into the content.
         fadeBottom={options.fadeHeight ?? below}
+        fadeCurve={options.fadeCurve}
         style={{ height }}
       />
     </View>
@@ -966,6 +1013,11 @@ function HeaderButton({
       rimGradient={glass?.rimGradient}
       sheenOpacity={glass?.sheenOpacity}
       specularEdge={glass?.specularEdge}
+      specularTopOpacity={glass?.specularTopOpacity}
+      specularBottomOpacity={glass?.specularBottomOpacity}
+      specularHairlineOpacity={glass?.specularHairlineOpacity}
+      specularGlowHeight={glass?.specularGlowHeight}
+      cornerReflection={glass?.cornerReflection}
       blurRadius={glass?.blurRadius}
       rimWidth={glass?.rimWidth}
       cornerRadius={SLOT_SIZE / 2}

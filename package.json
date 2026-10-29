@@ -166,6 +166,9 @@
         },
         "RNLiquidScrollEdgeContainer": {
           "className": "RNLiquidScrollEdgeContainer"
+        },
+        "RNLiquidProgressiveBlur": {
+          "className": "RNLiquidProgressiveBlur"
         }
       }
     }

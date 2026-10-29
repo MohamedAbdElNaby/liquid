@@ -57,6 +57,8 @@ static void RNLiquidAnimate(void (^animations)(void))
   BOOL _morph;
   BOOL _laidOut;
   CGFloat _fadeBottom;
+  // fadeCurve 'ease': the fade follows an S-curve instead of a straight line.
+  BOOL _fadeEase;
   // Masks the effect so it fades out at the bottom (see fadeBottom).
   UIView *_fadeMask;
   CAGradientLayer *_fadeGradient;
@@ -86,6 +88,18 @@ static void RNLiquidAnimate(void (^animations)(void))
   CAShapeLayer *_specGlowMask;
   CAGradientLayer *_specLine;
   CAShapeLayer *_specLineMask;
+  // Its strengths: top glow, bottom line, hairline, and how far down the glow reaches.
+  CGFloat _specTopOpacity;
+  CGFloat _specBottomOpacity;
+  CGFloat _specHairlineOpacity;
+  CGFloat _specGlowHeight;
+  // Corner reflection (cornerReflection): light catching the top-left and
+  // bottom-right corners, a soft bloom inside and a glint on the edge.
+  CGFloat _cornerReflection;
+  CALayer *_cornerBloom;
+  CAShapeLayer *_cornerBloomMask;
+  CALayer *_cornerGlint;
+  CAShapeLayer *_cornerGlintMask;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -118,6 +132,10 @@ static void RNLiquidAnimate(void (^animations)(void))
   // The sheen, edge and rim stay above the content.
   if (_sheen != nil) {
     [_effectView.contentView.layer addSublayer:_sheen];
+  }
+  if (_cornerBloom != nil) {
+    [_effectView.contentView.layer addSublayer:_cornerBloom];
+    [_effectView.contentView.layer addSublayer:_cornerGlint];
   }
   if (_specGlow != nil) {
     [_effectView.contentView.layer addSublayer:_specGlow];
@@ -214,14 +232,28 @@ static void RNLiquidAnimate(void (^animations)(void))
   }
 
   _morph = newViewProps.morph;
-  if (_fadeBottom != newViewProps.fadeBottom) {
+  BOOL fadeEase = newViewProps.fadeCurve == RNLiquidGlassViewFadeCurve::Ease;
+  if (_fadeBottom != newViewProps.fadeBottom || _fadeEase != fadeEase) {
     _fadeBottom = newViewProps.fadeBottom;
+    _fadeEase = fadeEase;
     [self applyFade];
   }
 
-  if (_specularEdge != newViewProps.specularEdge) {
+  if (_specularEdge != newViewProps.specularEdge || _specTopOpacity != newViewProps.specularTopOpacity ||
+      _specBottomOpacity != newViewProps.specularBottomOpacity ||
+      _specHairlineOpacity != newViewProps.specularHairlineOpacity ||
+      _specGlowHeight != newViewProps.specularGlowHeight) {
     _specularEdge = newViewProps.specularEdge;
+    _specTopOpacity = newViewProps.specularTopOpacity;
+    _specBottomOpacity = newViewProps.specularBottomOpacity;
+    _specHairlineOpacity = newViewProps.specularHairlineOpacity;
+    _specGlowHeight = newViewProps.specularGlowHeight;
     [self applySpecularEdge];
+  }
+
+  if (_cornerReflection != newViewProps.cornerReflection) {
+    _cornerReflection = newViewProps.cornerReflection;
+    [self applyCornerReflection];
   }
 
   if (_sheenOpacity != newViewProps.sheenOpacity) {
@@ -351,13 +383,6 @@ static void RNLiquidAnimate(void (^animations)(void))
     _specGlow = [CAGradientLayer layer];
     _specGlow.startPoint = CGPointMake(0.5, 0);
     _specGlow.endPoint = CGPointMake(0.5, 1);
-    _specGlow.colors = @[
-      (__bridge id)[UIColor colorWithWhite:1 alpha:0.95].CGColor,
-      (__bridge id)[UIColor colorWithWhite:1 alpha:0].CGColor,
-      (__bridge id)[UIColor colorWithWhite:1 alpha:0].CGColor,
-      (__bridge id)[UIColor colorWithWhite:1 alpha:0.95].CGColor,
-    ];
-    _specGlow.locations = @[ @0, @0.16, @0.93, @1 ];
     _specGlowMask = [CAShapeLayer layer];
     _specGlowMask.fillColor = UIColor.blackColor.CGColor;
     _specGlow.mask = _specGlowMask;
@@ -367,18 +392,31 @@ static void RNLiquidAnimate(void (^animations)(void))
     _specLine = [CAGradientLayer layer];
     _specLine.startPoint = CGPointMake(0.5, 0);
     _specLine.endPoint = CGPointMake(0.5, 1);
-    _specLine.colors = @[
-      (__bridge id)[UIColor colorWithWhite:0 alpha:0.13].CGColor,
-      (__bridge id)[UIColor colorWithWhite:0 alpha:0.3].CGColor,
-      (__bridge id)[UIColor colorWithWhite:0 alpha:0.24].CGColor,
-      (__bridge id)[UIColor colorWithWhite:0 alpha:0].CGColor,
-    ];
     _specLine.locations = @[ @0, @0.45, @0.78, @1 ];
     _specLineMask = [CAShapeLayer layer];
     _specLineMask.fillColor = UIColor.clearColor.CGColor;
     _specLineMask.strokeColor = UIColor.blackColor.CGColor;
     _specLine.mask = _specLineMask;
   }
+  CGFloat top = MAX(0, MIN(1, _specTopOpacity));
+  CGFloat bottom = MAX(0, MIN(1, _specBottomOpacity));
+  CGFloat hairline = MAX(0, MIN(1, _specHairlineOpacity));
+  // The glow reaches this far down; the bottom line is the last 7%.
+  CGFloat glowEnd = MAX(0.02, MIN(0.9, _specGlowHeight));
+  CGFloat lineStart = MAX(glowEnd, 0.93);
+  _specGlow.colors = @[
+    (__bridge id)[UIColor colorWithWhite:1 alpha:top].CGColor,
+    (__bridge id)[UIColor colorWithWhite:1 alpha:0].CGColor,
+    (__bridge id)[UIColor colorWithWhite:1 alpha:0].CGColor,
+    (__bridge id)[UIColor colorWithWhite:1 alpha:bottom].CGColor,
+  ];
+  _specGlow.locations = @[ @0, @(glowEnd), @(lineStart), @1 ];
+  _specLine.colors = @[
+    (__bridge id)[UIColor colorWithWhite:0 alpha:0.13 * hairline].CGColor,
+    (__bridge id)[UIColor colorWithWhite:0 alpha:0.3 * hairline].CGColor,
+    (__bridge id)[UIColor colorWithWhite:0 alpha:0.24 * hairline].CGColor,
+    (__bridge id)[UIColor colorWithWhite:0 alpha:0].CGColor,
+  ];
   // Inside the glass so they grow with it when pressed, above the content.
   CALayer *host = _effectView.contentView.layer;
   [host addSublayer:_specGlow];
@@ -400,6 +438,94 @@ static void RNLiquidAnimate(void (^animations)(void))
   _specLineMask.path = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(bounds, hair / 2, hair / 2)
                                                   cornerRadius:MAX(0, radius - hair / 2)]
                            .CGPath;
+  [CATransaction commit];
+}
+
+/// A white radial gradient centred on `center`, fading out at `reach`.
+static CAGradientLayer *RNLiquidCornerLight(CGPoint center, CGFloat reach, CGFloat alpha)
+{
+  CAGradientLayer *light = [CAGradientLayer layer];
+  light.type = kCAGradientLayerRadial;
+  light.frame = CGRectMake(center.x - reach, center.y - reach, reach * 2, reach * 2);
+  light.startPoint = CGPointMake(0.5, 0.5);
+  light.endPoint = CGPointMake(1, 1);
+  light.colors = @[
+    (__bridge id)[UIColor colorWithWhite:1 alpha:alpha].CGColor,
+    (__bridge id)[UIColor colorWithWhite:1 alpha:alpha * 0.4].CGColor,
+    (__bridge id)[UIColor colorWithWhite:1 alpha:0].CGColor,
+  ];
+  light.locations = @[ @0, @0.4, @1 ];
+  return light;
+}
+
+/// Light catching the top-left and bottom-right corners: a soft bloom inside
+/// the glass (`cornerReflection`) and a brighter glint on the edge there.
+- (void)applyCornerReflection
+{
+  CGFloat alpha = MAX(0, MIN(1, _cornerReflection));
+  CGRect bounds = (CGRect){CGPointZero, self.bounds.size};
+  if (alpha <= 0 || bounds.size.width <= 0 || bounds.size.height <= 0) {
+    [_cornerBloom removeFromSuperlayer];
+    [_cornerGlint removeFromSuperlayer];
+    _cornerBloom = nil;
+    _cornerBloomMask = nil;
+    _cornerGlint = nil;
+    _cornerGlintMask = nil;
+    return;
+  }
+  if (_cornerBloom == nil) {
+    _cornerBloom = [CALayer layer];
+    _cornerBloomMask = [CAShapeLayer layer];
+    _cornerBloomMask.fillColor = UIColor.blackColor.CGColor;
+    _cornerBloom.mask = _cornerBloomMask;
+    _cornerGlint = [CALayer layer];
+    _cornerGlintMask = [CAShapeLayer layer];
+    _cornerGlintMask.fillColor = UIColor.clearColor.CGColor;
+    _cornerGlintMask.strokeColor = UIColor.blackColor.CGColor;
+    _cornerGlint.mask = _cornerGlintMask;
+  }
+  // Inside the glass so they grow with it when pressed: over the sheen,
+  // under the specular edge and the rim.
+  CALayer *host = _effectView.contentView.layer;
+  CALayer *above = _specGlow.superlayer == host ? _specGlow
+      : _rimEdge.superlayer == host           ? _rimEdge
+      : _rim.superlayer == host               ? _rim
+                                              : nil;
+  for (CALayer *layer in @[ _cornerBloom, _cornerGlint ]) {
+    if (above != nil) {
+      [host insertSublayer:layer below:above];
+    } else {
+      [host addSublayer:layer];
+    }
+  }
+
+  CGFloat radius = MAX(0, MIN(_cornerRadius, MIN(bounds.size.width, bounds.size.height) / 2));
+  // The middle of each corner's curve, where the light sits.
+  CGFloat inset = radius * (1 - M_SQRT1_2);
+  CGPoint topLeft = CGPointMake(inset, inset);
+  CGPoint bottomRight = CGPointMake(bounds.size.width - inset, bounds.size.height - inset);
+  CGFloat bloomReach = MAX(12, radius * 1.6);
+  CGFloat glintReach = MAX(10, radius * 1.3);
+  CGFloat glintWidth = 1.2;
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  _cornerBloom.frame = bounds;
+  _cornerBloomMask.frame = bounds;
+  _cornerBloomMask.path = [UIBezierPath bezierPathWithRoundedRect:bounds cornerRadius:radius].CGPath;
+  _cornerBloom.sublayers = @[
+    RNLiquidCornerLight(topLeft, bloomReach, alpha), RNLiquidCornerLight(bottomRight, bloomReach, alpha)
+  ];
+  // The edge catches more light than the glass behind it.
+  CGFloat glintAlpha = MIN(1, alpha * 4);
+  _cornerGlint.frame = bounds;
+  _cornerGlintMask.frame = bounds;
+  _cornerGlintMask.lineWidth = glintWidth;
+  _cornerGlintMask.path = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(bounds, glintWidth / 2, glintWidth / 2)
+                                                     cornerRadius:MAX(0, radius - glintWidth / 2)]
+                              .CGPath;
+  _cornerGlint.sublayers = @[
+    RNLiquidCornerLight(topLeft, glintReach, glintAlpha), RNLiquidCornerLight(bottomRight, glintReach, glintAlpha)
+  ];
   [CATransaction commit];
 }
 
@@ -590,12 +716,15 @@ static void RNLiquidAnimate(void (^animations)(void))
   [self applyCornerRadius];
   [self applyFade];
   [self applySheen];
+  [self applyCornerReflection];
   [self applySpecularEdge];
   [self applyRim];
 }
 
 /// A gradient mask on the effect view: opaque, then clear over the last
-/// `fadeBottom` points. Effect views take masks through `maskView`.
+/// `fadeBottom` points, in a straight line or (fadeCurve 'ease') along an
+/// S-curve that melts into the content without a visible start or end.
+/// Effect views take masks through `maskView`.
 - (void)applyFade
 {
   if (_fadeBottom <= 0) {
@@ -609,9 +738,6 @@ static void RNLiquidAnimate(void (^animations)(void))
   if (_fadeMask == nil) {
     _fadeMask = [UIView new];
     _fadeGradient = [CAGradientLayer layer];
-    _fadeGradient.colors = @[
-      (id)UIColor.blackColor.CGColor, (id)UIColor.blackColor.CGColor, (id)[UIColor colorWithWhite:0 alpha:0].CGColor
-    ];
     [_fadeMask.layer addSublayer:_fadeGradient];
     _effectView.maskView = _fadeMask;
   }
@@ -622,7 +748,19 @@ static void RNLiquidAnimate(void (^animations)(void))
   _fadeMask.frame = bounds;
   _fadeGradient.frame = CGRectMake(0, 0, bounds.size.width, bounds.size.height);
   CGFloat start = MAX(0, 1 - _fadeBottom / height);
-  _fadeGradient.locations = @[ @0, @(start), @1 ];
+  NSMutableArray *colors = [NSMutableArray arrayWithObject:(id)UIColor.blackColor.CGColor];
+  NSMutableArray<NSNumber *> *locations = [NSMutableArray arrayWithObject:@0];
+  // Enough stops that the eased curve shows no banding.
+  NSInteger steps = _fadeEase ? 16 : 1;
+  for (NSInteger i = 0; i <= steps; i++) {
+    CGFloat t = (CGFloat)i / steps;
+    // Smootherstep: flat at both ends, so neither end of the fade shows.
+    CGFloat eased = _fadeEase ? t * t * t * (t * (t * 6 - 15) + 10) : t;
+    [colors addObject:(id)[UIColor colorWithWhite:0 alpha:1 - eased].CGColor];
+    [locations addObject:@(start + (1 - start) * t)];
+  }
+  _fadeGradient.colors = colors;
+  _fadeGradient.locations = locations;
   [CATransaction commit];
 }
 

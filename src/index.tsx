@@ -63,6 +63,10 @@ export {
   type LiquidStickyViewProps,
 } from './components/LiquidStickyView';
 export {
+  LiquidProgressiveBlur,
+  type LiquidProgressiveBlurProps,
+} from './components/LiquidProgressiveBlur';
+export {
   LiquidMenu,
   type LiquidMenuItem,
   type LiquidMenuProps,

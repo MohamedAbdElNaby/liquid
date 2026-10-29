@@ -41,6 +41,12 @@ export type LiquidGlassViewProps = ViewProps & {
    */
   fadeBottom?: number;
   /**
+   * iOS: how `fadeBottom` fades: `'linear'`, or `'ease'` along an S-curve
+   * that melts into the content with no visible start or end.
+   * @default 'linear'
+   */
+  fadeCurve?: 'linear' | 'ease';
+  /**
    * A specular rim along the edge, brightest on the top-left and bottom-right
    * curves like iOS 26 glass (Android: its angled highlight, in this colour).
    */
@@ -85,6 +91,20 @@ export type LiquidGlassViewProps = ViewProps & {
    * without tinting the glass. iOS and Android. @default false
    */
   specularEdge?: boolean;
+  /** iOS: strength of the specular edge's white glow inside the top edge, 0 to 1. @default 0.95 */
+  specularTopOpacity?: number;
+  /** iOS: strength of the specular edge's white line along the bottom, 0 to 1. @default 0.95 */
+  specularBottomOpacity?: number;
+  /** iOS: strength of the specular edge's grey hairline, 0 to 1. @default 1 */
+  specularHairlineOpacity?: number;
+  /** iOS: how far down the specular edge's top glow reaches, as a fraction of the height. @default 0.16 */
+  specularGlowHeight?: number;
+  /**
+   * iOS: light catching the top-left and bottom-right corners, like a lens:
+   * a soft bloom inside the glass and a brighter glint on the edge there,
+   * 0 (off) to 1. `0.1` is a subtle reflection. @default 0
+   */
+  cornerReflection?: number;
   /**
    * Forces the light or dark material.
    * @default 'system'

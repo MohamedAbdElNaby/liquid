@@ -21,6 +21,8 @@ export interface NativeProps extends ViewProps {
   morph?: CodegenTypes.WithDefault<boolean, false>;
   /** iOS: fades the glass out over this many points at its bottom edge. */
   fadeBottom?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
+  /** iOS: how `fadeBottom` fades, in a straight line or along an S-curve. */
+  fadeCurve?: CodegenTypes.WithDefault<'linear' | 'ease', 'linear'>;
   /** Forces the light or dark appearance of the material. */
   colorScheme?: CodegenTypes.WithDefault<'system' | 'light' | 'dark', 'system'>;
   /**
@@ -42,6 +44,16 @@ export interface NativeProps extends ViewProps {
   sheenOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
   /** The iOS 26 light-glass edge: a hairline, a white glow inside the top edge and a white line along the bottom. */
   specularEdge?: CodegenTypes.WithDefault<boolean, false>;
+  /** iOS: strength of the specular edge's white glow inside the top edge, 0 to 1. */
+  specularTopOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 0.95>;
+  /** iOS: strength of the specular edge's white line along the bottom, 0 to 1. */
+  specularBottomOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 0.95>;
+  /** iOS: strength of the specular edge's grey hairline, 0 to 1. */
+  specularHairlineOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 1>;
+  /** iOS: how far down the top glow reaches, as a fraction of the height. */
+  specularGlowHeight?: CodegenTypes.WithDefault<CodegenTypes.Float, 0.16>;
+  /** iOS: light catching the top-left and bottom-right corners, 0 (off) to 1. */
+  cornerReflection?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
 
   // Android only (AndroidLiquidGlass by Kyant0)
   blurRadius?: CodegenTypes.WithDefault<CodegenTypes.Float, 3>;

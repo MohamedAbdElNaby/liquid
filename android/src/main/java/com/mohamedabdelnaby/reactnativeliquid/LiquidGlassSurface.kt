@@ -71,6 +71,8 @@ internal class GlassState {
   var shadow by mutableStateOf(true)
   /** Fades the glass out over this many dp at its bottom edge. */
   var fadeBottom by mutableFloatStateOf(0f)
+  /** fadeCurve "ease": the fade follows an S-curve instead of a straight line. */
+  var fadeEase by mutableStateOf(false)
 
   /** Animate layout changes as a liquid morph. */
   var morph = false
@@ -142,10 +144,19 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
             .drawWithContent {
               drawContent()
               val start = (1f - state.fadeBottom.dp.toPx() / size.height).coerceIn(0f, 1f)
-              drawRect(
-                Brush.verticalGradient(0f to Color.Black, start to Color.Black, 1f to Color.Transparent),
-                blendMode = BlendMode.DstIn,
-              )
+              // Eased: a smootherstep with enough stops to show no banding, so
+              // neither end of the fade shows (as on iOS).
+              val steps = if (state.fadeEase) 16 else 1
+              val stops = Array(steps + 2) { i ->
+                if (i == 0) {
+                  0f to Color.Black
+                } else {
+                  val t = (i - 1).toFloat() / steps
+                  val eased = if (state.fadeEase) t * t * t * (t * (t * 6f - 15f) + 10f) else t
+                  (start + (1f - start) * t) to Color.Black.copy(alpha = 1f - eased)
+                }
+              }
+              drawRect(Brush.verticalGradient(*stops), blendMode = BlendMode.DstIn)
             }
         } else {
           Modifier

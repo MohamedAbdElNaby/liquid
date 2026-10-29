@@ -1,4 +1,4 @@
-# CONTEXT.md — building iOS 26 / Telegram-style screens with react-native-liquid
+# CONTEXT.md — building iOS 26 style screens with react-native-liquid
 
 This file is for AI coding agents (and people) adding Liquid Glass UI to a
 React Native app with `@mohamed_abd_elnaby/react-native-liquid`. It explains
@@ -130,13 +130,13 @@ How items morph, so you can predict the animation:
 
 | Need | Use |
 | --- | --- |
-| Header row with a full-width field under it (Telegram Contacts) | `LiquidSearchHeader` under the shared header, `headerHeight={LIQUID_HEADER_HEIGHT}`, no children; clear the header (`useLiquidNavigationHeader(navigation, {})`) while searching so the field rises into its place, and hide the tab bar with `tabBarStyle: { display: 'none' }`. |
-| Search circle in the header (Telegram Settings) | `search` option of `useLiquidNavigationHeader`. |
+| Header row with a full-width field under it (a contacts list) | `LiquidSearchHeader` under the shared header, `headerHeight={LIQUID_HEADER_HEIGHT}`, no children; clear the header (`useLiquidNavigationHeader(navigation, {})`) while searching so the field rises into its place, and hide the tab bar with `tabBarStyle: { display: 'none' }`. |
+| Search circle in the header (a settings screen) | `search` option of `useLiquidNavigationHeader`. |
 | Search circle next to the tab bar opening a search screen | `createLiquidBottomTabBar({ search: { route: 'Search' } })` and a `Search` tab screen; it reads `route.params?.query`. Closing returns to the previous tab. |
 | Round button that becomes a field anywhere | `LiquidExpandableSearch` (children show next to it while closed). |
 | A plain glass field | `LiquidSearchBar`. |
 
-## Profile screen (Telegram channel profile)
+## Profile screen (a channel or user profile)
 
 Open it with `animation: 'fade'` so the photo can grow out of the chat
 header's avatar. The scroll view must be an `Animated.ScrollView` driving a

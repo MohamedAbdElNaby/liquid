@@ -77,7 +77,12 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
       setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
       clipChildren = false
       importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-      setContent { key(attachGeneration.intValue) { content() } }
+      setContent {
+        key(attachGeneration.intValue) {
+          // Mirrored controls keep left-to-right geometry inside; the view flip mirrors them.
+          if (mirrorsInRtl) LeftToRight(content) else content()
+        }
+      }
       var attachedBefore = false
       addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
         override fun onViewAttachedToWindow(view: View) {
@@ -296,4 +301,13 @@ private class NoReactTouchFrame(context: Context) :
   com.facebook.react.uimanager.ReactPointerEventsView {
   override val pointerEvents: com.facebook.react.uimanager.PointerEvents
     get() = com.facebook.react.uimanager.PointerEvents.NONE
+}
+
+/** Lays out [content] left to right, for views that mirror their geometry themselves. */
+@Composable
+internal fun LeftToRight(content: @Composable () -> Unit) {
+  androidx.compose.runtime.CompositionLocalProvider(
+    androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr,
+    content = content,
+  )
 }

@@ -686,10 +686,3 @@ class LiquidTabBarViewManager : LiquidComposeHostManager() {
 private fun pillLeft(rtl: Boolean, width: Float, inset: Float, tabWidth: Float, position: Float): Float =
   if (rtl) width - inset - (position + 1f) * tabWidth else inset + position * tabWidth
 
-@Composable
-private fun LeftToRight(content: @Composable () -> Unit) {
-  androidx.compose.runtime.CompositionLocalProvider(
-    androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr,
-    content = content,
-  )
-}

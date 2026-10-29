@@ -23,12 +23,13 @@ export function ChevronLeftIcon({ color, size = 20 }: IconProps) {
         style={{
           width: arm,
           height: arm,
-          marginLeft: arm * 0.4,
           borderLeftWidth: 2.5,
           borderBottomWidth: 2.5,
           borderColor: color,
           borderBottomLeftRadius: 1.5,
-          transform: [{ rotate: '45deg' }],
+          // A transform, not a margin: margins swap sides in right-to-left
+          // layout, and the whole icon is already mirrored there.
+          transform: [{ translateX: arm * 0.2 }, { rotate: '45deg' }],
         }}
       />
     </View>

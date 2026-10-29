@@ -203,6 +203,7 @@ export type MorphGlassProps = Omit<
   rimColor?: LiquidGlassViewProps['rimColor'];
   rimWidth?: number;
   rimSideOpacity?: number;
+  rimShadeColor?: LiquidGlassViewProps['rimShadeColor'];
   sheenOpacity?: number;
   blurRadius?: number;
 };
@@ -225,6 +226,7 @@ export function MorphGlass({
   rimColor,
   rimWidth,
   rimSideOpacity,
+  rimShadeColor,
   sheenOpacity,
   blurRadius,
   ...rest
@@ -240,6 +242,7 @@ export function MorphGlass({
       rimColor={rimColor}
       rimWidth={rimWidth}
       rimSideOpacity={rimSideOpacity}
+      rimShadeColor={rimShadeColor}
       sheenOpacity={sheenOpacity}
       blurRadius={blurRadius}
       style={[style, disabled ? styles.disabled : null]}

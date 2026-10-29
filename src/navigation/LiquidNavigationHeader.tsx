@@ -12,6 +12,7 @@ import {
 } from 'react';
 import {
   Animated,
+  Easing,
   I18nManager,
   Platform,
   Pressable,
@@ -22,6 +23,7 @@ import {
   type StyleProp,
   type TextStyle,
   type ViewStyle,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LiquidGlassContainer, LiquidGlassView } from '../LiquidGlassView';
@@ -78,6 +80,8 @@ export type LiquidHeaderGlass = {
   rimWidth?: number;
   /** iOS: how bright the rim stays along the sides, 0 to 1. @default 0.35 */
   rimSideOpacity?: number;
+  /** The rim on the side away from the light, e.g. a faint dark line so the highlight reads on white. */
+  rimShadeColor?: ColorValue;
   /** iOS: a soft white reflection across the top of the glass, 0 to 1. */
   sheenOpacity?: number;
   /** Android: how blurry the glass is, in dp (iOS glass has a fixed blur). */
@@ -193,21 +197,67 @@ export type LiquidHeaderNavigation = {
   canGoBack: () => boolean;
   goBack: () => void;
   isFocused: () => boolean;
-  addListener: (event: 'focus' | 'blur', callback: () => void) => () => void;
+  /**
+   * `beforeRemove` tells a screen being popped from one being covered, so a
+   * header with no header to morph into leaves the way its screen does.
+   * `transitionStart` (native stack) lets it leave as its screen starts to,
+   * on Android, where `blur` only comes once the screen is gone.
+   */
+  addListener: (
+    event: 'focus' | 'blur' | 'beforeRemove' | 'transitionStart',
+    callback: (event: {
+      data?: { closing?: boolean };
+      defaultPrevented?: boolean;
+    }) => void
+  ) => () => void;
   getState?: () => { type?: string } | undefined;
 };
+
+/**
+ * How a screen comes or goes: `push` comes in from the trailing edge (and
+ * `pop` leaves toward it), `reveal` comes back from under the screen being
+ * popped (and `cover` goes under the screen being pushed).
+ */
+type ScreenMove = 'push' | 'reveal' | 'pop' | 'cover';
 
 type ActiveHeader = {
   id: string;
   options: LiquidNavigationHeaderOptions;
   back: boolean;
   goBack: () => void;
+  enter?: ScreenMove;
 };
 
 type HeaderStore = {
   show: (header: ActiveHeader) => void;
-  hide: (id: string) => void;
+  hide: (id: string, exit?: ScreenMove) => void;
 };
+
+/**
+ * The header follows its screen in and out when there is no other header
+ * to morph into, with the timing of the iOS stack transition. Android stacks
+ * cross-fade quickly instead, so there the header fades with its screen.
+ */
+const SLIDES_WITH_SCREEN = Platform.OS === 'ios';
+const SCREEN_SLIDE_MS = 500;
+const SCREEN_FADE_MS = 180;
+/** How long a hidden header waits for the next screen's header. */
+const HIDE_DELAY_MS = 80;
+const SCREEN_SLIDE_EASING = Easing.bezier(0.3, 0.85, 0.35, 1);
+/** Where the screen is when the header starts leaving, HIDE_DELAY_MS in. */
+const EXIT_START = HIDE_DELAY_MS / SCREEN_SLIDE_MS;
+/** The rest of the screen's curve, from EXIT_START on. */
+const EXIT_EASING = (t: number) => {
+  const from = SCREEN_SLIDE_EASING(EXIT_START);
+  const at = SCREEN_SLIDE_EASING(EXIT_START + t * (1 - EXIT_START));
+  return (at - from) / (1 - from);
+};
+
+/**
+ * True while the header comes in with its screen: its buttons are already
+ * full size, they ride in instead of growing.
+ */
+const SlidingInContext = createContext(false);
 
 const HeaderContext = createContext<HeaderStore | null>(null);
 
@@ -259,31 +309,134 @@ export function LiquidHeaderProvider({
   style,
 }: LiquidHeaderProviderProps) {
   const [active, setActive] = useState<ActiveHeader | null>(null);
+  const activeRef = useRef<ActiveHeader | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Moves the whole header (buttons, title, edge) with its screen.
+  const slide = useRef(new Animated.Value(0)).current;
+  // Android: fades the whole header with its screen instead.
+  const fade = useRef(new Animated.Value(1)).current;
+  const exiting = useRef(false);
+  // A new header that slides in, or one that slid out, is remounted, so its
+  // buttons neither grow in nor shrink away on top of the slide.
+  const [generation, setGeneration] = useState(0);
+  const [slidingIn, setSlidingIn] = useState(false);
+  const { width } = useWindowDimensions();
+  const widthRef = useRef(width);
+  widthRef.current = width;
 
-  const store = useMemo<HeaderStore>(
-    () => ({
+  const store = useMemo<HeaderStore>(() => {
+    const setHeader = (header: ActiveHeader | null) => {
+      activeRef.current = header;
+      setActive(header);
+    };
+    // Where a screen is when off screen in the native stack: new screens
+    // come in from the trailing edge, which is the left one in RTL.
+    const offset = (move: ScreenMove) =>
+      widthRef.current *
+      (I18nManager.isRTL ? -1 : 1) *
+      (move === 'push' || move === 'pop' ? 1 : -1);
+    const run = (
+      toValue: number,
+      duration: number,
+      easing: (t: number) => number,
+      done?: () => void,
+      value = slide
+    ) =>
+      Animated.timing(value, {
+        toValue,
+        duration,
+        easing,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) {
+          done?.();
+        }
+      });
+
+    return {
       show: (header) => {
         if (hideTimer.current != null) {
           clearTimeout(hideTimer.current);
           hideTimer.current = null;
         }
-        setActive(header);
+        const fromNothing = activeRef.current == null;
+        if (exiting.current) {
+          // Another header takes over while this one leaves: morph instead.
+          exiting.current = false;
+          slide.stopAnimation();
+          slide.setValue(0);
+          fade.stopAnimation();
+          fade.setValue(1);
+        } else if (fromNothing && header.enter) {
+          // Nothing to morph from: come in with the screen.
+          setGeneration((value) => value + 1);
+          setSlidingIn(true);
+          const done = () => setSlidingIn(false);
+          if (SLIDES_WITH_SCREEN) {
+            slide.setValue(offset(header.enter));
+            run(0, SCREEN_SLIDE_MS, SCREEN_SLIDE_EASING, done);
+          } else {
+            // The screen starts to fade in a frame or two after its focus.
+            fade.setValue(0);
+            Animated.timing(fade, {
+              toValue: 1,
+              duration: SCREEN_FADE_MS,
+              delay: 50,
+              easing: Easing.out(Easing.quad),
+              useNativeDriver: true,
+            }).start(done);
+          }
+        } else if (fromNothing) {
+          // Put back here, not when the last header left: it would show
+          // again for a frame before being unmounted.
+          slide.setValue(0);
+          fade.setValue(1);
+        }
+        setHeader(header);
       },
-      hide: (id) => {
+      hide: (id, exit) => {
         // The next screen usually takes over in the same moment; wait a
         // little so the header morphs instead of disappearing in between.
         if (hideTimer.current != null) {
           clearTimeout(hideTimer.current);
+          hideTimer.current = null;
+        }
+        const done = () => {
+          if (exiting.current) {
+            exiting.current = false;
+            setHeader(null);
+            setGeneration((value) => value + 1);
+          }
+        };
+        if (!SLIDES_WITH_SCREEN && exit != null) {
+          if (activeRef.current?.id !== id || exiting.current) {
+            return;
+          }
+          // Android: fade out at once, on the UI thread, since the JS thread
+          // is often busy with the next screen. The fade starts slowly, so
+          // a header that takes over right away stops it before it shows.
+          exiting.current = true;
+          run(0, SCREEN_FADE_MS, Easing.in(Easing.cubic), done, fade);
+          return;
         }
         hideTimer.current = setTimeout(() => {
           hideTimer.current = null;
-          setActive((current) => (current?.id === id ? null : current));
-        }, 80);
+          if (activeRef.current?.id !== id) {
+            return;
+          }
+          if (exit == null) {
+            setHeader(null);
+            return;
+          }
+          // Nothing to morph into: leave with the screen, from where the
+          // screen already is after the wait.
+          exiting.current = true;
+          slide.setValue(offset(exit) * SCREEN_SLIDE_EASING(EXIT_START));
+          run(offset(exit), SCREEN_SLIDE_MS - HIDE_DELAY_MS, EXIT_EASING, done);
+        }, HIDE_DELAY_MS);
       },
-    }),
-    []
-  );
+    };
+  }, [slide, fade]);
 
   return (
     <HeaderContext.Provider value={store}>
@@ -297,12 +450,25 @@ export function LiquidHeaderProvider({
             style={styles.scrollEdgeSwitch}
           />
         ) : null}
-        <FloatingHeader
-          header={active}
-          colorScheme={colorScheme}
-          direction={direction}
-          extendScrollEdge={extendScrollEdge}
-        />
+        <Animated.View
+          pointerEvents="box-none"
+          style={[
+            StyleSheet.absoluteFill,
+            SLIDES_WITH_SCREEN
+              ? { transform: [{ translateX: slide }] }
+              : { opacity: fade },
+          ]}
+        >
+          <SlidingInContext.Provider value={slidingIn}>
+            <FloatingHeader
+              key={generation}
+              header={active}
+              colorScheme={colorScheme}
+              direction={direction}
+              extendScrollEdge={extendScrollEdge}
+            />
+          </SlidingInContext.Provider>
+        </Animated.View>
       </View>
     </HeaderContext.Provider>
   );
@@ -327,13 +493,41 @@ export function useLiquidNavigationHeader(
   const latest = useRef(options);
   latest.current = options;
   const [focused, setFocused] = useState(() => navigation.isFocused());
+  // A screen shown before comes back from under the one being popped; a
+  // new one is pushed. One being removed is popped; else it is covered.
+  const shownBefore = useRef(false);
+  const removing = useRef(false);
 
   useEffect(() => {
     const focus = navigation.addListener('focus', () => setFocused(true));
     const blur = navigation.addListener('blur', () => setFocused(false));
+    const beforeRemove = navigation.addListener('beforeRemove', (event) => {
+      removing.current = true;
+      if (!SLIDES_WITH_SCREEN) {
+        // Android: leave as the pop starts, unless a later listener keeps
+        // the screen.
+        Promise.resolve().then(() => {
+          if (event.defaultPrevented) {
+            removing.current = false;
+          } else {
+            setFocused(false);
+          }
+        });
+      }
+    });
+    const transitionStart = navigation.addListener(
+      'transitionStart',
+      (event) => {
+        if (!SLIDES_WITH_SCREEN && event.data?.closing) {
+          setFocused(false);
+        }
+      }
+    );
     return () => {
       focus();
       blur();
+      beforeRemove();
+      transitionStart();
     };
   }, [navigation]);
 
@@ -347,6 +541,7 @@ export function useLiquidNavigationHeader(
         latest.current.backButton ??
         (navigation.canGoBack() && navigation.getState?.()?.type !== 'tab'),
       goBack: navigation.goBack,
+      enter: shownBefore.current ? 'reveal' : 'push',
     });
   }, [id, navigation, store]);
 
@@ -358,11 +553,16 @@ export function useLiquidNavigationHeader(
   });
 
   useEffect(() => {
-    if (!focused) {
-      store.hide(id);
+    if (focused) {
+      shownBefore.current = true;
+      return;
     }
-    return () => store.hide(id);
+    if (shownBefore.current) {
+      store.hide(id, removing.current ? 'pop' : 'cover');
+    }
   }, [focused, id, store]);
+
+  useEffect(() => () => store.hide(id, 'pop'), [id, store]);
 }
 
 export type LiquidNavigationHeaderProps = LiquidNavigationHeaderOptions & {
@@ -546,6 +746,7 @@ function FloatingHeader({
         tintColor={titleGlass.tintColor}
         rimColor={titleGlass.rimColor}
         rimSideOpacity={titleGlass.rimSideOpacity}
+        rimShadeColor={titleGlass.rimShadeColor}
         sheenOpacity={titleGlass.sheenOpacity}
         blurRadius={titleGlass.blurRadius}
         rimWidth={titleGlass.rimWidth}
@@ -751,6 +952,7 @@ function HeaderButton({
       tintColor={item.tintColor ?? glass?.tintColor}
       rimColor={glass?.rimColor}
       rimSideOpacity={glass?.rimSideOpacity}
+      rimShadeColor={glass?.rimShadeColor}
       sheenOpacity={glass?.sheenOpacity}
       blurRadius={glass?.blurRadius}
       rimWidth={glass?.rimWidth}
@@ -818,8 +1020,12 @@ function Presence({
   if (children != null) {
     last.current = children;
   }
-  // Starts hidden even when mounted visible, so a button in a new place grows in.
-  const progress = useRef(new Animated.Value(0)).current;
+  // Starts hidden even when mounted visible, so a button in a new place grows
+  // in; full size when the whole header slides in with its screen.
+  const slidingIn = useContext(SlidingInContext);
+  const progress = useRef(
+    new Animated.Value(slidingIn && visible ? 1 : 0)
+  ).current;
   const [mounted, setMounted] = useState(visible);
 
   useEffect(() => {

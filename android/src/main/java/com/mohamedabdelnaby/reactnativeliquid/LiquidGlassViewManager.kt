@@ -113,6 +113,11 @@ class LiquidGlassViewManager : ReactViewManager() {
     view.glass { rimColor = value }
   }
 
+  @ReactProp(name = "rimShadeColor", customType = "Color")
+  fun setRimShadeColor(view: ReactViewGroup, value: Int?) {
+    view.glass { rimShadeColor = value }
+  }
+
   @ReactProp(name = "rimWidth", defaultFloat = 1f)
   fun setRimWidth(view: ReactViewGroup, value: Float) {
     view.glass { rimWidth = value }

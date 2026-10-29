@@ -53,6 +53,13 @@ export type LiquidGlassViewProps = ViewProps & {
    */
   rimSideOpacity?: number;
   /**
+   * The rim's colour on the side away from the light (the bottom-right),
+   * blending from the highlight. A faint dark colour, such as
+   * `rgba(0, 0, 0, 0.14)`, makes the highlight read as a reflection on light
+   * backgrounds, where a white rim alone disappears. Off when unset.
+   */
+  rimShadeColor?: ColorValue;
+  /**
    * iOS: a soft white reflection across the top of the glass, like light
    * catching it, 0 (off) to 1. @default 0
    */

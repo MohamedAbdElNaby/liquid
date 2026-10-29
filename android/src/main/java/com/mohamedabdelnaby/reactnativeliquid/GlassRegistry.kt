@@ -81,6 +81,21 @@ internal object GlassRegistry {
       ?: if (dark) Color.argb(if (clear) 31 else 97, 28, 28, 30)
       else Color.argb(if (clear) 20 else 82, 255, 255, 255)
     val radius = min(state.cornerRadius * state.density, min(glass.width, glass.height) / 2f)
-    canvas.drawRoundRect(0f, 0f, glass.width.toFloat(), glass.height.toFloat(), radius, radius, paint)
+    val height = glass.height.toFloat()
+    val fade = state.fadeBottom * state.density
+    // Glass that melts into the content (fadeBottom) fades out here too, so
+    // glass over it still sees the content under the faded part.
+    paint.shader = if (fade > 0f && height > 0f) {
+      val start = (height - fade).coerceAtLeast(0f)
+      android.graphics.LinearGradient(
+        0f, start, 0f, height,
+        paint.color, paint.color and 0x00FFFFFF,
+        android.graphics.Shader.TileMode.CLAMP,
+      )
+    } else {
+      null
+    }
+    canvas.drawRoundRect(0f, 0f, glass.width.toFloat(), height, radius, radius, paint)
+    paint.shader = null
   }
 }

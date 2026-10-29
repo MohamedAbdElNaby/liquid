@@ -430,6 +430,9 @@ inside another glass shape, such as a toolbar.
 ```
 
 `LiquidGlassView` props: `glassStyle`, `tintColor`, `interactive`, `rimColor` / `rimWidth` (a specular rim, brightest on the top-left and bottom-right curves),
+`rimSideOpacity` (iOS: how much of the rim stays along the sides; 0 keeps only
+the curves), `rimShadeColor` (a dark edge on the bottom-right, lit from the
+top-left, so the rim reads as a reflection on white pages),
 `cornerRadius`, `morph`, `colorScheme`, `fadeBottom` (fades the glass out
 over this many points at its bottom edge, like a bar melting into the
 content), and on Android `blurRadius`, `refractionHeight`, `refractionAmount`,

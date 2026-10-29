@@ -14,6 +14,7 @@ export function NativeLiquidGlassView({
   rimColor: _rimColor,
   rimWidth: _rimWidth,
   rimSideOpacity: _rimSideOpacity,
+  rimShadeColor: _rimShadeColor,
   sheenOpacity: _sheenOpacity,
   glassStyle,
   glassTintColor,

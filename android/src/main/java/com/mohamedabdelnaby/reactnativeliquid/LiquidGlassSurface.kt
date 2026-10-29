@@ -60,6 +60,8 @@ internal class GlassState {
   /** Specular rim colour (rimColor): the highlight in that colour and width. */
   var rimColor by mutableStateOf<Int?>(null)
   var rimWidth by mutableStateOf(1f)
+  /** The rim on the side away from the light (rimShadeColor). */
+  var rimShadeColor by mutableStateOf<Int?>(null)
   var shadow by mutableStateOf(true)
   /** Fades the glass out over this many dp at its bottom edge. */
   var fadeBottom by mutableFloatStateOf(0f)
@@ -143,6 +145,30 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
           Modifier
         },
       )
+      // The rim's shade goes over the glass and its highlight, which would
+      // otherwise light it back up.
+      .drawWithContent {
+        drawContent()
+        state.rimShadeColor?.let { argb ->
+          // The far side of the rim: clear at the top-left, the shade at the
+          // bottom-right, so the highlight reads as a reflection on white.
+          val stroke = state.rimWidth.dp.toPx()
+          val radius = min(state.cornerRadius * state.density, min(size.width, size.height) / 2f)
+          drawRoundRect(
+            brush = Brush.linearGradient(
+              0f to Color.Transparent,
+              0.45f to Color.Transparent,
+              1f to Color(argb),
+              start = androidx.compose.ui.geometry.Offset.Zero,
+              end = androidx.compose.ui.geometry.Offset(size.width, size.height),
+            ),
+            topLeft = androidx.compose.ui.geometry.Offset(stroke / 2f, stroke / 2f),
+            size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius((radius - stroke / 2f).coerceAtLeast(0f)),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(stroke),
+          )
+        }
+      }
       .drawBackdrop(
         backdrop = backdrop,
         shape = {

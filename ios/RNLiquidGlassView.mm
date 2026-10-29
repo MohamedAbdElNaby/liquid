@@ -70,6 +70,7 @@ static void RNLiquidAnimate(void (^animations)(void))
   UIColor *_rimColor;
   CGFloat _rimWidth;
   CGFloat _rimSideOpacity;
+  UIColor *_rimShadeColor;
   // Reflection (sheenOpacity): white fading down from the top, clipped to the shape.
   CAGradientLayer *_sheen;
   CGFloat _sheenOpacity;
@@ -197,9 +198,12 @@ static void RNLiquidAnimate(void (^animations)(void))
     [self applySheen];
   }
   UIColor *rimColor = RCTUIColorFromSharedColor(newViewProps.rimColor);
+  UIColor *rimShadeColor = RCTUIColorFromSharedColor(newViewProps.rimShadeColor);
   if (![rimColor isEqual:_rimColor] || _rimWidth != newViewProps.rimWidth ||
-      _rimSideOpacity != newViewProps.rimSideOpacity) {
+      _rimSideOpacity != newViewProps.rimSideOpacity ||
+      (rimShadeColor != _rimShadeColor && ![rimShadeColor isEqual:_rimShadeColor])) {
     _rimColor = rimColor;
+    _rimShadeColor = rimShadeColor;
     _rimWidth = newViewProps.rimWidth;
     _rimSideOpacity = newViewProps.rimSideOpacity;
     [self applyRim];
@@ -317,7 +321,16 @@ static void RNLiquidAnimate(void (^animations)(void))
   // Bright on the top-left and bottom-right curves, fainter along the sides.
   CGFloat alpha = CGColorGetAlpha(_rimColor.CGColor);
   CGColorRef side = [_rimColor colorWithAlphaComponent:alpha * MAX(0, MIN(1, _rimSideOpacity))].CGColor;
-  _rim.colors = @[ (__bridge id)_rimColor.CGColor, (__bridge id)side, (__bridge id)side, (__bridge id)_rimColor.CGColor ];
+  if (_rimShadeColor != nil) {
+    // Lit from the top-left: the highlight there, the shade on the far side.
+    CGFloat shadeAlpha = CGColorGetAlpha(_rimShadeColor.CGColor);
+    CGColorRef halfShade = [_rimShadeColor colorWithAlphaComponent:shadeAlpha * 0.5].CGColor;
+    _rim.colors = @[
+      (__bridge id)_rimColor.CGColor, (__bridge id)side, (__bridge id)halfShade, (__bridge id)_rimShadeColor.CGColor
+    ];
+  } else {
+    _rim.colors = @[ (__bridge id)_rimColor.CGColor, (__bridge id)side, (__bridge id)side, (__bridge id)_rimColor.CGColor ];
+  }
 
   CGRect bounds = self.bounds;
   CGFloat radius = MAX(0, MIN(_cornerRadius, MIN(bounds.size.width, bounds.size.height) / 2));

@@ -377,7 +377,14 @@ static void RNLiquidAnimate(void (^animations)(void))
   _rim.locations = _rimVertical ? @[ @0, @0.3, @0.7, @1 ] : @[ @0, @0.38, @0.62, @1 ];
   CGFloat alpha = CGColorGetAlpha(_rimColor.CGColor);
   CGColorRef side = [_rimColor colorWithAlphaComponent:alpha * MAX(0, MIN(1, _rimSideOpacity))].CGColor;
-  if (_rimShadeColor != nil) {
+  if (_rimShadeColor != nil && _rimVertical) {
+    // A shiny border: white along the top and bottom edges, turning to the
+    // shade down the left and right sides.
+    _rim.colors = @[
+      (__bridge id)_rimColor.CGColor, (__bridge id)_rimShadeColor.CGColor, (__bridge id)_rimShadeColor.CGColor,
+      (__bridge id)_rimColor.CGColor
+    ];
+  } else if (_rimShadeColor != nil) {
     // Lit from the top-left: the highlight there, the shade on the far side.
     CGFloat shadeAlpha = CGColorGetAlpha(_rimShadeColor.CGColor);
     CGColorRef halfShade = [_rimShadeColor colorWithAlphaComponent:shadeAlpha * 0.5].CGColor;

@@ -68,7 +68,9 @@ export type LiquidGlassViewProps = ViewProps & {
   /**
    * Where the rim shines: `'diagonal'` on the top-left and bottom-right
    * curves, `'vertical'` along the top and bottom edges, fading towards the
-   * left and right sides like the iOS search field. @default 'diagonal'
+   * left and right sides like the iOS search field; with `rimShadeColor`
+   * the sides turn to that colour, a shiny white-to-grey border.
+   * @default 'diagonal'
    */
   rimGradient?: 'diagonal' | 'vertical';
   /**

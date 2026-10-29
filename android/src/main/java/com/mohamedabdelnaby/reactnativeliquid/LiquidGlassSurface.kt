@@ -168,10 +168,13 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
             // like the glass highlight, so it shows on white: bright on the
             // top-left and bottom-right curves, faint along the sides.
             val rim = Color(rimArgb)
-            val side = rim.copy(alpha = rim.alpha * 0.2f)
+            val vertical = state.rimGradient == "vertical"
+            // Vertical with a shade: a shiny border, white along the top and
+            // bottom edges, turning to the shade down the sides.
+            val shade = state.rimShadeColor
+            val side = if (vertical && shade != null) Color(shade) else rim.copy(alpha = rim.alpha * 0.2f)
             val stroke = state.rimWidth.dp.toPx()
             val inset = edge + stroke / 2f
-            val vertical = state.rimGradient == "vertical"
             drawRoundRect(
               brush = Brush.linearGradient(
                 0f to rim,
@@ -190,7 +193,8 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
             )
           }
         }
-        state.rimShadeColor?.let { argb ->
+        // (In the vertical shiny border the shade is already the sides' colour.)
+        state.rimShadeColor?.takeUnless { state.rimGradient == "vertical" && state.rimEdgeColor != null && state.rimColor != null }?.let { argb ->
           // The far side of the rim: clear at the top-left, the shade at the
           // bottom-right, so the highlight reads as a reflection on white.
           val stroke = state.rimWidth.dp.toPx()

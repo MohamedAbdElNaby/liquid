@@ -56,6 +56,8 @@ export interface NativeProps extends ViewProps {
   specularBottomHeight?: CodegenTypes.WithDefault<CodegenTypes.Float, 0.07>;
   /** iOS: light catching the top-left and bottom-right corners, 0 (off) to 1. */
   cornerReflection?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
+  /** iOS: blurs the page behind the glass this many points (0 = the material's own blur). */
+  backdropBlur?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
 
   // Android only (AndroidLiquidGlass by Kyant0)
   blurRadius?: CodegenTypes.WithDefault<CodegenTypes.Float, 3>;

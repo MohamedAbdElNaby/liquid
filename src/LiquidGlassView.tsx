@@ -101,8 +101,9 @@ export type LiquidGlassViewProps = ViewProps & {
   specularGlowHeight?: number;
   /**
    * iOS: how far up the specular edge's bottom shine reaches, as a fraction of
-   * the height: `0.07` is a white line, about `specularGlowHeight` mirrors the
-   * top glow. @default 0.07
+   * the height: `0.07` is a white line (the hairline fades out under it);
+   * taller is a glow, and the bottom edge then mirrors the top one, glow and
+   * hairline (e.g. the same value as `specularGlowHeight`). @default 0.07
    */
   specularBottomHeight?: number;
   /**
@@ -111,6 +112,13 @@ export type LiquidGlassViewProps = ViewProps & {
    * 0 (off) to 1. `0.1` is a subtle reflection. @default 0
    */
   cornerReflection?: number;
+  /**
+   * iOS: blurs the page behind the glass by this many points, inside its
+   * shape. With `glassStyle: 'clear'` the glass then shows the page softly
+   * blurred and bent at the edges, between clear (sharp) and regular
+   * (frosted), e.g. `4`. 0 keeps the material's own blur. @default 0
+   */
+  backdropBlur?: number;
   /**
    * Forces the light or dark material.
    * @default 'system'

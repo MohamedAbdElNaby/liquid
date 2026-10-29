@@ -103,6 +103,8 @@ export type LiquidHeaderGlass = {
   specularBottomHeight?: number;
   /** iOS: light catching the top-left and bottom-right corners, 0 (off) to 1, e.g. `0.1`. */
   cornerReflection?: number;
+  /** iOS: blurs the page behind the glass this many points, e.g. `4` with clear glass. */
+  backdropBlur?: number;
   /** Android: how blurry the glass is, in dp (iOS glass has a fixed blur). */
   blurRadius?: number;
 };
@@ -790,6 +792,7 @@ function FloatingHeader({
         specularGlowHeight={titleGlass.specularGlowHeight}
         specularBottomHeight={titleGlass.specularBottomHeight}
         cornerReflection={titleGlass.cornerReflection}
+        backdropBlur={titleGlass.backdropBlur}
         blurRadius={titleGlass.blurRadius}
         rimWidth={titleGlass.rimWidth}
         colorScheme={titleGlass.colorScheme ?? colorScheme}
@@ -1022,6 +1025,7 @@ function HeaderButton({
       specularGlowHeight={glass?.specularGlowHeight}
       specularBottomHeight={glass?.specularBottomHeight}
       cornerReflection={glass?.cornerReflection}
+      backdropBlur={glass?.backdropBlur}
       blurRadius={glass?.blurRadius}
       rimWidth={glass?.rimWidth}
       cornerRadius={SLOT_SIZE / 2}

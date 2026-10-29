@@ -101,6 +101,13 @@ static void RNLiquidAnimate(void (^animations)(void))
   CAShapeLayer *_cornerBloomMask;
   CALayer *_cornerGlint;
   CAShapeLayer *_cornerGlintMask;
+  // An adjustable blur inside the glass (backdropBlur), clipped to its shape:
+  // clear glass then shows the page blurred this much, between clear (sharp)
+  // and regular (frosted).
+  UIView *_backdropBlurView;
+  CALayer *_backdropLayer;
+  id _backdropBlurFilter;
+  CGFloat _backdropBlur;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -129,7 +136,9 @@ static void RNLiquidAnimate(void (^animations)(void))
 // top of the glass and so touches reach the interactive glass.
 - (void)mountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
 {
-  [_effectView.contentView insertSubview:childComponentView atIndex:index];
+  // The backdrop blur stays the bottom subview, under the content.
+  NSInteger offset = _backdropBlurView.superview == _effectView.contentView ? 1 : 0;
+  [_effectView.contentView insertSubview:childComponentView atIndex:index + offset];
   // The sheen, edge and rim stay above the content.
   if (_sheen != nil) {
     [_effectView.contentView.layer addSublayer:_sheen];
@@ -252,6 +261,11 @@ static void RNLiquidAnimate(void (^animations)(void))
     _specGlowHeight = newViewProps.specularGlowHeight;
     _specBottomHeight = newViewProps.specularBottomHeight;
     [self applySpecularEdge];
+  }
+
+  if (_backdropBlur != newViewProps.backdropBlur) {
+    _backdropBlur = newViewProps.backdropBlur;
+    [self applyBackdropBlur];
   }
 
   if (_cornerReflection != newViewProps.cornerReflection) {
@@ -395,7 +409,6 @@ static void RNLiquidAnimate(void (^animations)(void))
     _specLine = [CAGradientLayer layer];
     _specLine.startPoint = CGPointMake(0.5, 0);
     _specLine.endPoint = CGPointMake(0.5, 1);
-    _specLine.locations = @[ @0, @0.45, @0.78, @1 ];
     _specLineMask = [CAShapeLayer layer];
     _specLineMask.fillColor = UIColor.clearColor.CGColor;
     _specLineMask.strokeColor = UIColor.blackColor.CGColor;
@@ -416,12 +429,17 @@ static void RNLiquidAnimate(void (^animations)(void))
     (__bridge id)[UIColor colorWithWhite:1 alpha:bottom].CGColor,
   ];
   _specGlow.locations = @[ @0, @(glowEnd), @(lineStart), @1 ];
+  // A bottom glow (taller than the default line) mirrors the top edge: the
+  // hairline light along the bottom too, darker down the sides. A bottom
+  // line keeps the Messages look, the hairline gone under the white line.
+  BOOL mirrored = _specBottomHeight > 0.07 + 0.001;
   _specLine.colors = @[
     (__bridge id)[UIColor colorWithWhite:0 alpha:0.13 * hairline].CGColor,
     (__bridge id)[UIColor colorWithWhite:0 alpha:0.3 * hairline].CGColor,
-    (__bridge id)[UIColor colorWithWhite:0 alpha:0.24 * hairline].CGColor,
-    (__bridge id)[UIColor colorWithWhite:0 alpha:0].CGColor,
+    (__bridge id)[UIColor colorWithWhite:0 alpha:(mirrored ? 0.3 : 0.24) * hairline].CGColor,
+    (__bridge id)[UIColor colorWithWhite:0 alpha:(mirrored ? 0.13 : 0) * hairline].CGColor,
   ];
+  _specLine.locations = mirrored ? @[ @0, @0.45, @0.55, @1 ] : @[ @0, @0.45, @0.78, @1 ];
   // Inside the glass so they grow with it when pressed, above the content.
   CALayer *host = _effectView.contentView.layer;
   [host addSublayer:_specGlow];
@@ -631,6 +649,13 @@ static CAGradientLayer *RNLiquidCornerLight(CGPoint center, CGFloat reach, CGFlo
   CGSize size = self.bounds.size;
   CGFloat radius = MAX(0, MIN(_cornerRadius, MIN(size.width, size.height) / 2));
 
+  // Follows the glass, also while it morphs (this runs in the animation).
+  if (_backdropBlurView != nil) {
+    _backdropBlurView.frame = self.bounds;
+    _backdropBlurView.layer.cornerRadius = radius;
+    _backdropLayer.frame = _backdropBlurView.bounds;
+  }
+
   if (@available(iOS 26.0, *)) {
     _effectView.cornerConfiguration =
         [UICornerConfiguration configurationWithUniformRadius:[UICornerRadius fixedRadius:radius]];
@@ -639,6 +664,64 @@ static CAGradientLayer *RNLiquidCornerLight(CGPoint center, CGFloat reach, CGFlo
     _effectView.layer.cornerCurve = kCACornerCurveContinuous;
     _effectView.clipsToBounds = radius > 0;
   }
+}
+
+/// The blur inside the glass (`backdropBlur`): a Core Animation backdrop
+/// layer with a gaussian blur, under the glass's content, clipped to its
+/// shape. It captures what the clear glass shows (the page, bent at the
+/// edges) and blurs it by `backdropBlur` points. The glass can't sample a
+/// blur placed behind it, so it lives inside. Private API: nothing changes
+/// when the backdrop layer or the filter is unavailable.
+- (void)applyBackdropBlur
+{
+  UIView *host = _effectView.contentView;
+  if (_backdropBlur <= 0) {
+    [_backdropBlurView removeFromSuperview];
+    _backdropBlurView = nil;
+    _backdropLayer = nil;
+    return;
+  }
+  if (_backdropBlurView == nil) {
+    Class backdropClass = NSClassFromString(@"CABackdropLayer");
+    Class filterClass = NSClassFromString(@"CAFilter");
+    SEL make = NSSelectorFromString(@"filterWithType:");
+    if (backdropClass == nil || filterClass == nil || ![filterClass respondsToSelector:make]) {
+      return;
+    }
+    _backdropBlurFilter = ((id (*)(id, SEL, id))[filterClass methodForSelector:make])(filterClass, make, @"gaussianBlur");
+    if (_backdropBlurFilter == nil) {
+      return;
+    }
+    _backdropBlurView = [UIView new];
+    _backdropBlurView.userInteractionEnabled = NO;
+    _backdropBlurView.clipsToBounds = YES;
+    _backdropBlurView.layer.cornerCurve = kCACornerCurveContinuous;
+    _backdropLayer = [backdropClass new];
+    [_backdropBlurView.layer addSublayer:_backdropLayer];
+  }
+  if (_backdropBlurView.superview != host) {
+    // Under the content, which is mounted above it (see mountChildComponentView).
+    [host insertSubview:_backdropBlurView atIndex:0];
+    [self applyCornerRadius];
+  }
+  @try {
+    [_backdropBlurFilter setValue:@(_backdropBlur) forKey:@"inputRadius"];
+    [_backdropBlurFilter setValue:@YES forKey:@"inputNormalizeEdges"];
+    _backdropLayer.filters = @[ _backdropBlurFilter ];
+    CGFloat scale = self.window.screen.scale;
+    if (scale > 0) {
+      // Keeps the blurred backdrop sharp instead of rendering at 1x.
+      [_backdropLayer setValue:@(scale) forKey:@"scale"];
+    }
+  } @catch (NSException *exception) {
+    _backdropLayer.filters = nil;
+  }
+}
+
+- (void)didMoveToWindow
+{
+  [super didMoveToWindow];
+  [self applyBackdropBlur];
 }
 
 #pragma mark - Layout
@@ -719,6 +802,7 @@ static CAGradientLayer *RNLiquidCornerLight(CGPoint center, CGFloat reach, CGFlo
 {
   [super layoutSubviews];
   [self applyCornerRadius];
+  [self applyBackdropBlur];
   [self applyFade];
   [self applySheen];
   [self applyCornerReflection];

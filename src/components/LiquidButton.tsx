@@ -214,6 +214,7 @@ export type MorphGlassProps = Omit<
   specularGlowHeight?: number;
   specularBottomHeight?: number;
   cornerReflection?: number;
+  backdropBlur?: number;
   blurRadius?: number;
 };
 
@@ -246,6 +247,7 @@ export function MorphGlass({
   specularGlowHeight,
   specularBottomHeight,
   cornerReflection,
+  backdropBlur,
   blurRadius,
   ...rest
 }: MorphGlassProps) {
@@ -271,6 +273,7 @@ export function MorphGlass({
       specularGlowHeight={specularGlowHeight}
       specularBottomHeight={specularBottomHeight}
       cornerReflection={cornerReflection}
+      backdropBlur={backdropBlur}
       blurRadius={blurRadius}
       style={[style, disabled ? styles.disabled : null]}
     >

@@ -212,6 +212,7 @@ export type MorphGlassProps = Omit<
   specularBottomOpacity?: number;
   specularHairlineOpacity?: number;
   specularGlowHeight?: number;
+  specularBottomHeight?: number;
   cornerReflection?: number;
   blurRadius?: number;
 };
@@ -243,6 +244,7 @@ export function MorphGlass({
   specularBottomOpacity,
   specularHairlineOpacity,
   specularGlowHeight,
+  specularBottomHeight,
   cornerReflection,
   blurRadius,
   ...rest
@@ -267,6 +269,7 @@ export function MorphGlass({
       specularBottomOpacity={specularBottomOpacity}
       specularHairlineOpacity={specularHairlineOpacity}
       specularGlowHeight={specularGlowHeight}
+      specularBottomHeight={specularBottomHeight}
       cornerReflection={cornerReflection}
       blurRadius={blurRadius}
       style={[style, disabled ? styles.disabled : null]}

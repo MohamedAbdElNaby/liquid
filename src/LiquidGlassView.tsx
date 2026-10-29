@@ -100,6 +100,12 @@ export type LiquidGlassViewProps = ViewProps & {
   /** iOS: how far down the specular edge's top glow reaches, as a fraction of the height. @default 0.16 */
   specularGlowHeight?: number;
   /**
+   * iOS: how far up the specular edge's bottom shine reaches, as a fraction of
+   * the height: `0.07` is a white line, about `specularGlowHeight` mirrors the
+   * top glow. @default 0.07
+   */
+  specularBottomHeight?: number;
+  /**
    * iOS: light catching the top-left and bottom-right corners, like a lens:
    * a soft bloom inside the glass and a brighter glint on the edge there,
    * 0 (off) to 1. `0.1` is a subtle reflection. @default 0

@@ -99,6 +99,8 @@ export type LiquidHeaderGlass = {
   specularHairlineOpacity?: number;
   /** iOS: how far down the top glow reaches, as a fraction of the height. @default 0.16 */
   specularGlowHeight?: number;
+  /** iOS: how far up the bottom shine reaches, as a fraction of the height (0.07 = a line). @default 0.07 */
+  specularBottomHeight?: number;
   /** iOS: light catching the top-left and bottom-right corners, 0 (off) to 1, e.g. `0.1`. */
   cornerReflection?: number;
   /** Android: how blurry the glass is, in dp (iOS glass has a fixed blur). */
@@ -786,6 +788,7 @@ function FloatingHeader({
         specularBottomOpacity={titleGlass.specularBottomOpacity}
         specularHairlineOpacity={titleGlass.specularHairlineOpacity}
         specularGlowHeight={titleGlass.specularGlowHeight}
+        specularBottomHeight={titleGlass.specularBottomHeight}
         cornerReflection={titleGlass.cornerReflection}
         blurRadius={titleGlass.blurRadius}
         rimWidth={titleGlass.rimWidth}
@@ -1017,6 +1020,7 @@ function HeaderButton({
       specularBottomOpacity={glass?.specularBottomOpacity}
       specularHairlineOpacity={glass?.specularHairlineOpacity}
       specularGlowHeight={glass?.specularGlowHeight}
+      specularBottomHeight={glass?.specularBottomHeight}
       cornerReflection={glass?.cornerReflection}
       blurRadius={glass?.blurRadius}
       rimWidth={glass?.rimWidth}

@@ -93,6 +93,7 @@ static void RNLiquidAnimate(void (^animations)(void))
   CGFloat _specBottomOpacity;
   CGFloat _specHairlineOpacity;
   CGFloat _specGlowHeight;
+  CGFloat _specBottomHeight;
   // Corner reflection (cornerReflection): light catching the top-left and
   // bottom-right corners, a soft bloom inside and a glint on the edge.
   CGFloat _cornerReflection;
@@ -242,12 +243,14 @@ static void RNLiquidAnimate(void (^animations)(void))
   if (_specularEdge != newViewProps.specularEdge || _specTopOpacity != newViewProps.specularTopOpacity ||
       _specBottomOpacity != newViewProps.specularBottomOpacity ||
       _specHairlineOpacity != newViewProps.specularHairlineOpacity ||
-      _specGlowHeight != newViewProps.specularGlowHeight) {
+      _specGlowHeight != newViewProps.specularGlowHeight ||
+      _specBottomHeight != newViewProps.specularBottomHeight) {
     _specularEdge = newViewProps.specularEdge;
     _specTopOpacity = newViewProps.specularTopOpacity;
     _specBottomOpacity = newViewProps.specularBottomOpacity;
     _specHairlineOpacity = newViewProps.specularHairlineOpacity;
     _specGlowHeight = newViewProps.specularGlowHeight;
+    _specBottomHeight = newViewProps.specularBottomHeight;
     [self applySpecularEdge];
   }
 
@@ -401,9 +404,11 @@ static void RNLiquidAnimate(void (^animations)(void))
   CGFloat top = MAX(0, MIN(1, _specTopOpacity));
   CGFloat bottom = MAX(0, MIN(1, _specBottomOpacity));
   CGFloat hairline = MAX(0, MIN(1, _specHairlineOpacity));
-  // The glow reaches this far down; the bottom line is the last 7%.
+  // The top glow reaches this far down; the bottom one this far up (a thin
+  // line at the default 7%, a glow like the top one when taller). They
+  // never overlap: the top glow keeps its share when both are large.
   CGFloat glowEnd = MAX(0.02, MIN(0.9, _specGlowHeight));
-  CGFloat lineStart = MAX(glowEnd, 0.93);
+  CGFloat lineStart = MAX(glowEnd, 1 - MAX(0.02, MIN(0.9, _specBottomHeight)));
   _specGlow.colors = @[
     (__bridge id)[UIColor colorWithWhite:1 alpha:top].CGColor,
     (__bridge id)[UIColor colorWithWhite:1 alpha:0].CGColor,

@@ -52,6 +52,8 @@ export interface NativeProps extends ViewProps {
   specularHairlineOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 1>;
   /** iOS: how far down the top glow reaches, as a fraction of the height. */
   specularGlowHeight?: CodegenTypes.WithDefault<CodegenTypes.Float, 0.16>;
+  /** iOS: how far up the bottom shine reaches, as a fraction of the height (0.07 = a line). */
+  specularBottomHeight?: CodegenTypes.WithDefault<CodegenTypes.Float, 0.07>;
   /** iOS: light catching the top-left and bottom-right corners, 0 (off) to 1. */
   cornerReflection?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
 

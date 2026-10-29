@@ -30,6 +30,7 @@ export function NativeLiquidGlassView({
   specularBottomOpacity: _specularBottomOpacity,
   specularHairlineOpacity: _specularHairlineOpacity,
   specularGlowHeight: _specularGlowHeight,
+  specularBottomHeight: _specularBottomHeight,
   cornerReflection: _cornerReflection,
   glassStyle,
   glassTintColor,

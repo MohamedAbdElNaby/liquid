@@ -70,7 +70,7 @@ export type LiquidNavigationHeaderOptions = {
    * where the pressed one was.
    */
   right?: (LiquidHeaderItem | null)[];
-  /** Defaults to `navigation.canGoBack()`. */
+  /** Defaults to whether the screen can go back in a stack (not in tabs). */
   backButton?: boolean;
   /**
    * A search circle at the trailing edge that morphs into a field with a
@@ -96,6 +96,7 @@ export type LiquidHeaderNavigation = {
   goBack: () => void;
   isFocused: () => boolean;
   addListener: (event: 'focus' | 'blur', callback: () => void) => () => void;
+  getState?: () => { type?: string } | undefined;
 };
 
 type ActiveHeader = {
@@ -206,7 +207,11 @@ export function useLiquidNavigationHeader(
     store.show({
       id,
       options: latest.current,
-      back: latest.current.backButton ?? navigation.canGoBack(),
+      // Tab navigators can go back to the previous tab, which is no reason
+      // for a back button.
+      back:
+        latest.current.backButton ??
+        (navigation.canGoBack() && navigation.getState?.()?.type !== 'tab'),
       goBack: navigation.goBack,
     });
   }, [id, navigation, store]);
@@ -368,42 +373,48 @@ function FloatingHeader({
         pointerEvents="box-none"
         style={[styles.titleLayer, { top: insets.top }]}
       >
-        <Presence>
-          {options?.subtitle != null ? (
-            <MorphGlass
-              colorScheme={colorScheme}
-              cornerRadius={SLOT_SIZE / 2}
-              contentKey={`${options.title}\n${options.subtitle}`}
-              onPress={options.onTitlePress}
-              accessibilityRole="header"
-              contentStyle={styles.titleCapsule}
-            >
+        {/* The capsule and the plain title have layers of their own, so one
+            shrinking away never pushes the other out of the center. */}
+        <View pointerEvents="box-none" style={styles.titleSlot}>
+          <Presence>
+            {options?.subtitle != null ? (
+              <MorphGlass
+                colorScheme={colorScheme}
+                cornerRadius={SLOT_SIZE / 2}
+                contentKey={`${options.title}\n${options.subtitle}`}
+                onPress={options.onTitlePress}
+                accessibilityRole="header"
+                contentStyle={styles.titleCapsule}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={[styles.capsuleTitle, { color: colors.label }]}
+                >
+                  {options.title}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.subtitle, { color: colors.secondaryLabel }]}
+                >
+                  {options.subtitle}
+                </Text>
+              </MorphGlass>
+            ) : null}
+          </Presence>
+        </View>
+        <View pointerEvents="box-none" style={styles.titleSlot}>
+          {options?.subtitle == null && options?.title != null && !searching ? (
+            <FadeIn key={options.title}>
               <Text
+                accessibilityRole="header"
                 numberOfLines={1}
-                style={[styles.capsuleTitle, { color: colors.label }]}
+                style={[styles.title, { color: colors.label }]}
               >
                 {options.title}
               </Text>
-              <Text
-                numberOfLines={1}
-                style={[styles.subtitle, { color: colors.secondaryLabel }]}
-              >
-                {options.subtitle}
-              </Text>
-            </MorphGlass>
+            </FadeIn>
           ) : null}
-        </Presence>
-        {options?.subtitle == null && options?.title != null && !searching ? (
-          <FadeIn key={options.title}>
-            <Text
-              accessibilityRole="header"
-              numberOfLines={1}
-              style={[styles.title, { color: colors.label }]}
-            >
-              {options.title}
-            </Text>
-          </FadeIn>
-        ) : null}
+        </View>
       </View>
     </View>
   );
@@ -488,7 +499,8 @@ function Presence({
   if (children != null) {
     last.current = children;
   }
-  const progress = useRef(new Animated.Value(visible ? 1 : 0)).current;
+  // Starts hidden even when mounted visible, so a button in a new place grows in.
+  const progress = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(visible);
 
   useEffect(() => {
@@ -640,6 +652,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: LIQUID_HEADER_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleSlot: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

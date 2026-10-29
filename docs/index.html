@@ -305,6 +305,12 @@ figcaption { margin-top: 8px; font-size: 14px; color: var(--muted); text-align: 
   <a href="#bottom-tabs">Bottom tab bar</a>
   <a href="#top-tabs">Top tab bar</a>
   <a href="#header">Header</a>
+  <h4>Telegram-style screens</h4>
+  <a href="#morphing-header">Morphing header</a>
+  <a href="#search-screens">Search</a>
+  <a href="#profile">Profile header</a>
+  <a href="#rtl">Right to left</a>
+  <a href="#agents">AI agents</a>
   <h4>Components</h4>
   <a href="#glass-view">Glass view &amp; container</a>
   <a href="#button">Buttons</a>
@@ -519,6 +525,58 @@ npx react-native run-android</code></pre>
   <p>With <code>headerTransparent: true</code> the content scrolls under the glass; pad it with <code>useLiquidHeaderHeight()</code> (safe area + <code>LIQUID_HEADER_HEIGHT</code>, 56). Options read: <code>title</code>, <code>headerTitle</code>, <code>headerTitleAlign</code>, <code>headerTitleStyle</code>, <code>headerTintColor</code>, <code>headerLeft</code>, <code>headerRight</code>, <code>headerBackTitle</code>. Config: <code>variant</code>, <code>glassStyle</code>, <code>glassTintColor</code>, <code>colorScheme</code>, <code>style</code>.</p>
 </section>
 
+<section id="morphing-header">
+  <h2>Morphing header</h2>
+  <p>One floating header for the whole app. Wrap the root navigator in <code>LiquidHeaderProvider</code>, turn off the navigators' own headers, and describe each screen's header with <code>useLiquidNavigationHeader</code>. Because the header is shared, it morphs on every push, pop and tab switch: Edit becomes Sort or the back button, two circles fuse into one, and the title blurs across.</p>
+  <figure><img src="media/header-morph.gif" alt="Header buttons morphing from Home to Contacts" width="600" loading="lazy"><figcaption>Home → Contacts: Edit becomes Sort, the two circles merge into one</figcaption></figure>
+<pre><code>&lt;LiquidHeaderProvider&gt;
+  &lt;Stack.Navigator screenOptions={{ headerShown: false }}&gt;…&lt;/Stack.Navigator&gt;
+&lt;/LiquidHeaderProvider&gt;
+
+// In a screen:
+useLiquidNavigationHeader(navigation, {
+  title: 'Chats',
+  left: { title: editing ? 'Done' : 'Edit', onPress: toggle },
+  right: [
+    { key: 'story', icon: &lt;PlusIcon /&gt;, onPress: newStory },
+    { key: 'compose', icon: &lt;ComposeIcon /&gt;, tintColor: '#0A84FF' },
+  ],
+});</code></pre>
+  <ul>
+    <li>Items are matched by place. When an item's <code>key</code> changes, its glass resizes and the content blurs across. Same key: nothing moves.</li>
+    <li>Fewer items: the extra ones slide into their neighbour, fuse and shrink. Use <code>null</code> to keep a place empty: <code>right: [closeButton, null]</code> merges the second button into the first, pressed one.</li>
+    <li><code>subtitle</code> shows the title and subtitle in a glass capsule, like a chat header. <code>stretch: true</code> makes an item take the free width.</li>
+    <li>The back button appears in stacks, not in tabs; <code>backButton</code> overrides it. Pad content with <code>useLiquidHeaderHeight()</code>.</li>
+  </ul>
+  <figure><img src="media/merge.gif" alt="Two header buttons merging into the pressed one" width="360" loading="lazy"><figcaption>+ merges into the compose button</figcaption></figure>
+</section>
+
+<section id="search-screens">
+  <h2>Search</h2>
+  <ul>
+    <li><strong>Tab bar search screen</strong>: <code>createLiquidBottomTabBar({ search: { route: 'Search' } })</code> and a <code>Search</code> tab screen. The circle morphs into a field, the Search screen opens and reads <code>route.params?.query</code>; closing returns to the previous tab.</li>
+    <li><strong>Search under the header</strong> (Telegram Contacts): <code>LiquidSearchHeader</code> with <code>headerHeight={LIQUID_HEADER_HEIGHT}</code>; clear the shared header while searching so the field rises into its place.</li>
+    <li><strong>Header search circle</strong> (Telegram Settings): the <code>search</code> option of <code>useLiquidNavigationHeader</code>.</li>
+  </ul>
+  <figure><img src="media/tab-search.jpg" alt="Search screen opened from the tab bar" width="300" loading="lazy"><figcaption>Search screen with the tab bar field open</figcaption></figure>
+</section>
+
+<section id="profile">
+  <h2>Profile header</h2>
+  <p><code>LiquidProfileHeader</code> follows an <code>Animated.ScrollView</code>: a full-width photo, then a round avatar over the blurred photo, then a frosted glass bar that fades into the content. <code>useLiquidProfileSnapOffsets()</code> makes the scroll rest on each step, <code>useLiquidProfileEntrance()</code> grows the photo out of the chat header's avatar, and <code>LiquidStickyView</code> pins a control like Media / Links under the bar.</p>
+  <figure><img src="media/profile-steps.jpg" alt="Profile header in its three states" width="820" loading="lazy"><figcaption>Photo · avatar · bar</figcaption></figure>
+</section>
+
+<section id="rtl">
+  <h2>Right to left</h2>
+  <p>Every component follows <code>I18nManager.isRTL</code> on iOS and Android: the tab bars fill from the right, search fields and headers mirror, merges slide the other way, and switches and sliders flip. Call <code>I18nManager.forceRTL(true)</code> and restart the app.</p>
+</section>
+
+<section id="agents">
+  <h2>AI agents</h2>
+  <p>The package ships <code>CONTEXT.md</code>, written for AI coding agents: the app shell, header recipes, how items morph and merge, which search to use, the profile screen, and the pitfalls. Point your agent at <code>node_modules/@mohamed_abd_elnaby/react-native-liquid/CONTEXT.md</code>.</p>
+</section>
+
 <section id="glass-view">
   <h2>Glass view &amp; container</h2>
 <pre><code><span class="kw">import</span> { LiquidGlassView, LiquidGlassContainer } <span class="kw">from</span> <span class="str">'@mohamed_abd_elnaby/react-native-liquid'</span>;
@@ -588,6 +646,8 @@ npx react-native run-android</code></pre>
   &lt;<span class="tag">Text</span>&gt;Controls&lt;/<span class="tag">Text</span>&gt;   <span class="cm">{/* shown next to the button while collapsed */}</span>
 &lt;/<span class="tag">LiquidExpandableSearch</span>&gt;</code></pre>
   <p>A round glass button that morphs into a field with a separate close button, 16&nbsp;pt apart. Props: <code>expanded</code> / <code>defaultExpanded</code> / <code>onExpandedChange</code>, <code>value</code>, <code>onChangeText</code>, <code>onSubmit</code>, <code>placeholder</code>, <code>height</code> (44), <code>glassStyle</code>, <code>glassTintColor</code>, <code>colorScheme</code>, <code>style</code>. The bottom tab bar's <code>search</code> option uses it.</p>
+  <h3>LiquidSearchHeader</h3>
+  <p>A header row with a full-width field under it that rises into the row, with a close button sliding in. Props: <code>value</code>, <code>onChangeText</code>, <code>onSubmit</code>, <code>placeholder</code>, <code>expanded</code> / <code>defaultExpanded</code> / <code>onExpandedChange</code>, <code>headerHeight</code> (52), <code>fieldHeight</code> (44), <code>glassStyle</code>, <code>glassTintColor</code>, <code>colorScheme</code>.</p>
 </section>
 
 <section id="menu">

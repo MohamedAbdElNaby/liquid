@@ -4,11 +4,12 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import {
-  LiquidButton,
-  LiquidIconButton,
+  LIQUID_HEADER_HEIGHT,
   LiquidSearchHeader,
   useLiquidColors,
+  useLiquidNavigationHeader,
 } from '@mohamed_abd_elnaby/react-native-liquid';
+import { PlusIcon } from '../HeaderIcons';
 
 const NAMES = [
   'Amelia Hart',
@@ -39,9 +40,30 @@ export function ContactsScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const { colors } = useLiquidColors();
   const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
 
-  const contacts = NAMES.filter((name) =>
-    name.toLowerCase().includes(query.trim().toLowerCase())
+  // Sort, the title and + live in the shared floating header, so switching
+  // tabs morphs them from Home's Edit, title and circles. They go away while
+  // the search field rises into the header.
+  useLiquidNavigationHeader(
+    navigation,
+    searching
+      ? {}
+      : {
+          title: 'Contacts',
+          left: { title: 'Sort' },
+          right: [
+            {
+              key: 'add',
+              accessibilityLabel: 'Add contact',
+              icon: <PlusIcon color={colors.label} />,
+            },
+          ],
+        },
+  );
+
+  const contacts = NAMES.filter(name =>
+    name.toLowerCase().includes(query.trim().toLowerCase()),
   );
 
   return (
@@ -49,22 +71,20 @@ export function ContactsScreen() {
       <LiquidSearchHeader
         value={query}
         onChangeText={setQuery}
-        onExpandedChange={(searching) =>
+        onExpandedChange={next => {
+          setSearching(next);
           navigation.setOptions({
-            tabBarStyle: searching ? { display: 'none' } : undefined,
-          })
-        }
+            tabBarStyle: next ? { display: 'none' } : undefined,
+          });
+        }}
+        // The empty header row is the floating header's place, so the field
+        // rises exactly into it.
+        headerHeight={LIQUID_HEADER_HEIGHT}
         style={styles.header}
-      >
-        <LiquidButton title="Sort" size="small" />
-        <Text style={[styles.title, { color: colors.label }]}>Contacts</Text>
-        <LiquidIconButton accessibilityLabel="Add contact" size={34}>
-          <Text style={[styles.plus, { color: colors.label }]}>+</Text>
-        </LiquidIconButton>
-      </LiquidSearchHeader>
+      />
       <FlatList
         data={contacts}
-        keyExtractor={(name) => name}
+        keyExtractor={name => name}
         keyboardDismissMode="on-drag"
         contentContainerStyle={{ paddingBottom: tabBarHeight }}
         renderItem={({ item, index }) => (
@@ -73,22 +93,19 @@ export function ContactsScreen() {
               style={[
                 styles.avatar,
                 {
-                  backgroundColor:
-                    AVATAR_COLORS[index % AVATAR_COLORS.length],
+                  backgroundColor: AVATAR_COLORS[index % AVATAR_COLORS.length],
                 },
               ]}
             >
               <Text style={styles.initials}>
                 {item
                   .split(' ')
-                  .map((part) => part[0])
+                  .map(part => part[0])
                   .join('')}
               </Text>
             </View>
             <View style={[styles.rowText, { borderColor: colors.track }]}>
-              <Text style={[styles.name, { color: colors.label }]}>
-                {item}
-              </Text>
+              <Text style={[styles.name, { color: colors.label }]}>{item}</Text>
               <Text style={[styles.status, { color: colors.secondaryLabel }]}>
                 last seen {index * 7 + 3} minutes ago
               </Text>
@@ -106,15 +123,6 @@ const styles = StyleSheet.create({
   },
   header: {
     marginHorizontal: 16,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  plus: {
-    fontSize: 24,
-    fontWeight: '300',
-    marginTop: -2,
   },
   row: {
     flexDirection: 'row',

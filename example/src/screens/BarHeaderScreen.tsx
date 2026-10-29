@@ -13,7 +13,7 @@ export function BarHeaderScreen() {
   return (
     <FlatList
       data={ROWS}
-      keyExtractor={(item) => item.id}
+      keyExtractor={item => item.id}
       contentContainerStyle={{ paddingTop: headerHeight }}
       renderItem={({ item }) => (
         <View style={[styles.row, { backgroundColor: item.color }]}>

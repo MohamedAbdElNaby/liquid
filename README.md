@@ -1,15 +1,29 @@
 # @mohamed_abd_elnaby/react-native-liquid
 
+[![npm](https://img.shields.io/npm/v/@mohamed_abd_elnaby/react-native-liquid.svg)](https://www.npmjs.com/package/@mohamed_abd_elnaby/react-native-liquid)
+[![license](https://img.shields.io/npm/l/@mohamed_abd_elnaby/react-native-liquid.svg)](LICENSE)
+![platforms](https://img.shields.io/badge/platforms-iOS%20%7C%20Android-lightgrey.svg)
+![new architecture](https://img.shields.io/badge/New%20Architecture-required-blue.svg)
+
 ![React Native Liquid](docs/media/banner.jpg)
 
-Liquid Glass UI components for React Native, built to drop into React Navigation as custom tab bars and headers.
+Liquid Glass UI components for React Native, built to drop into React Navigation as custom tab bars and headers. Everything you need for iOS 26 / Telegram-style screens: a tab bar with Apple's liquid lens, one floating header whose buttons morph and merge between screens, search fields that grow out of their buttons, and a profile header that collapses as you scroll.
+
+**Highlights**
+
+- Apple's own Liquid Glass lens in the iOS 26 tab bar, and a matching liquid drop on Android.
+- One shared header for the whole app: Edit becomes Sort or the back button, two circles fuse into one, titles blur across, on every push, pop and tab switch.
+- Buttons that change content morph: `Mute → Unmute` blurs across while the glass resizes.
+- Search everywhere: a field under the header that rises into it, a header circle that stretches into a field, and a tab bar search that opens a search screen.
+- A channel profile header: full photo, round avatar, then a frosted glass bar.
+- Light and dark mode, left-to-right and right-to-left, iOS and Android.
 
 - **iOS 26+** uses the native Liquid Glass material (`UIGlassEffect`, `UIGlassContainerEffect`). Earlier iOS versions fall back to a system material blur.
 - **Android 12+** draws the glass natively with Jetpack Compose: it blurs, saturates and refracts the React Native views behind the glass. The glass code ships inside this package, so there is **no extra dependency** to install. Lens refraction needs Android 13+. Earlier Android versions get a frosted, opaque material.
 - New Architecture (Fabric) only.
 - Every animation (the tab bar drop, morphs, toggles, sliders) runs natively, not on the JS thread.
 
-**Documentation: https://mohamedabdelnaby.github.io/liquid/** (every prop, GIFs, light and dark screenshots). For copy-paste recipes of every component, see [`USAGE.md`](USAGE.md) (it ships with the package).
+**Documentation: https://mohamedabdelnaby.github.io/liquid/** (every prop, GIFs, light and dark screenshots). For copy-paste recipes of every component, see [`USAGE.md`](USAGE.md). Using an AI coding agent? Point it at [`CONTEXT.md`](CONTEXT.md): it explains how the pieces fit together to build these screens in any app. Both ship with the package.
 
 ## Preview
 
@@ -18,6 +32,11 @@ Liquid Glass UI components for React Native, built to drop into React Navigation
 | <img src="docs/media/tabbar.gif" width="320" alt="Bottom tab bar drop"> | <img src="docs/media/toptabs.gif" width="260" alt="Top tab bar"> | <img src="docs/media/controls.gif" width="220" alt="Controls"> |
 | **Tab bar search** | **Toolbar morph and menu** | **Light and dark** |
 | <img src="docs/media/search.gif" width="240" alt="Tab bar search above the keyboard"> | <img src="docs/media/menu.gif" width="260" alt="Morphing toolbar and menu"> | <img src="docs/media/tabbar-themes.jpg" width="300" alt="Tab bar in light and dark"> |
+
+| **Header morph between tabs** | **Merge into the pressed button** | **Tab bar search screen** |
+| <img src="docs/media/header-morph.gif" width="320" alt="Header buttons morphing between tabs"> | <img src="docs/media/merge.gif" width="200" alt="Two header buttons merging"> | <img src="docs/media/tab-search.jpg" width="180" alt="Search screen opened from the tab bar"> |
+
+<img src="docs/media/profile-steps.jpg" width="640" alt="Profile header: photo, round avatar, glass bar">
 
 | Home | Discover | Controls | Lab |
 | --- | --- | --- | --- |
@@ -43,6 +62,27 @@ Liquid Glass UI components for React Native, built to drop into React Navigation
 | `LiquidExpandableSearch` | Round search button that morphs into a field with a close button. |
 | `LiquidSearchHeader` | Header row with a search field under it that rises into the row. |
 | `LiquidMenu` | Glass button that morphs into a menu, with submenus. |
+
+## Quick start
+
+```tsx
+const tabBar = createLiquidBottomTabBar({ search: { route: 'Search' } });
+
+<LiquidHeaderProvider>
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Tabs" component={Tabs} />
+  </Stack.Navigator>
+</LiquidHeaderProvider>
+
+// In any screen:
+useLiquidNavigationHeader(navigation, {
+  title: 'Chats',
+  left: { title: 'Edit', onPress: edit },
+  right: [{ key: 'compose', icon: <ComposeIcon />, onPress: compose }],
+});
+```
+
+See [CONTEXT.md](CONTEXT.md) for the full app shell.
 
 ## Installation
 
@@ -94,7 +134,7 @@ Extra props:
 
 | Prop | Default | Description |
 | --- | --- | --- |
-| `search` | | Adds a search button after the bar that morphs into a field with a close button. The tabs fade out and the bar rises above the keyboard. Takes `placeholder`, `value`, `onChangeText`, `onSubmit`, `expanded`, `defaultExpanded` and `onExpandedChange`. Replaces `accessory`. |
+| `search` | | Adds a search button after the bar that morphs into a field with a close button. The tabs fade out and the bar rises above the keyboard. Takes `placeholder`, `value`, `onChangeText`, `onSubmit`, `expanded`, `defaultExpanded`, `onExpandedChange` and `route`. With `route`, that tab screen (it gets no tab item) is shown while searching and receives the text as `route.params.query`; closing returns to the previous tab. Replaces `accessory`. |
 | `accessory` | | Element in a separate glass circle after the bar. Wrap it in a `Pressable`. |
 | `glassStyle` | `'clear'` | `'regular'` or `'clear'`. |
 | `glassTintColor` | theme frost | Tints the glass. Defaults to `colors.tabBarGlass`. |
@@ -173,6 +213,40 @@ With `headerTransparent: true` the content scrolls under the glass. Pad it with 
 
 It reads `title`, `headerTitle`, `headerTitleAlign`, `headerTitleStyle`, `headerTintColor`, `headerLeft`, `headerRight` and `headerBackTitle`. `<LiquidHeader {...props} />` works too.
 
+### Morphing header
+
+One floating header for the whole app, drawn by `LiquidHeaderProvider` around your root navigator. Each screen describes its header with `useLiquidNavigationHeader`; turn off the navigators' own headers. Because the header is shared, it morphs on every push, pop and tab switch.
+
+```tsx
+useLiquidNavigationHeader(navigation, {
+  title: 'Chats',
+  subtitle: undefined,            // with a subtitle the title shows in a glass capsule
+  left: { title: editing ? 'Done' : 'Edit', onPress: toggle },
+  right: [
+    { key: 'story', icon: <PlusIcon />, onPress: () => setPressed('story') },
+    { key: 'compose', icon: <ComposeIcon />, tintColor: '#0A84FF' },
+  ],
+  search: undefined,              // { value, onChangeText }: a circle that becomes a field
+});
+```
+
+- Items in the same place morph when their `key` changes: the glass resizes and the content blurs across.
+- Fewer items: the extra ones slide into their neighbour and fuse. Use `null` to keep a place empty, e.g. `right: [closeButton, null]` merges the second button into the first one, which you pressed.
+- `stretch: true` makes an item take the free width.
+- The back button appears in stacks, not in tabs (`backButton` overrides it).
+
+### Search header
+
+`LiquidSearchHeader` is a full-width field under a header row that rises into it, like Telegram's Contacts. Put it under the shared header with `headerHeight={LIQUID_HEADER_HEIGHT}`, clear the header while searching, and hide the tab bar with `tabBarStyle: { display: 'none' }`.
+
+### Profile header
+
+`LiquidProfileHeader` follows an `Animated.ScrollView`: a full-width photo, then a round avatar over the blurred photo, then a frosted glass bar with the name. Use `useLiquidProfileSnapOffsets()` for the rest positions and `useLiquidProfileEntrance()` to grow the photo out of the chat header's avatar. `LiquidStickyView` pins a control under the bar.
+
+### Right to left
+
+Everything follows `I18nManager.isRTL`: the tab bars fill from the right, search fields and headers mirror, merges slide the other way and switches and sliders flip. Call `I18nManager.forceRTL(true)` and restart the app.
+
 ### Glass view
 
 ```tsx
@@ -196,7 +270,8 @@ Keep a container's `spacing` below the gap between its children: the shapes then
 | `tintColor` | | Tints the glass. |
 | `interactive` | `false` | Native interactive glass on iOS 26. Press highlight on Android. |
 | `cornerRadius` | `style.borderRadius` | Values above half of the shortest side make a capsule. |
-| `morph` | `false` | Animates size and position changes as a liquid morph. |
+| `morph` | `false` | Animates size and position changes as a liquid morph, and blurs content across when the children change. |
+| `fadeBottom` | `0` | iOS: fades the glass out over this many points at its bottom edge. |
 | `colorScheme` | `'system'` | Forces the light or dark material. |
 | `blurRadius` | `8` (`clear`: `2`) | Android: backdrop blur in dp. |
 | `refractionHeight` / `refractionAmount` | `12` / `24` | Android 13+: lens refraction in dp. |
@@ -207,6 +282,7 @@ Keep a container's `spacing` below the gap between its children: the shapes then
 
 ```tsx
 <LiquidButton title="Continue" variant="prominent" onPress={next} />
+<LiquidButton morph title={muted ? 'Unmute' : 'Mute'} onPress={toggleMute} />
 <LiquidIconButton accessibilityLabel="Add" onPress={add}><PlusIcon /></LiquidIconButton>
 <LiquidToggle value={enabled} onValueChange={setEnabled} />
 <LiquidToggle value={on} onValueChange={setOn} onTintColor="#FF3B30" offTintColor="#3A3A3C" thumbTintColor="#FFFFFF" lensTintColor="rgba(255,59,48,0.12)" />
@@ -247,7 +323,7 @@ The glass effects (blur, vibrancy, lens, highlight, shadows) are adapted from [A
 
 ## Example app
 
-The `example` folder is a React Native CLI app with a native stack, bottom tabs with search, top tabs, a controls screen, a glass lab and a light/dark switch. It installs the published package from npm.
+The `example` folder is a React Native CLI app in the style of Telegram on iOS 26: Contacts with a search header, Chats with Edit and merging buttons, a chat screen and channel profile, a Settings-style header search, a tab bar search screen, top tabs, controls, a glass lab, and light/dark and LTR/RTL switches. It installs the published package from npm.
 
 ```sh
 cd example

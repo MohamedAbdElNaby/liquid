@@ -7,24 +7,22 @@ import { HomeScreen } from './screens/HomeScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { ControlsScreen } from './screens/ControlsScreen';
 import { ContactsScreen } from './screens/ContactsScreen';
-import {
-  ContactsIcon,
-  ControlsIcon,
-  DiscoverIcon,
-  HomeIcon,
-} from './TabIcons';
+import { SearchScreen } from './screens/SearchScreen';
+import { ContactsIcon, ControlsIcon, DiscoverIcon, HomeIcon } from './TabIcons';
 
 export type TabParamList = {
   Contacts: undefined;
   Home: undefined;
   Discover: undefined;
   Controls: undefined;
+  Search: { query?: string } | undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
 const tabBar = createLiquidBottomTabBar({
-  search: { placeholder: 'Search photos' },
+  // The search circle opens the Search tab, which gets the text as `query`.
+  search: { placeholder: 'Search photos', route: 'Search' },
 });
 const header = createLiquidHeader({ variant: 'bar' });
 
@@ -58,6 +56,7 @@ export function Tabs() {
         name="Discover"
         component={DiscoverScreen}
         options={{
+          headerShown: false,
           tabBarBadge: 3,
           tabBarIcon: discoverIcon,
         }}
@@ -70,7 +69,11 @@ export function Tabs() {
           tabBarIcon: controlsIcon,
         }}
       />
+      <Tab.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{ headerShown: false }}
+      />
     </Tab.Navigator>
   );
 }
-

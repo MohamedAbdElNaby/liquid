@@ -32,7 +32,8 @@
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",
-    "!**/.*"
+    "!**/.*",
+    "CONTEXT.md"
   ],
   "scripts": {
     "clean": "del-cli lib",

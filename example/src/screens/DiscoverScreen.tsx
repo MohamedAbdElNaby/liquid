@@ -6,7 +6,10 @@ import {
   LiquidGlassView,
   createLiquidTopTabBar,
   useLiquidColors,
+  useLiquidHeaderHeight,
+  useLiquidNavigationHeader,
 } from '@mohamed_abd_elnaby/react-native-liquid';
+import { useNavigation } from '@react-navigation/native';
 import { PHOTOS } from '../data';
 
 const TopTab = createMaterialTopTabNavigator();
@@ -19,10 +22,13 @@ function PhotosTab() {
     <FlatList
       data={PHOTOS}
       numColumns={2}
-      keyExtractor={(item) => item.id}
+      keyExtractor={item => item.id}
       contentContainerStyle={[
         styles.grid,
-        { paddingTop: LIQUID_TOP_TAB_BAR_HEIGHT, paddingBottom: tabBarHeight + 16 },
+        {
+          paddingTop: LIQUID_TOP_TAB_BAR_HEIGHT,
+          paddingBottom: tabBarHeight + 16,
+        },
       ]}
       renderItem={({ item }) => (
         <Image source={{ uri: item.image }} style={styles.tile} />
@@ -37,7 +43,7 @@ function ColorsTab() {
   return (
     <FlatList
       data={PHOTOS}
-      keyExtractor={(item) => item.id}
+      keyExtractor={item => item.id}
       contentContainerStyle={{
         paddingTop: LIQUID_TOP_TAB_BAR_HEIGHT,
         paddingBottom: tabBarHeight + 16,
@@ -67,16 +73,27 @@ function AboutTab() {
 }
 
 export function DiscoverScreen() {
+  const navigation = useNavigation();
+  const headerHeight = useLiquidHeaderHeight();
+
+  // The same floating header as the other tabs, so it morphs between them.
+  useLiquidNavigationHeader(navigation, { title: 'Discover' });
+
   return (
-    <TopTab.Navigator tabBar={tabBar}>
-      <TopTab.Screen name="Photos" component={PhotosTab} />
-      <TopTab.Screen name="Colors" component={ColorsTab} />
-      <TopTab.Screen name="About" component={AboutTab} />
-    </TopTab.Navigator>
+    <View style={[styles.discover, { paddingTop: headerHeight }]}>
+      <TopTab.Navigator tabBar={tabBar}>
+        <TopTab.Screen name="Photos" component={PhotosTab} />
+        <TopTab.Screen name="Colors" component={ColorsTab} />
+        <TopTab.Screen name="About" component={AboutTab} />
+      </TopTab.Navigator>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  discover: {
+    flex: 1,
+  },
   grid: {
     padding: 8,
   },

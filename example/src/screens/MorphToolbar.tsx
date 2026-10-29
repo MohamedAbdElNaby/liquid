@@ -14,7 +14,7 @@ const SIZE = 44;
  */
 export function MorphToolbar() {
   const [selecting, setSelecting] = useState(false);
-  const mode = useColorScheme()??'light';
+  const mode = useColorScheme() ?? 'light';
 
   return (
     // Spacing below the gap: the glass fuses only while the buttons morph.
@@ -35,7 +35,10 @@ export function MorphToolbar() {
             items={[
               { title: 'Share', systemImage: 'square.and.arrow.up' },
               { title: 'Duplicate', systemImage: 'plus.square.on.square' },
-              { title: 'Add to Album', systemImage: 'rectangle.stack.badge.plus' },
+              {
+                title: 'Add to Album',
+                systemImage: 'rectangle.stack.badge.plus',
+              },
               { title: 'Delete', systemImage: 'trash', destructive: true },
             ]}
             style={styles.menu}
@@ -53,7 +56,7 @@ export function MorphToolbar() {
       >
         <Pressable
           accessibilityRole="button"
-          onPress={() => setSelecting((value) => !value)}
+          onPress={() => setSelecting(value => !value)}
           style={styles.fill}
         >
           <Text style={selecting ? styles.icon : styles.label}>

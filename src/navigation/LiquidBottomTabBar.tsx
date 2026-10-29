@@ -56,7 +56,15 @@ const HeightCallbackContext: Context<HeightCallback> = (() => {
 })();
 
 /** Search shown as a glass circle after the bar, like the search tab of iOS 26. */
-export type LiquidTabBarSearchOptions = Pick<
+export type LiquidTabBarSearchOptions = {
+  /**
+   * A tab route shown while searching, like the search tab of iOS 26. It
+   * gets no tab item; opening the field switches to it and closing returns
+   * to the previous tab. Every change of the text is passed to it as the
+   * `query` param, so the screen reads `route.params?.query`.
+   */
+  route?: string;
+} & Pick<
   LiquidExpandableSearchProps,
   | 'expanded'
   | 'defaultExpanded'
@@ -159,7 +167,29 @@ export function LiquidBottomTabBar({
   const [ownSearchExpanded, setOwnSearchExpanded] = useState(
     search?.defaultExpanded ?? false
   );
-  const searching = search != null && (search.expanded ?? ownSearchExpanded);
+  const searchRoute = search?.route;
+  const [ownQuery, setOwnQuery] = useState('');
+  const query = search?.value ?? ownQuery;
+  const focusedRoute = state.routes[state.index]!;
+  const searching =
+    search != null &&
+    (search.expanded ??
+      (searchRoute != null
+        ? focusedRoute.name === searchRoute || ownSearchExpanded
+        : ownSearchExpanded));
+  // The search route has no tab item; while it is shown, the pill stays on
+  // the tab that was open before.
+  const visibleRoutes = state.routes.filter(
+    (route) => route.name !== searchRoute
+  );
+  const lastTab = useRef(focusedRoute.name);
+  if (focusedRoute.name !== searchRoute) {
+    lastTab.current = focusedRoute.name;
+  }
+  const selectedIndex = Math.max(
+    visibleRoutes.findIndex((route) => route.name === lastTab.current),
+    0
+  );
   // iOS tucks the bar into the home indicator area. On Android the system bar (buttons or
   // gesture pill) is a solid strip, so the bar sits fully above it.
   const bottom =
@@ -176,7 +206,9 @@ export function LiquidBottomTabBar({
 
   const selectTab = (index: number) => {
     const { state: current, navigation: nav } = latest.current;
-    const route = current.routes[index];
+    const route = current.routes.filter(
+      (candidate) => candidate.name !== searchRoute
+    )[index];
     if (!route) {
       return;
     }
@@ -185,13 +217,18 @@ export function LiquidBottomTabBar({
       target: route.key,
       canPreventDefault: true,
     });
-    if (index !== current.index && !event.defaultPrevented) {
+    if (
+      route.key !== current.routes[current.index]?.key &&
+      !event.defaultPrevented
+    ) {
       nav.navigate(route.name, route.params);
     }
   };
 
   const longPressTab = (index: number) => {
-    const route = latest.current.state.routes[index];
+    const route = latest.current.state.routes.filter(
+      (candidate) => candidate.name !== searchRoute
+    )[index];
     if (route) {
       latest.current.navigation.emit({
         type: 'tabLongPress',
@@ -213,7 +250,7 @@ export function LiquidBottomTabBar({
   const bar = (
     <NativeLiquidTabBar
       accessibilityRole="tablist"
-      selectedIndex={state.index}
+      selectedIndex={selectedIndex}
       glassStyle={glassStyle}
       glassTintColor={glassTintColor}
       backdropBlur={blur}
@@ -227,7 +264,7 @@ export function LiquidBottomTabBar({
       onTabLongPress={(event) => longPressTab(event.nativeEvent.index)}
       style={[styles.bar, { height }, style]}
     >
-      {state.routes.map((route, i) => {
+      {visibleRoutes.map((route, i) => {
         const { options } = descriptors[route.key]!;
 
         return (
@@ -235,7 +272,7 @@ export function LiquidBottomTabBar({
             key={route.key}
             options={options}
             title={getTitle(options, route.name)}
-            focused={i === state.index}
+            focused={i === selectedIndex}
             colors={colors}
             activeTintColor={
               activeTintColor ?? options.tabBarActiveTintColor ?? colors.tint
@@ -287,8 +324,33 @@ export function LiquidBottomTabBar({
           <LiquidExpandableSearch
             {...search}
             expanded={searching}
+            value={query}
+            onChangeText={(text) => {
+              setOwnQuery(text);
+              if (searchRoute != null) {
+                latest.current.navigation.navigate({
+                  name: searchRoute,
+                  params: { query: text },
+                  merge: true,
+                } as never);
+              }
+              search.onChangeText?.(text);
+            }}
             onExpandedChange={(next) => {
               setOwnSearchExpanded(next);
+              if (searchRoute != null) {
+                const nav = latest.current.navigation;
+                if (next) {
+                  nav.navigate({
+                    name: searchRoute,
+                    params: { query },
+                    merge: true,
+                  } as never);
+                } else {
+                  setOwnQuery('');
+                  nav.navigate(lastTab.current as never);
+                }
+              }
               search.onExpandedChange?.(next);
             }}
             height={height}

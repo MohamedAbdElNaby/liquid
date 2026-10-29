@@ -182,6 +182,36 @@ Items: `key` (a new key in the same place blurs the content across), `title`,
 so a search circle can stretch into a field). Pad content with
 `useLiquidHeaderHeight()`.
 
+Your own back icon, title and subtitle, and a title next to the back button:
+
+```tsx
+useLiquidNavigationHeader(navigation, {
+  title: 'Measures', // also keys the morph when the title changes
+  subtitle: 'All available measures',
+  // Your own components, e.g. text in the app's font:
+  titleComponent: <AppText weight="600">Measures</AppText>,
+  subtitleComponent: <AppText size={13}>All available measures</AppText>,
+  // Or just restyle the built-in text:
+  titleStyle: { fontFamily: 'Helvetica Neue LT Arabic', fontWeight: '500' },
+  subtitleStyle: { fontSize: 13 },
+  backIcon: <MyBackIcon />,         // replaces the chevron
+  titlePosition: 'leading',         // capsule right after the back button
+  titleCapsule: true,               // a centered title in a capsule without a subtitle
+  onTitlePress: openDetails,
+});
+```
+
+A `leading` title shares one glass with the back button: pressing either
+swells it until the two melt together, like neighbouring glass buttons.
+
+For an app that flips its layout itself (not with `I18nManager.forceRTL`),
+give the provider the direction: back button and leading title go right in
+`rtl`, and the chevron points right.
+
+```tsx
+<LiquidHeaderProvider direction={isArabic ? 'rtl' : 'ltr'}>…</LiquidHeaderProvider>
+```
+
 ### Profile header
 
 ```tsx

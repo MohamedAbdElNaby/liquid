@@ -7,7 +7,14 @@ type IconProps = {
   size?: number;
 };
 
-export function ChevronLeftIcon({ color, size = 20 }: IconProps) {
+export function ChevronLeftIcon({
+  color,
+  size = 20,
+  mirrored = I18nManager.isRTL,
+}: IconProps & {
+  /** Points right, for a right-to-left layout. Defaults to `I18nManager`. */
+  mirrored?: boolean;
+}) {
   const arm = size * 0.55;
 
   return (
@@ -16,7 +23,7 @@ export function ChevronLeftIcon({ color, size = 20 }: IconProps) {
       style={[
         styles.center,
         { width: size, height: size },
-        I18nManager.isRTL ? styles.mirrored : null,
+        mirrored ? styles.mirrored : null,
       ]}
     >
       <View

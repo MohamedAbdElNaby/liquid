@@ -19,6 +19,7 @@ import {
   View,
   type ColorValue,
   type StyleProp,
+  type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -72,6 +73,30 @@ export type LiquidNavigationHeaderOptions = {
   right?: (LiquidHeaderItem | null)[];
   /** Defaults to whether the screen can go back in a stack (not in tabs). */
   backButton?: boolean;
+  /** Replaces the back button's chevron, e.g. your own icon. */
+  backIcon?: ReactNode;
+  /**
+   * Replaces the title text, e.g. your own `Text` with the app's font. Use
+   * `title` too when the title changes, so the capsule morphs across.
+   */
+  titleComponent?: ReactNode;
+  /** Replaces the subtitle text, like `titleComponent`. */
+  subtitleComponent?: ReactNode;
+  /** Merged into the title text style: font family, weight, size, color. */
+  titleStyle?: StyleProp<TextStyle>;
+  /** Merged into the subtitle text style. */
+  subtitleStyle?: StyleProp<TextStyle>;
+  /**
+   * `center` (default) puts the title in the middle of the bar. `leading`
+   * puts it in a glass capsule right after the back (or `left`) button, in
+   * the same glass: pressing one swells it into the other.
+   */
+  titlePosition?: 'center' | 'leading';
+  /**
+   * Draws a centered title in a glass capsule even without a subtitle.
+   * A subtitle or `titlePosition: 'leading'` always use the capsule.
+   */
+  titleCapsule?: boolean;
   /**
    * A search circle at the trailing edge that morphs into a field with a
    * close button, like `LiquidExpandableSearch`. The other buttons and the
@@ -116,6 +141,12 @@ const HeaderContext = createContext<HeaderStore | null>(null);
 export type LiquidHeaderProviderProps = {
   children: ReactNode;
   colorScheme?: LiquidColorSchemeSetting;
+  /**
+   * Lays the header out left-to-right or right-to-left: the back button and
+   * a leading title go on the right in `rtl`. Defaults to `I18nManager`; set
+   * it when the app flips its layout itself instead of with `forceRTL`.
+   */
+  direction?: 'ltr' | 'rtl';
   style?: StyleProp<ViewStyle>;
 };
 
@@ -135,6 +166,7 @@ export type LiquidHeaderProviderProps = {
 export function LiquidHeaderProvider({
   children,
   colorScheme,
+  direction,
   style,
 }: LiquidHeaderProviderProps) {
   const [active, setActive] = useState<ActiveHeader | null>(null);
@@ -168,7 +200,11 @@ export function LiquidHeaderProvider({
     <HeaderContext.Provider value={store}>
       <View style={[styles.root, style]}>
         {children}
-        <FloatingHeader header={active} colorScheme={colorScheme} />
+        <FloatingHeader
+          header={active}
+          colorScheme={colorScheme}
+          direction={direction}
+        />
       </View>
     </HeaderContext.Provider>
   );
@@ -246,10 +282,13 @@ const MERGE_SPACING = 6;
 function FloatingHeader({
   header,
   colorScheme,
+  direction,
 }: {
   header: ActiveHeader | null;
   colorScheme?: LiquidColorSchemeSetting;
+  direction?: 'ltr' | 'rtl';
 }) {
+  const isRTL = direction != null ? direction === 'rtl' : I18nManager.isRTL;
   const insets = useSafeAreaInsets();
   const { colors } = useLiquidColors(colorScheme);
   const options = header?.options;
@@ -270,7 +309,7 @@ function FloatingHeader({
     (_, i) => (explicit ? right[i] : right[i - firstSlot]) ?? null
   );
   // Slots are laid out right to left in RTL, but transforms don't flip.
-  const slideDistance = (SLOT_SIZE + SLOT_GAP) * (I18nManager.isRTL ? -1 : 1);
+  const slideDistance = (SLOT_SIZE + SLOT_GAP) * (isRTL ? -1 : 1);
   // A button that goes away slides into a neighbour that stays (the pressed
   // one), and one that comes back grows out of a neighbour that was already
   // there. Buttons that all come back together grow in place. The direction
@@ -302,19 +341,98 @@ function FloatingHeader({
   const left: LiquidHeaderItem | undefined = header?.back
     ? {
         key: 'liquid-back',
-        icon: <ChevronLeftIcon color={colors.label} />,
+        icon: options?.backIcon ?? (
+          <ChevronLeftIcon color={colors.label} mirrored={isRTL} />
+        ),
         onPress: header.goBack,
         accessibilityLabel: 'Back',
       }
     : options?.left;
 
+  const hasTitle = options?.title != null || options?.titleComponent != null;
+  const hasSubtitle =
+    options?.subtitle != null || options?.subtitleComponent != null;
+  const leadingTitle =
+    options?.titlePosition === 'leading' && hasTitle && !searching;
+  const inCapsule = hasSubtitle || options?.titleCapsule === true;
+  const titleContent =
+    options?.titleComponent ??
+    (options?.title != null ? (
+      <Text
+        numberOfLines={1}
+        style={[
+          leadingTitle || inCapsule ? styles.capsuleTitle : styles.title,
+          { color: colors.label },
+          options.titleStyle,
+        ]}
+      >
+        {options.title}
+      </Text>
+    ) : null);
+  const subtitleContent =
+    options?.subtitleComponent ??
+    (options?.subtitle != null ? (
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.subtitle,
+          { color: colors.secondaryLabel },
+          options.subtitleStyle,
+        ]}
+      >
+        {options.subtitle}
+      </Text>
+    ) : null);
+  const titleCapsule = (leading: boolean) => (
+    <MorphGlass
+      colorScheme={colorScheme}
+      cornerRadius={SLOT_SIZE / 2}
+      contentKey={`${options?.title ?? ''}\n${options?.subtitle ?? ''}`}
+      onPress={options?.onTitlePress}
+      accessibilityRole="header"
+      style={leading ? styles.leadingTitle : undefined}
+      contentStyle={[
+        styles.titleCapsule,
+        leading ? styles.titleCapsuleLeading : null,
+      ]}
+    >
+      {titleContent}
+      {subtitleContent}
+    </MorphGlass>
+  );
+
+  const leftButton = (
+    <Presence float={!leadingTitle}>
+      {left != null ? (
+        <HeaderButton item={left} colorScheme={colorScheme} />
+      ) : null}
+    </Presence>
+  );
+
   const buttons = (
     <>
-      <Presence float>
-        {left != null ? (
-          <HeaderButton item={left} colorScheme={colorScheme} />
-        ) : null}
-      </Presence>
+      {leadingTitle ? (
+        // The back button and the title share one glass: pressing either
+        // swells it until they melt together, like neighbouring buttons.
+        <LiquidGlassContainer
+          pointerEvents="box-none"
+          spacing={MERGE_SPACING}
+          style={styles.leading}
+        >
+          {leftButton}
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.leadingTitleSlot,
+              left != null ? styles.afterButton : null,
+            ]}
+          >
+            {titleCapsule(true)}
+          </View>
+        </LiquidGlassContainer>
+      ) : (
+        leftButton
+      )}
       <LiquidGlassContainer
         pointerEvents="box-none"
         spacing={MERGE_SPACING}
@@ -347,6 +465,7 @@ function FloatingHeader({
       pointerEvents="box-none"
       style={[
         styles.header,
+        direction != null ? { direction } : null,
         { paddingTop: insets.top, height: insets.top + LIQUID_HEADER_HEIGHT },
       ]}
     >
@@ -377,41 +496,15 @@ function FloatingHeader({
             shrinking away never pushes the other out of the center. */}
         <View pointerEvents="box-none" style={styles.titleSlot}>
           <Presence>
-            {options?.subtitle != null ? (
-              <MorphGlass
-                colorScheme={colorScheme}
-                cornerRadius={SLOT_SIZE / 2}
-                contentKey={`${options.title}\n${options.subtitle}`}
-                onPress={options.onTitlePress}
-                accessibilityRole="header"
-                contentStyle={styles.titleCapsule}
-              >
-                <Text
-                  numberOfLines={1}
-                  style={[styles.capsuleTitle, { color: colors.label }]}
-                >
-                  {options.title}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.subtitle, { color: colors.secondaryLabel }]}
-                >
-                  {options.subtitle}
-                </Text>
-              </MorphGlass>
-            ) : null}
+            {!leadingTitle && inCapsule && hasTitle && !searching
+              ? titleCapsule(false)
+              : null}
           </Presence>
         </View>
         <View pointerEvents="box-none" style={styles.titleSlot}>
-          {options?.subtitle == null && options?.title != null && !searching ? (
-            <FadeIn key={options.title}>
-              <Text
-                accessibilityRole="header"
-                numberOfLines={1}
-                style={[styles.title, { color: colors.label }]}
-              >
-                {options.title}
-              </Text>
+          {!leadingTitle && !inCapsule && hasTitle && !searching ? (
+            <FadeIn key={options?.title ?? 'title'}>
+              <View accessibilityRole="header">{titleContent}</View>
             </FadeIn>
           ) : null}
         </View>
@@ -626,7 +719,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rightSlot: {
-    marginLeft: SLOT_GAP,
+    marginStart: SLOT_GAP,
+  },
+  leading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+  },
+  leadingTitleSlot: {
+    flexShrink: 1,
+  },
+  afterButton: {
+    marginStart: SLOT_GAP,
+  },
+  leadingTitle: {
+    flexShrink: 1,
   },
   stretchSlot: {
     flex: 1,
@@ -640,7 +747,7 @@ const styles = StyleSheet.create({
   },
   floating: {
     position: 'absolute',
-    left: 16,
+    start: 16,
   },
   stretched: {
     flex: 1,
@@ -669,11 +776,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   titleCapsule: {
-    height: SLOT_SIZE,
+    // Grows for a title over a subtitle in a tall font.
+    minHeight: SLOT_SIZE,
     maxWidth: 220,
     paddingHorizontal: 18,
+    paddingVertical: 4,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  titleCapsuleLeading: {
+    maxWidth: undefined,
+    // Lines the text up with the back button's side.
+    alignItems: 'flex-start',
   },
   capsuleTitle: {
     fontSize: 15,
@@ -703,6 +817,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   titleWithIcon: {
-    marginLeft: 6,
+    marginStart: 6,
   },
 });

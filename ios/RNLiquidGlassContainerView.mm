@@ -41,6 +41,26 @@ using namespace facebook::react;
   [childComponentView removeFromSuperview];
 }
 
+#pragma mark - Touches
+
+// The effect view fills the component, so UIKit stops a touch on its empty part
+// there, even with pointerEvents="box-none" (React Native only passes touches
+// through its own views). Hand those to whatever is behind, like an empty plain
+// View: the glass between a header's buttons must not block the screen under it
+// (e.g. a title drawn by the page below the floating header).
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+  UIView *hit = [super hitTest:point withEvent:event];
+  BOOL onEffectItself = hit == _effectView ||
+      ([hit isDescendantOfView:_effectView] && ![hit isDescendantOfView:_effectView.contentView]) ||
+      hit == _effectView.contentView;
+  if (hit != nil && onEffectItself) {
+    PointerEventsMode mode = _props->pointerEvents;
+    return mode == PointerEventsMode::BoxNone || mode == PointerEventsMode::None ? nil : self;
+  }
+  return hit;
+}
+
 #pragma mark - Layout
 
 // The default content frame excludes padding and borders. The effect view has

@@ -16,7 +16,8 @@ break the animations. For every prop, see `USAGE.md` next to this file.
 - Components follow the system light/dark theme (`colorScheme="system"`).
   `Appearance.setColorScheme('dark' | 'light' | 'auto')` switches the whole app.
 - Right-to-left layout works with `I18nManager.forceRTL(true)` (applies on the
-  next launch). Do not mirror anything by hand.
+  next launch). Do not mirror anything by hand. An app that flips its layout
+  in JS instead passes `direction="rtl"` to `LiquidHeaderProvider`.
 
 ## The app shell
 
@@ -80,7 +81,12 @@ Rules that make the header morph:
 - Pad content with `useLiquidHeaderHeight()` at the top and
   `useBottomTabBarHeight()` at the bottom; both bars float over the content.
 - The back button appears automatically in a stack (`canGoBack()`), never for
-  tabs. Force it with `backButton: true | false`.
+  tabs. Force it with `backButton: true | false`; `backIcon` replaces the chevron.
+- Titles: `titleComponent` / `subtitleComponent` take your own text (the app's
+  font), or `titleStyle` / `subtitleStyle` restyle the built-in text. Keep
+  passing `title` so a changed title still morphs. `titlePosition: 'leading'`
+  puts the capsule right after the back button in the same glass, so pressing
+  either melts into the other; `titleCapsule` boxes a centered title.
 
 ## Header recipes (`useLiquidNavigationHeader`)
 

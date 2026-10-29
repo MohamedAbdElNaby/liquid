@@ -34,6 +34,8 @@ export interface NativeProps extends ViewProps {
   rimSideOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 0.35>;
   /** The rim on the side away from the light (bottom-right), e.g. a faint dark line so the highlight reads on white. */
   rimShadeColor?: ColorValue;
+  /** A hairline all round the outside of the glass, under the rim. */
+  rimEdgeColor?: ColorValue;
   /** iOS: a soft white reflection across the top of the glass, 0 (off) to 1. */
   sheenOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
 

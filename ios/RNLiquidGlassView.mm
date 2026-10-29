@@ -71,6 +71,9 @@ static void RNLiquidAnimate(void (^animations)(void))
   CGFloat _rimWidth;
   CGFloat _rimSideOpacity;
   UIColor *_rimShadeColor;
+  // A hairline all round the outside (rimEdgeColor), under the rim.
+  CAShapeLayer *_rimEdge;
+  UIColor *_rimEdgeColor;
   // Reflection (sheenOpacity): white fading down from the top, clipped to the shape.
   CAGradientLayer *_sheen;
   CGFloat _sheenOpacity;
@@ -103,9 +106,12 @@ static void RNLiquidAnimate(void (^animations)(void))
 - (void)mountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
 {
   [_effectView.contentView insertSubview:childComponentView atIndex:index];
-  // The sheen and rim stay above the content.
+  // The sheen, edge and rim stay above the content.
   if (_sheen != nil) {
     [_effectView.contentView.layer addSublayer:_sheen];
+  }
+  if (_rimEdge != nil) {
+    [_effectView.contentView.layer addSublayer:_rimEdge];
   }
   if (_rim != nil) {
     [_effectView.contentView.layer addSublayer:_rim];
@@ -206,11 +212,14 @@ static void RNLiquidAnimate(void (^animations)(void))
   }
   UIColor *rimColor = RCTUIColorFromSharedColor(newViewProps.rimColor);
   UIColor *rimShadeColor = RCTUIColorFromSharedColor(newViewProps.rimShadeColor);
+  UIColor *rimEdgeColor = RCTUIColorFromSharedColor(newViewProps.rimEdgeColor);
   if (![rimColor isEqual:_rimColor] || _rimWidth != newViewProps.rimWidth ||
       _rimSideOpacity != newViewProps.rimSideOpacity ||
-      (rimShadeColor != _rimShadeColor && ![rimShadeColor isEqual:_rimShadeColor])) {
+      (rimShadeColor != _rimShadeColor && ![rimShadeColor isEqual:_rimShadeColor]) ||
+      (rimEdgeColor != _rimEdgeColor && ![rimEdgeColor isEqual:_rimEdgeColor])) {
     _rimColor = rimColor;
     _rimShadeColor = rimShadeColor;
+    _rimEdgeColor = rimEdgeColor;
     _rimWidth = newViewProps.rimWidth;
     _rimSideOpacity = newViewProps.rimSideOpacity;
     [self applyRim];
@@ -307,6 +316,38 @@ static void RNLiquidAnimate(void (^animations)(void))
 
 - (void)applyRim
 {
+  // The edge: a hairline round the outside, under the rim, so the rim's light
+  // shines against it on light backgrounds.
+  CGFloat edgeWidth = 0;
+  if (_rimEdgeColor != nil) {
+    if (_rimEdge == nil) {
+      _rimEdge = [CAShapeLayer layer];
+      _rimEdge.fillColor = UIColor.clearColor.CGColor;
+    }
+    edgeWidth = 1;
+    CGRect bounds = (CGRect){CGPointZero, self.bounds.size};
+    CGFloat radius = MAX(0, MIN(_cornerRadius, MIN(bounds.size.width, bounds.size.height) / 2));
+    // Inside the glass so it grows with it when pressed, under the rim.
+    CALayer *host = _effectView.contentView.layer;
+    if (_rim.superlayer == host) {
+      [host insertSublayer:_rimEdge below:_rim];
+    } else {
+      [host addSublayer:_rimEdge];
+    }
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    _rimEdge.frame = bounds;
+    _rimEdge.strokeColor = _rimEdgeColor.CGColor;
+    _rimEdge.lineWidth = edgeWidth;
+    _rimEdge.path = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(bounds, edgeWidth / 2, edgeWidth / 2)
+                                               cornerRadius:MAX(0, radius - edgeWidth / 2)]
+                        .CGPath;
+    [CATransaction commit];
+  } else {
+    [_rimEdge removeFromSuperlayer];
+    _rimEdge = nil;
+  }
+
   if (_rimColor == nil || _rimWidth <= 0) {
     [_rim removeFromSuperlayer];
     _rim = nil;
@@ -343,7 +384,8 @@ static void RNLiquidAnimate(void (^animations)(void))
 
   CGRect bounds = (CGRect){CGPointZero, self.bounds.size};
   CGFloat radius = MAX(0, MIN(_cornerRadius, MIN(bounds.size.width, bounds.size.height) / 2));
-  CGFloat inset = _rimWidth / 2;
+  // Just inside the edge, like light on a bevel.
+  CGFloat inset = edgeWidth + _rimWidth / 2;
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
   _rim.frame = bounds;

@@ -62,6 +62,8 @@ internal class GlassState {
   var rimWidth by mutableStateOf(1f)
   /** The rim on the side away from the light (rimShadeColor). */
   var rimShadeColor by mutableStateOf<Int?>(null)
+  /** A hairline all round the outside (rimEdgeColor), with the rim's glint just inside it. */
+  var rimEdgeColor by mutableStateOf<Int?>(null)
   var shadow by mutableStateOf(true)
   /** Fades the glass out over this many dp at its bottom edge. */
   var fadeBottom by mutableFloatStateOf(0f)
@@ -149,6 +151,40 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
       // otherwise light it back up.
       .drawWithContent {
         drawContent()
+        state.rimEdgeColor?.let { edgeArgb ->
+          val radius = min(state.cornerRadius * state.density, min(size.width, size.height) / 2f)
+          val edge = 1.dp.toPx()
+          drawRoundRect(
+            color = Color(edgeArgb),
+            topLeft = androidx.compose.ui.geometry.Offset(edge / 2f, edge / 2f),
+            size = androidx.compose.ui.geometry.Size(size.width - edge, size.height - edge),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius((radius - edge / 2f).coerceAtLeast(0f)),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(edge),
+          )
+          state.rimColor?.let { rimArgb ->
+            // The glint just inside the edge, drawn normally rather than added
+            // like the glass highlight, so it shows on white: bright on the
+            // top-left and bottom-right curves, faint along the sides.
+            val rim = Color(rimArgb)
+            val side = rim.copy(alpha = rim.alpha * 0.2f)
+            val stroke = state.rimWidth.dp.toPx()
+            val inset = edge + stroke / 2f
+            drawRoundRect(
+              brush = Brush.linearGradient(
+                0f to rim,
+                0.38f to side,
+                0.62f to side,
+                1f to rim,
+                start = androidx.compose.ui.geometry.Offset.Zero,
+                end = androidx.compose.ui.geometry.Offset(size.width, size.height),
+              ),
+              topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+              size = androidx.compose.ui.geometry.Size(size.width - inset * 2f, size.height - inset * 2f),
+              cornerRadius = androidx.compose.ui.geometry.CornerRadius((radius - inset).coerceAtLeast(0f)),
+              style = androidx.compose.ui.graphics.drawscope.Stroke(stroke),
+            )
+          }
+        }
         state.rimShadeColor?.let { argb ->
           // The far side of the rim: clear at the top-left, the shade at the
           // bottom-right, so the highlight reads as a reflection on white.

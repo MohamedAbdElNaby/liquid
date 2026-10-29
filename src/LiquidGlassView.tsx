@@ -60,6 +60,12 @@ export type LiquidGlassViewProps = ViewProps & {
    */
   rimShadeColor?: ColorValue;
   /**
+   * A hairline all round the outside of the glass, under the rim, e.g.
+   * `rgba(0, 0, 0, 0.12)`. The rim's light then shines against an edge, so
+   * it reads as a glint on white pages. Off when unset.
+   */
+  rimEdgeColor?: ColorValue;
+  /**
    * iOS: a soft white reflection across the top of the glass, like light
    * catching it, 0 (off) to 1. @default 0
    */

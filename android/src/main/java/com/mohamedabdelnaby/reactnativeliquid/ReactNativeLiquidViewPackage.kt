@@ -16,6 +16,8 @@ class ReactNativeLiquidViewPackage : BaseReactPackage() {
       LiquidTabBarViewManager(),
       LiquidMenuViewManager(),
       LiquidSearchViewManager(),
+      LiquidScrollEdgeViewManager(),
+      LiquidScrollEdgeContainerViewManager(),
     )
   }
 

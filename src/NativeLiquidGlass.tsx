@@ -11,6 +11,10 @@ import type { NativeProps as SearchProps } from './native/LiquidSearchNativeComp
 
 export function NativeLiquidGlassView({
   fadeBottom: _fadeBottom,
+  rimColor: _rimColor,
+  rimWidth: _rimWidth,
+  rimSideOpacity: _rimSideOpacity,
+  sheenOpacity: _sheenOpacity,
   glassStyle,
   glassTintColor,
   cornerRadius,
@@ -147,4 +151,20 @@ export function NativeLiquidSearch({
   ...rest
 }: SearchProps) {
   return <View {...(rest as ViewProps)} />;
+}
+
+/** The system scroll edge effect is iOS-only: nothing to do elsewhere. */
+export function NativeLiquidScrollEdge(
+  _props: ViewProps & { hideTopEdge?: boolean }
+) {
+  return null;
+}
+
+/** No scroll edge effect elsewhere: a plain view. */
+export function NativeLiquidScrollEdgeContainer({
+  extendScrollEdge: _extendScrollEdge,
+  screenKey: _screenKey,
+  ...props
+}: ViewProps & { extendScrollEdge?: boolean; screenKey?: string }) {
+  return <View {...props} />;
 }

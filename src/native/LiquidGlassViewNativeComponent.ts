@@ -23,6 +23,17 @@ export interface NativeProps extends ViewProps {
   fadeBottom?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
   /** Forces the light or dark appearance of the material. */
   colorScheme?: CodegenTypes.WithDefault<'system' | 'light' | 'dark', 'system'>;
+  /**
+   * A specular rim along the edge: brightest on the top-left and bottom-right
+   * curves, fading along the sides, like iOS 26 glass. Off when unset.
+   */
+  rimColor?: ColorValue;
+  /** Width of the rim in points. */
+  rimWidth?: CodegenTypes.WithDefault<CodegenTypes.Float, 1>;
+  /** iOS: how bright the rim stays along the sides (0 = gone, 1 = even all round). */
+  rimSideOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 0.35>;
+  /** iOS: a soft white reflection across the top of the glass, 0 (off) to 1. */
+  sheenOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
 
   // Android only (AndroidLiquidGlass by Kyant0)
   blurRadius?: CodegenTypes.WithDefault<CodegenTypes.Float, 3>;

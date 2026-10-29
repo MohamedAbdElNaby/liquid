@@ -82,6 +82,15 @@ Rules that make the header morph:
   `useBottomTabBarHeight()` at the bottom; both bars float over the content.
 - The back button appears automatically in a stack (`canGoBack()`), never for
   tabs. Force it with `backButton: true | false`; `backIcon` replaces the chevron.
+- Glass: `glass` ({ glassStyle, colorScheme, tintColor }) styles every button and
+  the title capsule; `backGlass` / `titleGlass` override it, `titleGlass: false`
+  drops the title's glass. `<LiquidNavigationHeader navigation={…} {...options} />`
+  is the same as the hook, as JSX.
+- `edge` (JSX, per screen) is drawn across the top of the screen behind the
+  buttons, e.g. your own status-bar glass; without it the system's scroll
+  edge effect shows.
+- `LiquidHeaderProvider scrollEdgeEffect={false}` hides iOS 26's top scroll edge
+  effect on all scroll views (native; rebuild after installing).
 - Titles: `titleComponent` / `subtitleComponent` take your own text (the app's
   font), or `titleStyle` / `subtitleStyle` restyle the built-in text. Keep
   passing `title` so a changed title still morphs. `titlePosition: 'leading'`

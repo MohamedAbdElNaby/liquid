@@ -94,12 +94,16 @@ export {
 } from './navigation/LiquidHeader';
 export {
   LiquidHeaderProvider,
+  LiquidNavigationHeader,
   useLiquidNavigationHeader,
+  type LiquidHeaderGlass,
+  type LiquidHeaderEdgeGlass,
   type LiquidHeaderItem,
   type LiquidHeaderSearch,
   type LiquidHeaderNavigation,
   type LiquidHeaderProviderProps,
   type LiquidNavigationHeaderOptions,
+  type LiquidNavigationHeaderProps,
 } from './navigation/LiquidNavigationHeader';
 export {
   createLiquidBottomTabBar,

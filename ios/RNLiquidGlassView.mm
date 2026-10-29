@@ -64,6 +64,15 @@ static void RNLiquidAnimate(void (^animations)(void))
   // content then crossfades with a blur and stays in place while the glass
   // moves, instead of fading in after it.
   BOOL _contentSwapped;
+  // Specular rim (rimColor): a diagonal gradient drawn only along the edge.
+  CAGradientLayer *_rim;
+  CAShapeLayer *_rimMask;
+  UIColor *_rimColor;
+  CGFloat _rimWidth;
+  CGFloat _rimSideOpacity;
+  // Reflection (sheenOpacity): white fading down from the top, clipped to the shape.
+  CAGradientLayer *_sheen;
+  CGFloat _sheenOpacity;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -183,6 +192,19 @@ static void RNLiquidAnimate(void (^animations)(void))
     [self applyFade];
   }
 
+  if (_sheenOpacity != newViewProps.sheenOpacity) {
+    _sheenOpacity = newViewProps.sheenOpacity;
+    [self applySheen];
+  }
+  UIColor *rimColor = RCTUIColorFromSharedColor(newViewProps.rimColor);
+  if (![rimColor isEqual:_rimColor] || _rimWidth != newViewProps.rimWidth ||
+      _rimSideOpacity != newViewProps.rimSideOpacity) {
+    _rimColor = rimColor;
+    _rimWidth = newViewProps.rimWidth;
+    _rimSideOpacity = newViewProps.rimSideOpacity;
+    [self applyRim];
+  }
+
   if (oldViewProps.cornerRadius != newViewProps.cornerRadius) {
     _cornerRadius = newViewProps.cornerRadius;
     [self applyCornerRadius];
@@ -227,6 +249,88 @@ static void RNLiquidAnimate(void (^animations)(void))
     _effectView.effect = [UIBlurEffect effectWithStyle:style];
     _effectView.contentView.backgroundColor = [tintColor colorWithAlphaComponent:0.35];
   }
+}
+
+/// The rim: bright on the top-left and bottom-right curves, clear along the
+/// sides, masked to a stroke following the glass's rounded shape.
+/// The reflection: light catching the top of the glass. Drawn over the effect
+/// and its content, under the rim, clipped to the glass's rounded shape.
+- (void)applySheen
+{
+  if (_sheenOpacity <= 0) {
+    [_sheen removeFromSuperlayer];
+    _sheen = nil;
+    return;
+  }
+  if (_sheen == nil) {
+    _sheen = [CAGradientLayer layer];
+    _sheen.startPoint = CGPointMake(0.5, 0);
+    _sheen.endPoint = CGPointMake(0.5, 1);
+    _sheen.locations = @[ @0, @0.42, @0.68, @1 ];
+    _sheen.masksToBounds = YES;
+    _sheen.cornerCurve = kCACornerCurveContinuous;
+  }
+  // Under the rim when there is one.
+  if (_rim.superlayer == self.layer) {
+    [self.layer insertSublayer:_sheen below:_rim];
+  } else {
+    [self.layer addSublayer:_sheen];
+  }
+  CGFloat alpha = MAX(0, MIN(1, _sheenOpacity));
+  // Like light on a lens: bright at the top, clear through the middle, a
+  // faint shade along the bottom, so it reads even over white content.
+  _sheen.colors = @[
+    (__bridge id)[UIColor colorWithWhite:1 alpha:alpha].CGColor,
+    (__bridge id)[UIColor colorWithWhite:1 alpha:alpha * 0.2].CGColor,
+    (__bridge id)[UIColor colorWithWhite:1 alpha:0].CGColor,
+    (__bridge id)[UIColor colorWithWhite:0 alpha:alpha * 0.14].CGColor,
+  ];
+  CGRect bounds = self.bounds;
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  _sheen.frame = bounds;
+  _sheen.cornerRadius = MAX(0, MIN(_cornerRadius, MIN(bounds.size.width, bounds.size.height) / 2));
+  [CATransaction commit];
+}
+
+- (void)applyRim
+{
+  if (_rimColor == nil || _rimWidth <= 0) {
+    [_rim removeFromSuperlayer];
+    _rim = nil;
+    _rimMask = nil;
+    return;
+  }
+  if (_rim == nil) {
+    _rim = [CAGradientLayer layer];
+    _rim.startPoint = CGPointMake(0, 0);
+    _rim.endPoint = CGPointMake(1, 1);
+    _rim.locations = @[ @0, @0.38, @0.62, @1 ];
+    _rimMask = [CAShapeLayer layer];
+    _rimMask.fillColor = UIColor.clearColor.CGColor;
+    _rimMask.strokeColor = UIColor.blackColor.CGColor;
+    _rim.mask = _rimMask;
+  }
+  // Above the effect view and its content.
+  [self.layer addSublayer:_rim];
+
+  // Bright on the top-left and bottom-right curves, fainter along the sides.
+  CGFloat alpha = CGColorGetAlpha(_rimColor.CGColor);
+  CGColorRef side = [_rimColor colorWithAlphaComponent:alpha * MAX(0, MIN(1, _rimSideOpacity))].CGColor;
+  _rim.colors = @[ (__bridge id)_rimColor.CGColor, (__bridge id)side, (__bridge id)side, (__bridge id)_rimColor.CGColor ];
+
+  CGRect bounds = self.bounds;
+  CGFloat radius = MAX(0, MIN(_cornerRadius, MIN(bounds.size.width, bounds.size.height) / 2));
+  CGFloat inset = _rimWidth / 2;
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  _rim.frame = bounds;
+  _rimMask.frame = bounds;
+  _rimMask.lineWidth = _rimWidth;
+  _rimMask.path = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(bounds, inset, inset)
+                                             cornerRadius:MAX(0, radius - inset)]
+                      .CGPath;
+  [CATransaction commit];
 }
 
 - (void)applyCornerRadius
@@ -323,6 +427,8 @@ static void RNLiquidAnimate(void (^animations)(void))
   [super layoutSubviews];
   [self applyCornerRadius];
   [self applyFade];
+  [self applySheen];
+  [self applyRim];
 }
 
 /// A gradient mask on the effect view: opaque, then clear over the last

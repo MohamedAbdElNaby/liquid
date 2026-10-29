@@ -13,7 +13,15 @@ import { usePressAnimation } from './animations';
 export type GlassPressableProps = Omit<PressableProps, 'style' | 'children'> &
   Pick<
     LiquidGlassViewProps,
-    'glassStyle' | 'tintColor' | 'colorScheme' | 'cornerRadius'
+    | 'glassStyle'
+    | 'tintColor'
+    | 'colorScheme'
+    | 'cornerRadius'
+    | 'rimColor'
+    | 'rimWidth'
+    | 'rimSideOpacity'
+    | 'sheenOpacity'
+    | 'blurRadius'
   > & {
     /** Style of the glass surface. */
     style?: StyleProp<ViewStyle>;
@@ -28,6 +36,11 @@ export function GlassPressable({
   tintColor,
   colorScheme,
   cornerRadius,
+  rimColor,
+  rimWidth,
+  rimSideOpacity,
+  sheenOpacity,
+  blurRadius,
   style,
   pressScale = 1.06,
   disabled,
@@ -69,6 +82,11 @@ export function GlassPressable({
           tintColor={tintColor}
           colorScheme={colorScheme}
           cornerRadius={cornerRadius}
+          rimColor={rimColor}
+          rimWidth={rimWidth}
+          rimSideOpacity={rimSideOpacity}
+          sheenOpacity={sheenOpacity}
+          blurRadius={blurRadius}
           style={style}
         >
           {children}

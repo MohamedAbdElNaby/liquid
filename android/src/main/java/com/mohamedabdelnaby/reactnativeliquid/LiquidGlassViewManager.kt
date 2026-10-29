@@ -108,6 +108,16 @@ class LiquidGlassViewManager : ReactViewManager() {
     view.glass { depthEffect = value }
   }
 
+  @ReactProp(name = "rimColor", customType = "Color")
+  fun setRimColor(view: ReactViewGroup, value: Int?) {
+    view.glass { rimColor = value }
+  }
+
+  @ReactProp(name = "rimWidth", defaultFloat = 1f)
+  fun setRimWidth(view: ReactViewGroup, value: Float) {
+    view.glass { rimWidth = value }
+  }
+
   @ReactProp(name = "highlight", defaultBoolean = true)
   fun setHighlight(view: ReactViewGroup, value: Boolean) {
     view.glass { highlight = value }

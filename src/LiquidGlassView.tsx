@@ -41,6 +41,23 @@ export type LiquidGlassViewProps = ViewProps & {
    */
   fadeBottom?: number;
   /**
+   * A specular rim along the edge, brightest on the top-left and bottom-right
+   * curves like iOS 26 glass (Android: its angled highlight, in this colour).
+   */
+  rimColor?: ColorValue;
+  /** Width of the rim in points. @default 1 */
+  rimWidth?: number;
+  /**
+   * iOS: how bright the rim stays along the sides, 0 to 1 (the curves are
+   * always brightest). @default 0.35
+   */
+  rimSideOpacity?: number;
+  /**
+   * iOS: a soft white reflection across the top of the glass, like light
+   * catching it, 0 (off) to 1. @default 0
+   */
+  sheenOpacity?: number;
+  /**
    * Forces the light or dark material.
    * @default 'system'
    */

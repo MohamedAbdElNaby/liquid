@@ -111,5 +111,9 @@ const styles = StyleSheet.create({
   center: {
     alignItems: 'center',
     justifyContent: 'center',
+    // Glyphs are drawn with left/bottom borders: in an RTL subtree Android swaps
+    // left and right borders (iOS doesn't), turning the chevron downwards.
+    // Draw in LTR and mirror explicitly (`mirrored`).
+    direction: 'ltr',
   },
 });

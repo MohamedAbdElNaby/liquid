@@ -8,6 +8,8 @@ import LiquidMenuNativeComponent from './native/LiquidMenuNativeComponent';
 import LiquidSearchNativeComponent from './native/LiquidSearchNativeComponent';
 
 export { default as NativeLiquidGlassContainerView } from './native/LiquidGlassContainerViewNativeComponent';
+export { default as NativeLiquidScrollEdge } from './native/LiquidScrollEdgeNativeComponent';
+export { default as NativeLiquidScrollEdgeContainer } from './native/LiquidScrollEdgeContainerNativeComponent';
 
 type SchemeProps = { colorScheme?: 'system' | 'light' | 'dark' };
 

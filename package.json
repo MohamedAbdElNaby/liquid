@@ -160,6 +160,12 @@
         },
         "RNLiquidSearch": {
           "className": "RNLiquidSearch"
+        },
+        "RNLiquidScrollEdge": {
+          "className": "RNLiquidScrollEdge"
+        },
+        "RNLiquidScrollEdgeContainer": {
+          "className": "RNLiquidScrollEdgeContainer"
         }
       }
     }

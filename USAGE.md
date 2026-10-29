@@ -201,6 +201,39 @@ useLiquidNavigationHeader(navigation, {
 });
 ```
 
+The glass of the header, all of it or per part:
+
+```tsx
+useLiquidNavigationHeader(navigation, {
+  title: 'Measures',
+  glass: { glassStyle: 'regular', colorScheme: 'light', tintColor: 'rgba(255, 255, 255, 0.3)', rimColor: 'white', rimWidth: 1.5 },
+  backGlass: { tintColor: 'rgba(255, 255, 255, 0.5)' }, // overrides `glass` for the back button
+  titleGlass: false, // the title as plain text, no capsule (or a glass object to restyle it)
+});
+```
+
+Your own status-bar edge, per screen (leave it out to keep the system's
+scroll edge effect under the status bar):
+
+```tsx
+useLiquidNavigationHeader(navigation, { title: 'Measures', edge: <MyStatusBarGlass /> });
+```
+
+iOS 26 blurs scroll content under the status bar (its scroll edge effect).
+Turn it off for every scroll view under the provider, e.g. when screens draw
+their own `edge` (no effect on Android, which has none):
+
+```tsx
+<LiquidHeaderProvider scrollEdgeEffect={false}>…</LiquidHeaderProvider>
+```
+
+Prefer JSX? `LiquidNavigationHeader` takes the same options as props and
+renders nothing itself:
+
+```tsx
+<LiquidNavigationHeader navigation={navigation} title="Measures" titlePosition="leading" />
+```
+
 A `leading` title shares one glass with the back button: pressing either
 swells it until the two melt together, like neighbouring glass buttons.
 
@@ -396,7 +429,7 @@ inside another glass shape, such as a toolbar.
 </LiquidGlassContainer>
 ```
 
-`LiquidGlassView` props: `glassStyle`, `tintColor`, `interactive`,
+`LiquidGlassView` props: `glassStyle`, `tintColor`, `interactive`, `rimColor` / `rimWidth` (a specular rim, brightest on the top-left and bottom-right curves),
 `cornerRadius`, `morph`, `colorScheme`, `fadeBottom` (fades the glass out
 over this many points at its bottom edge, like a bar melting into the
 content), and on Android `blurRadius`, `refractionHeight`, `refractionAmount`,

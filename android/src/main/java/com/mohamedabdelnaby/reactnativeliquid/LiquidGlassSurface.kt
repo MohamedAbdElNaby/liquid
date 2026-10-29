@@ -36,6 +36,7 @@ import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.blur
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.lens
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.vibrancy
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.highlight.Highlight
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.highlight.HighlightStyle
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.shadow.Shadow
 import kotlin.math.min
 
@@ -56,6 +57,9 @@ internal class GlassState {
   var chromaticAberration by mutableStateOf(false)
   var depthEffect by mutableStateOf(false)
   var highlight by mutableStateOf(true)
+  /** Specular rim colour (rimColor): the highlight in that colour and width. */
+  var rimColor by mutableStateOf<Int?>(null)
+  var rimWidth by mutableStateOf(1f)
   var shadow by mutableStateOf(true)
   /** Fades the glass out over this many dp at its bottom edge. */
   var fadeBottom by mutableFloatStateOf(0f)
@@ -159,7 +163,11 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
           )
         },
         highlight = {
-          if (!state.highlight) null
+          val rim = state.rimColor
+          if (rim != null) {
+            // Angled like iOS: brightest on the top-left and bottom-right curves.
+            Highlight(width = state.rimWidth.dp, style = HighlightStyle.Default(color = Color(rim)))
+          } else if (!state.highlight) null
           else if (dark) Highlight.Ambient
           else Highlight.Default
         },

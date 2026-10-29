@@ -14,6 +14,7 @@ import {
   Animated,
   I18nManager,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -23,7 +24,11 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LiquidGlassContainer } from '../LiquidGlassView';
+import { LiquidGlassContainer, LiquidGlassView } from '../LiquidGlassView';
+import {
+  NativeLiquidScrollEdge,
+  NativeLiquidScrollEdgeContainer,
+} from '../NativeLiquidGlass';
 import { MorphGlass } from '../components/LiquidButton';
 import {
   LiquidExpandableSearch,
@@ -54,6 +59,49 @@ export type LiquidHeaderItem = {
    * in the same place into a stretched item makes it stretch out.
    */
   stretch?: boolean;
+};
+
+/** The look of a glass shape in the header. */
+export type LiquidHeaderGlass = {
+  /** @default 'regular' */
+  glassStyle?: 'regular' | 'clear';
+  /** Pins the light or dark material. Defaults to the provider's. */
+  colorScheme?: LiquidColorSchemeSetting;
+  /** Tints the glass, e.g. `rgba(255, 255, 255, 0.3)` for a whiter frost. */
+  tintColor?: ColorValue;
+  /**
+   * A specular rim along the edge, brightest on the top-left and bottom-right
+   * curves like iOS 26 glass, so the edge reads on any background.
+   */
+  rimColor?: ColorValue;
+  /** @default 1 */
+  rimWidth?: number;
+  /** iOS: how bright the rim stays along the sides, 0 to 1. @default 0.35 */
+  rimSideOpacity?: number;
+  /** iOS: a soft white reflection across the top of the glass, 0 to 1. */
+  sheenOpacity?: number;
+  /** Android: how blurry the glass is, in dp (iOS glass has a fixed blur). */
+  blurRadius?: number;
+};
+
+/**
+ * Glass behind the header buttons, from the top of the screen down, that melts
+ * into the content below (native `fadeBottom`, iOS and Android), like the
+ * edge of iOS 26 Photos.
+ */
+export type LiquidHeaderEdgeGlass = {
+  /** @default 'regular' */
+  glassStyle?: 'regular' | 'clear';
+  /** Defaults to the provider's. */
+  colorScheme?: LiquidColorSchemeSetting;
+  /** Tints the glass, e.g. a white frost or a dark dim. */
+  tintColor?: ColorValue;
+  /** Android: blur in dp. */
+  blurRadius?: number;
+  /** Height below the status bar. @default header height + 30 */
+  height?: number;
+  /** How many points at the bottom fade out. @default the whole height below the status bar */
+  fadeHeight?: number;
 };
 
 export type LiquidNavigationHeaderOptions = {
@@ -97,6 +145,31 @@ export type LiquidNavigationHeaderOptions = {
    * A subtitle or `titlePosition: 'leading'` always use the capsule.
    */
   titleCapsule?: boolean;
+  /**
+   * Lines the title and subtitle up inside their capsule: `start` (the back
+   * button's side), `center` (default) or `end`.
+   */
+  titleAlign?: 'start' | 'center' | 'end';
+  /** The glass of every button and the title capsule in this header. */
+  glass?: LiquidHeaderGlass;
+  /** Overrides `glass` for the back button. */
+  backGlass?: LiquidHeaderGlass;
+  /**
+   * Overrides `glass` for the title capsule, or `false` to draw the title
+   * (and subtitle) as plain text with no glass behind it.
+   */
+  titleGlass?: LiquidHeaderGlass | false;
+  /**
+   * Drawn across the top of the screen behind the header buttons, e.g. your
+   * own glass under the status bar. It covers the system's scroll edge
+   * effect there; without it, that native effect shows.
+   */
+  edge?: ReactNode;
+  /**
+   * Built-in glass behind the buttons that melts into the content (`true` for
+   * the defaults, or its options). Ignored when `edge` is given.
+   */
+  edgeGlass?: boolean | LiquidHeaderEdgeGlass;
   /**
    * A search circle at the trailing edge that morphs into a field with a
    * close button, like `LiquidExpandableSearch`. The other buttons and the
@@ -147,6 +220,20 @@ export type LiquidHeaderProviderProps = {
    * it when the app flips its layout itself instead of with `forceRTL`.
    */
   direction?: 'ltr' | 'rtl';
+  /**
+   * iOS 26+: `false` turns off the system's scroll edge effect (the blur and
+   * whitening under the status bar) on every scroll view while the provider
+   * is mounted, e.g. when screens draw their own `edge`.
+   * @default true
+   */
+  scrollEdgeEffect?: boolean;
+  /**
+   * iOS 26+: extends the system scroll edge effect of the screen's scroll view
+   * down behind the floating header, like a navigation bar (the content under
+   * it blurs progressively and keeps its colours).
+   * @default true
+   */
+  extendScrollEdge?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -167,6 +254,8 @@ export function LiquidHeaderProvider({
   children,
   colorScheme,
   direction,
+  scrollEdgeEffect = true,
+  extendScrollEdge = true,
   style,
 }: LiquidHeaderProviderProps) {
   const [active, setActive] = useState<ActiveHeader | null>(null);
@@ -200,10 +289,19 @@ export function LiquidHeaderProvider({
     <HeaderContext.Provider value={store}>
       <View style={[styles.root, style]}>
         {children}
+        {/* iOS hides its scroll edge effect; a no-op on Android (no such effect). */}
+        {!scrollEdgeEffect ? (
+          <NativeLiquidScrollEdge
+            hideTopEdge
+            pointerEvents="none"
+            style={styles.scrollEdgeSwitch}
+          />
+        ) : null}
         <FloatingHeader
           header={active}
           colorScheme={colorScheme}
           direction={direction}
+          extendScrollEdge={extendScrollEdge}
         />
       </View>
     </HeaderContext.Provider>
@@ -267,7 +365,36 @@ export function useLiquidNavigationHeader(
   }, [focused, id, store]);
 }
 
+export type LiquidNavigationHeaderProps = LiquidNavigationHeaderOptions & {
+  /** The screen's `navigation`. */
+  navigation: LiquidHeaderNavigation;
+};
+
+/**
+ * `useLiquidNavigationHeader` as a component: put it anywhere in a screen and
+ * pass the same options as props. It renders nothing itself; the provider's
+ * floating header shows these options while the screen is focused.
+ *
+ * ```tsx
+ * <LiquidNavigationHeader
+ *   navigation={navigation}
+ *   title="Measures"
+ *   titlePosition="leading"
+ *   glass={{ glassStyle: 'regular', tintColor: 'rgba(255, 255, 255, 0.3)' }}
+ * />
+ * ```
+ */
+export function LiquidNavigationHeader({
+  navigation,
+  ...options
+}: LiquidNavigationHeaderProps) {
+  useLiquidNavigationHeader(navigation, options);
+  return null;
+}
+
 const SLOT_SIZE = 44;
+/** Larger than half of any capsule's height, so the glass is a full pill. */
+const CAPSULE_RADIUS = 999;
 /** Point of a button's exit where it has merged into its neighbour. */
 const MERGED = 0.45;
 /** Halfway into its neighbour, where a sliding drop is stretched most. */
@@ -283,10 +410,12 @@ function FloatingHeader({
   header,
   colorScheme,
   direction,
+  extendScrollEdge,
 }: {
   header: ActiveHeader | null;
   colorScheme?: LiquidColorSchemeSetting;
   direction?: 'ltr' | 'rtl';
+  extendScrollEdge?: boolean;
 }) {
   const isRTL = direction != null ? direction === 'rtl' : I18nManager.isRTL;
   const insets = useSafeAreaInsets();
@@ -338,6 +467,9 @@ function FloatingHeader({
   previousSlots.current = slots;
   const slideFor = (i: number) => slides.current[i] ?? 0;
 
+  const glass = options?.glass;
+  const titleGlass =
+    options?.titleGlass === false ? null : { ...glass, ...options?.titleGlass };
   const left: LiquidHeaderItem | undefined = header?.back
     ? {
         key: 'liquid-back',
@@ -383,28 +515,66 @@ function FloatingHeader({
         {options.subtitle}
       </Text>
     ) : null);
-  const titleCapsule = (leading: boolean) => (
-    <MorphGlass
-      colorScheme={colorScheme}
-      cornerRadius={SLOT_SIZE / 2}
-      contentKey={`${options?.title ?? ''}\n${options?.subtitle ?? ''}`}
-      onPress={options?.onTitlePress}
-      accessibilityRole="header"
-      style={leading ? styles.leadingTitle : undefined}
-      contentStyle={[
-        styles.titleCapsule,
-        leading ? styles.titleCapsuleLeading : null,
-      ]}
-    >
-      {titleContent}
-      {subtitleContent}
-    </MorphGlass>
-  );
+  const titleAlignStyle = {
+    alignItems:
+      options?.titleAlign === 'start'
+        ? ('flex-start' as const)
+        : options?.titleAlign === 'end'
+          ? ('flex-end' as const)
+          : ('center' as const),
+  };
+  const titleCapsule = (leading: boolean) =>
+    titleGlass == null ? (
+      // No glass: the same box, so the title sits where the capsule would.
+      <Pressable
+        accessibilityRole="header"
+        disabled={options?.onTitlePress == null}
+        onPress={options?.onTitlePress}
+        style={[
+          styles.titleCapsule,
+          leading ? styles.titleCapsuleLeading : null,
+          titleAlignStyle,
+          leading ? styles.leadingTitle : null,
+        ]}
+      >
+        {titleContent}
+        {subtitleContent}
+      </Pressable>
+    ) : (
+      <MorphGlass
+        glassStyle={titleGlass.glassStyle}
+        tintColor={titleGlass.tintColor}
+        rimColor={titleGlass.rimColor}
+        rimSideOpacity={titleGlass.rimSideOpacity}
+        sheenOpacity={titleGlass.sheenOpacity}
+        blurRadius={titleGlass.blurRadius}
+        rimWidth={titleGlass.rimWidth}
+        colorScheme={titleGlass.colorScheme ?? colorScheme}
+        // Larger than half its height: a full pill even with a subtitle.
+        cornerRadius={CAPSULE_RADIUS}
+        contentKey={`${options?.title ?? ''}\n${options?.subtitle ?? ''}`}
+        onPress={options?.onTitlePress}
+        accessibilityRole="header"
+        style={leading ? styles.leadingTitle : undefined}
+        contentStyle={[
+          styles.titleCapsule,
+          leading ? styles.titleCapsuleLeading : null,
+          titleAlignStyle,
+        ]}
+      >
+        {titleContent}
+        {subtitleContent}
+      </MorphGlass>
+    );
 
   const leftButton = (
     <Presence float={!leadingTitle}>
       {left != null ? (
-        <HeaderButton item={left} colorScheme={colorScheme} />
+        <HeaderButton
+          item={left}
+          colorScheme={colorScheme}
+          glass={header?.back ? { ...glass, ...options?.backGlass } : glass}
+        />
       ) : null}
     </Presence>
   );
@@ -451,7 +621,11 @@ function FloatingHeader({
               keepSpace={explicit && item == null}
             >
               {item != null ? (
-                <HeaderButton item={item} colorScheme={colorScheme} />
+                <HeaderButton
+                  item={item}
+                  colorScheme={colorScheme}
+                  glass={glass}
+                />
               ) : null}
             </Presence>
           );
@@ -461,7 +635,9 @@ function FloatingHeader({
   );
 
   return (
-    <View
+    <NativeLiquidScrollEdgeContainer
+      extendScrollEdge={extendScrollEdge}
+      screenKey={header?.id}
       pointerEvents="box-none"
       style={[
         styles.header,
@@ -469,6 +645,19 @@ function FloatingHeader({
         { paddingTop: insets.top, height: insets.top + LIQUID_HEADER_HEIGHT },
       ]}
     >
+      {options?.edge != null ? (
+        // The screen's edge, behind the buttons: from the very top of the
+        // screen, whatever height the element gives itself.
+        <View pointerEvents="none" style={styles.edge}>
+          {options.edge}
+        </View>
+      ) : options?.edgeGlass ? (
+        <HeaderEdgeGlass
+          top={insets.top}
+          colorScheme={colorScheme}
+          options={options.edgeGlass === true ? {} : options.edgeGlass}
+        />
+      ) : null}
       <View pointerEvents="box-none" style={styles.bar}>
         {search != null ? (
           <LiquidExpandableSearch
@@ -509,6 +698,32 @@ function FloatingHeader({
           ) : null}
         </View>
       </View>
+    </NativeLiquidScrollEdgeContainer>
+  );
+}
+
+function HeaderEdgeGlass({
+  top,
+  colorScheme,
+  options,
+}: {
+  top: number;
+  colorScheme?: LiquidColorSchemeSetting;
+  options: LiquidHeaderEdgeGlass;
+}) {
+  const below = options.height ?? LIQUID_HEADER_HEIGHT + 30;
+  const height = top + below;
+  return (
+    <View pointerEvents="none" style={[styles.edge, { height }]}>
+      <LiquidGlassView
+        glassStyle={options.glassStyle ?? 'regular'}
+        colorScheme={options.colorScheme ?? colorScheme}
+        tintColor={options.tintColor}
+        blurRadius={options.blurRadius}
+        // Solid under the status bar, then melts into the content.
+        fadeBottom={options.fadeHeight ?? below}
+        style={{ height }}
+      />
     </View>
   );
 }
@@ -516,18 +731,29 @@ function FloatingHeader({
 function HeaderButton({
   item,
   colorScheme,
+  glass,
 }: {
   item: LiquidHeaderItem;
   colorScheme?: LiquidColorSchemeSetting;
+  glass?: LiquidHeaderGlass;
 }) {
-  const { colors } = useLiquidColors(colorScheme);
+  const scheme = glass?.colorScheme ?? colorScheme;
+  const { colors } = useLiquidColors(scheme);
+  // Only an item's own tint (a prominent button) turns its label white; the
+  // header's glass tint is a frost behind the usual label colour.
   const tinted = item.tintColor != null;
   const labelColor = tinted ? '#FFFFFF' : colors.label;
 
   return (
     <MorphGlass
-      colorScheme={colorScheme}
-      tintColor={item.tintColor}
+      glassStyle={glass?.glassStyle}
+      colorScheme={scheme}
+      tintColor={item.tintColor ?? glass?.tintColor}
+      rimColor={glass?.rimColor}
+      rimSideOpacity={glass?.rimSideOpacity}
+      sheenOpacity={glass?.sheenOpacity}
+      blurRadius={glass?.blurRadius}
+      rimWidth={glass?.rimWidth}
       cornerRadius={SLOT_SIZE / 2}
       contentKey={item.key ?? item.title ?? ''}
       onPress={item.onPress}
@@ -697,6 +923,17 @@ function FadeIn({ children }: { children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  scrollEdgeSwitch: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+  },
+  edge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
   root: {
     flex: 1,
   },
@@ -786,8 +1023,6 @@ const styles = StyleSheet.create({
   },
   titleCapsuleLeading: {
     maxWidth: undefined,
-    // Lines the text up with the back button's side.
-    alignItems: 'flex-start',
   },
   capsuleTitle: {
     fontSize: 15,

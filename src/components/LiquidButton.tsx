@@ -11,7 +11,7 @@ import {
   GlassPressable,
   type GlassPressableProps,
 } from '../internal/GlassPressable';
-import { LiquidGlassView } from '../LiquidGlassView';
+import { LiquidGlassView, type LiquidGlassViewProps } from '../LiquidGlassView';
 import { useLiquidColors } from '../theme';
 
 type MorphProps = {
@@ -200,6 +200,11 @@ export type MorphGlassProps = Omit<
   contentKey: string;
   contentStyle: GlassPressableProps['style'];
   children: ReactNode;
+  rimColor?: LiquidGlassViewProps['rimColor'];
+  rimWidth?: number;
+  rimSideOpacity?: number;
+  sheenOpacity?: number;
+  blurRadius?: number;
 };
 
 /**
@@ -217,6 +222,11 @@ export function MorphGlass({
   contentStyle,
   disabled,
   children,
+  rimColor,
+  rimWidth,
+  rimSideOpacity,
+  sheenOpacity,
+  blurRadius,
   ...rest
 }: MorphGlassProps) {
   return (
@@ -227,6 +237,11 @@ export function MorphGlass({
       tintColor={tintColor}
       colorScheme={colorScheme}
       cornerRadius={cornerRadius}
+      rimColor={rimColor}
+      rimWidth={rimWidth}
+      rimSideOpacity={rimSideOpacity}
+      sheenOpacity={sheenOpacity}
+      blurRadius={blurRadius}
       style={[style, disabled ? styles.disabled : null]}
     >
       <Pressable

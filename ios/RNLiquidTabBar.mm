@@ -115,6 +115,8 @@ static const CGFloat kBarStretch = 0.45;
   CFTimeInterval _awaitingSince;
 
   double _previousValue;
+  // Right-to-left layout: React lays out the first tab on the right.
+  BOOL _rtl;
   // Frames rendered since the lens arrived over its tab after release, -1 while travelling.
   int _arrivedFrames;
 }
@@ -270,6 +272,7 @@ static const CGFloat kBarStretch = 0.45;
            oldLayoutMetrics:(LayoutMetrics const &)oldLayoutMetrics
 {
   [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
+  _rtl = layoutMetrics.layoutDirection == LayoutDirection::RightToLeft;
   // Keep the bar's own transform out of the frame calculation.
   CGAffineTransform transform = _barView.transform;
   _barView.transform = CGAffineTransformIdentity;
@@ -405,10 +408,23 @@ static const CGFloat kBarStretch = 0.45;
   return (self.bounds.size.width - kInset * 2) / [self tabCount];
 }
 
+/// Left edge of the pill at a position in tabs, mirrored in right-to-left layout.
+- (CGFloat)leftForPosition:(double)position
+{
+  CGFloat tabWidth = [self tabWidth];
+  if (_rtl) {
+    return self.bounds.size.width - kInset - (position + 1) * tabWidth;
+  }
+  return kInset + position * tabWidth;
+}
+
 /// Lens position under `x`, rubber-banded past the first and last tab.
 - (double)positionForTouchX:(CGFloat)x
 {
   double last = [self tabCount] - 1;
+  if (_rtl) {
+    x = self.bounds.size.width - x;
+  }
   double raw = (x - kInset) / [self tabWidth] - 0.5;
   if (raw < 0) {
     return -kMaxOvershoot * -raw / (-raw + 1);
@@ -842,7 +858,7 @@ static void RNLiquidSetBool(UIView *view, NSString *name, BOOL value)
   _systemLens.hidden = !_lensEnabled;
   // Like UITabBar, the pill's tint fades while the lens is lifted and clear.
   _restingBackground.alpha = 1 - press;
-  _systemLens.center = CGPointMake(kInset + (position + 0.5) * tabWidth, size.height / 2);
+  _systemLens.center = CGPointMake([self leftForPosition:position] + tabWidth / 2, size.height / 2);
   if (!_systemLensResizing) {
     CGSize lensSize = [self systemLensSizeLifted:_systemLensLifted];
     _systemLens.bounds = CGRectMake(0, 0, lensSize.width, lensSize.height);
@@ -876,10 +892,10 @@ static void RNLiquidSetBool(UIView *view, NSString *name, BOOL value)
   CGFloat pillHeight = size.height - kInset * 2;
   double last = [self tabCount] - 1;
   double clamped = MIN(MAX(_value.value, 0.0), last);
-  CGRect restFrame = CGRectMake(kInset + _value.value * tabWidth, kInset, tabWidth, pillHeight);
-  CGRect pillFrame = CGRectMake(kInset + clamped * tabWidth, kInset, tabWidth, pillHeight);
+  CGRect restFrame = CGRectMake([self leftForPosition:_value.value], kInset, tabWidth, pillHeight);
+  CGRect pillFrame = CGRectMake([self leftForPosition:clamped], kInset, tabWidth, pillHeight);
   CGFloat press = MIN(MAX(_press.value, 0), 1);
-  CGFloat stretch = (_value.value - clamped) * tabWidth * kBarStretch;
+  CGFloat stretch = (_value.value - clamped) * tabWidth * kBarStretch * (_rtl ? -1 : 1);
 
   [CATransaction begin];
   [CATransaction setDisableActions:YES];

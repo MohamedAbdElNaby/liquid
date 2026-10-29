@@ -75,6 +75,8 @@ internal class SliderState {
 /** Liquid Glass slider. Dragging lifts the thumb into a clear glass lens over the track. */
 class LiquidSliderView(context: Context) : LiquidComposeHost(context) {
 
+  override val mirrorsInRtl = true
+
   internal val state = SliderState()
 
   init {

@@ -22,6 +22,7 @@ import {
 } from '@mohamed_abd_elnaby/react-native-liquid';
 import { PHOTOS, type Photo } from '../data';
 import { AppearanceSwitch } from '../AppearanceSwitch';
+import { DirectionSwitch } from '../DirectionSwitch';
 import type { RootStackParamList } from '../../App';
 import { CloseIcon, ComposeIcon, PlusIcon } from '../HeaderIcons';
 
@@ -140,6 +141,7 @@ export function HomeScreen() {
               : 'This OS version renders the fallback material.'}
           </Text>
           <AppearanceSwitch style={styles.appearance} />
+          <DirectionSwitch style={styles.appearance} />
           <View style={styles.homeButtons}>
             <LiquidButton
               title="Glass Lab"

@@ -40,6 +40,8 @@ static const CGFloat kBarIconSize = 18;
   BOOL _bar;
   CGFloat _headerHeight;
   CGFloat _fieldHeight;
+  // Right-to-left layout: frames are worked out left to right, then mirrored.
+  BOOL _rtl;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -145,6 +147,9 @@ static const CGFloat kBarIconSize = 18;
            oldLayoutMetrics:(LayoutMetrics const &)oldLayoutMetrics
 {
   [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
+  _rtl = layoutMetrics.layoutDirection == LayoutDirection::RightToLeft;
+  // Hugs the icon whatever the language of the text or placeholder.
+  _textField.textAlignment = _rtl ? NSTextAlignmentRight : NSTextAlignmentLeft;
   [self layoutForExpanded:_expanded];
 }
 
@@ -237,6 +242,7 @@ static const CGFloat kBarIconSize = 18;
 {
   if (_bar) {
     [self layoutBarForExpanded:expanded];
+    [self mirrorForRightToLeft];
     return;
   }
   _containerView.frame = self.bounds;
@@ -278,6 +284,40 @@ static const CGFloat kBarIconSize = 18;
 
   _collapsedContentView.alpha = expanded ? 0 : 1;
   _collapsedContentView.transform = expanded ? CGAffineTransformMakeScale(0.92, 0.92) : CGAffineTransformIdentity;
+  [self mirrorForRightToLeft];
+}
+
+static CGRect RNLiquidMirror(CGRect frame, CGFloat width)
+{
+  frame.origin.x = width - CGRectGetMaxX(frame);
+  return frame;
+}
+
+/// Mirrors the left-to-right layout in right-to-left layout: the button sits
+/// at the leading (left) edge and the field grows toward the right. React
+/// already mirrors the children.
+- (void)mirrorForRightToLeft
+{
+  if (!_rtl) {
+    return;
+  }
+  CGFloat width = self.bounds.size.width;
+  // The container can be wider than the view (the bar's close button waits
+  // outside it); it hangs off the left edge instead.
+  CGRect container = _containerView.frame;
+  CGFloat offset = container.origin.x;
+  _containerView.frame = RNLiquidMirror(container, width);
+  CGFloat shift = _containerView.frame.origin.x;
+  for (UIVisualEffectView *glass in @[ _fieldView, _closeView ]) {
+    CGRect frame = glass.frame;
+    frame.origin.x += offset;
+    frame = RNLiquidMirror(frame, width);
+    frame.origin.x -= shift;
+    glass.frame = frame;
+  }
+  CGFloat fieldWidth = _fieldView.bounds.size.width;
+  _searchIcon.frame = RNLiquidMirror(_searchIcon.frame, fieldWidth);
+  _textField.frame = RNLiquidMirror(_textField.frame, fieldWidth);
 }
 
 - (void)layoutBarForExpanded:(BOOL)expanded

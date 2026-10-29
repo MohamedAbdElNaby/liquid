@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import {
   Animated,
+  I18nManager,
   Image,
   Pressable,
   StyleSheet,
@@ -223,7 +224,10 @@ export function LiquidProfileHeader({
 
   // Entrance: the photo grows out of the header's avatar circle.
   const progress = entrance?.progress ?? ONE;
-  const fromX = width - HEADER_INSET - HEADER_AVATAR / 2 - width / 2;
+  // The avatar circle sits at the trailing edge: the left one in RTL.
+  const fromX =
+    (width / 2 - HEADER_INSET - HEADER_AVATAR / 2) *
+    (I18nManager.isRTL ? -1 : 1);
   const fromY = insets.top + LIQUID_HEADER_HEIGHT / 2 - H / 2;
   const photoRadius =
     entrance != null

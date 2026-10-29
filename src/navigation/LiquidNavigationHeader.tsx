@@ -12,6 +12,7 @@ import {
 } from 'react';
 import {
   Animated,
+  I18nManager,
   Platform,
   StyleSheet,
   Text,
@@ -263,7 +264,8 @@ function FloatingHeader({
     { length: slotCount.current },
     (_, i) => (explicit ? right[i] : right[i - firstSlot]) ?? null
   );
-  const slideDistance = SLOT_SIZE + SLOT_GAP;
+  // Slots are laid out right to left in RTL, but transforms don't flip.
+  const slideDistance = (SLOT_SIZE + SLOT_GAP) * (I18nManager.isRTL ? -1 : 1);
   // A button that goes away slides into a neighbour that stays (the pressed
   // one), and one that comes back grows out of a neighbour that was already
   // there. Buttons that all come back together grow in place. The direction

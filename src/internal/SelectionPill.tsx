@@ -1,4 +1,9 @@
-import { Animated, StyleSheet, type ColorValue } from 'react-native';
+import {
+  Animated,
+  I18nManager,
+  StyleSheet,
+  type ColorValue,
+} from 'react-native';
 
 type Props = {
   /** Animated index of the selected item (may be fractional while swiping). */
@@ -22,7 +27,11 @@ export function SelectionPill({
   }
 
   const pillHeight = height - inset * 2;
-  const translateX = Animated.add(Animated.multiply(index, itemWidth), inset);
+  // `left` becomes `right` in right-to-left layout, but transforms don't flip.
+  const translateX = Animated.multiply(
+    Animated.add(Animated.multiply(index, itemWidth), inset),
+    I18nManager.isRTL ? -1 : 1
+  );
 
   return (
     <Animated.View

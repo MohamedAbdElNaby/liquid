@@ -196,7 +196,7 @@ private fun SearchMorph(
           val fieldWidth = lerp(height, width - height - gap, p).coerceAtLeast(height * 0.5f)
           val left = lerp(width - height, 0f, p)
           val placeable = measurable.measure(Constraints.fixed(fieldWidth.roundToInt(), height.roundToInt()))
-          layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(left.roundToInt(), 0) }
+          layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(left.roundToInt(), 0) }
         }
         .then(glassModifier { if (pressed) 1f else 0f })
         .pointerInput(Unit) {
@@ -223,7 +223,7 @@ private fun SearchMorph(
             val centered = (constraints.maxWidth - placeable.width) / 2f
             val leading = parentHeight * 0.32f
             layout(constraints.maxWidth, constraints.maxHeight) {
-              placeable.place(lerp(centered, leading, p).roundToInt(), ((parentHeight - placeable.height) / 2).roundToInt())
+              placeable.placeRelative(lerp(centered, leading, p).roundToInt(), ((parentHeight - placeable.height) / 2).roundToInt())
             }
           },
       )
@@ -270,7 +270,7 @@ private fun SearchMorph(
           val placeable = measurable.measure(Constraints.fixed(size.roundToInt(), size.roundToInt()))
           val centerX = lerp(width - height / 2f - gap, width - height / 2f, p)
           layout(constraints.maxWidth, constraints.maxHeight) {
-            placeable.place((centerX - size / 2f).roundToInt(), ((height - size) / 2f).roundToInt())
+            placeable.placeRelative((centerX - size / 2f).roundToInt(), ((height - size) / 2f).roundToInt())
           }
         }
         .graphicsLayer { alpha = close.value.coerceIn(0f, 1f) }
@@ -363,7 +363,7 @@ private fun SearchBarMorph(
           val fieldWidth = lerp(width, width - fieldHeight - gap, p)
           val y = lerp(headerHeight, (headerHeight - fieldHeight) / 2f, p)
           val placeable = measurable.measure(Constraints.fixed(fieldWidth.roundToInt(), fieldHeight.roundToInt()))
-          layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, y.roundToInt()) }
+          layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(0, y.roundToInt()) }
         }
         .then(glass)
         .pointerInput(Unit) {
@@ -384,7 +384,7 @@ private fun SearchBarMorph(
         modifier = Modifier.layout { measurable, constraints ->
           val placeable = measurable.measure(Constraints())
           layout(constraints.maxWidth, constraints.maxHeight) {
-            placeable.place(
+            placeable.placeRelative(
               contentX(constraints.maxWidth.toFloat()).roundToInt(),
               ((constraints.maxHeight - placeable.height) / 2f).roundToInt(),
             )
@@ -414,7 +414,7 @@ private fun SearchBarMorph(
               Constraints.fixedWidth((width - x - pad).coerceAtLeast(0f).roundToInt()),
             )
             layout(constraints.maxWidth, constraints.maxHeight) {
-              placeable.place(x.roundToInt(), ((constraints.maxHeight - placeable.height) / 2f).roundToInt())
+              placeable.placeRelative(x.roundToInt(), ((constraints.maxHeight - placeable.height) / 2f).roundToInt())
             }
           }
           .focusRequester(focusRequester),
@@ -438,7 +438,7 @@ private fun SearchBarMorph(
           val x = lerp(width + gap * 2f, width - fieldHeight, p)
           val y = lerp(headerHeight, (headerHeight - fieldHeight) / 2f, p)
           val placeable = measurable.measure(Constraints.fixed(fieldHeight.roundToInt(), fieldHeight.roundToInt()))
-          layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(x.roundToInt(), y.roundToInt()) }
+          layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(x.roundToInt(), y.roundToInt()) }
         }
         .graphicsLayer { alpha = progress.value.coerceIn(0f, 1f) }
         .then(glass)

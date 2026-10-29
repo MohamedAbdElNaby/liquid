@@ -113,6 +113,8 @@ internal class TabBarState {
   var velocity by mutableFloatStateOf(0f)
   /** How far the bar stretches toward the finger past its ends, in px (negative = left). */
   var stretch by mutableFloatStateOf(0f)
+  /** Right-to-left layout: React lays out the first tab on the right. */
+  var rtl by mutableStateOf(false)
 }
 
 /**
@@ -185,10 +187,11 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
     scaleY.snap(1f)
 
     val barBackdrop = createBackdrop(this)
-    addComposeView { TabBarBackground(state, barBackdrop) }
+    // The bar mirrors its geometry itself in right-to-left layout (see pillLeft).
+    addComposeView { LeftToRight { TabBarBackground(state, barBackdrop) } }
 
     lateinit var lensBackdrop: Backdrop
-    val lensView = addComposeView(above = true) { TabBarLens(state, lensBackdrop) }
+    val lensView = addComposeView(above = true) { LeftToRight { TabBarLens(state, lensBackdrop) } }
     lensBackdrop = createBackdrop(
       target = lensView,
       magnification = { 1f + 0.05f * state.press },
@@ -232,10 +235,14 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
   private val tabWidth: Float
     get() = (width - INSET_DP * density * 2) / tabCount
 
+  private val isRtl: Boolean
+    get() = com.facebook.react.modules.i18nmanager.I18nUtil.instance.isRTL(context)
+
   /** Lens position under [x], rubber-banded past the first and last tab. */
   private fun positionFor(x: Float): Float {
     val last = (tabCount - 1).toFloat()
-    val raw = (x - INSET_DP * density) / tabWidth - 0.5f
+    val mirrored = if (isRtl) width - x else x
+    val raw = (mirrored - INSET_DP * density) / tabWidth - 0.5f
     return when {
       raw < 0f -> -rubberBand(-raw)
       raw > last -> last + rubberBand(raw - last)
@@ -459,7 +466,8 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
     state.scaleY = scaleY.value
     state.velocity = velocity.value
     val overshoot = value.value - value.value.coerceIn(0f, (tabCount - 1).toFloat())
-    state.stretch = overshoot * tabWidth * BAR_STRETCH
+    state.rtl = isRtl
+    state.stretch = overshoot * tabWidth * BAR_STRETCH * (if (state.rtl) -1f else 1f)
     // Redraw the glass in this frame instead of the next one.
     Snapshot.sendApplyNotifications()
 
@@ -534,7 +542,7 @@ private fun TabBarBackground(state: TabBarState, backdrop: Backdrop) {
         val position = state.value.coerceIn(0f, (state.tabCount - 1).toFloat())
         drawRoundRect(
           color = pillColor.copy(alpha = pillColor.alpha * (1f - state.press)),
-          topLeft = androidx.compose.ui.geometry.Offset(inset + position * tabWidth, inset),
+          topLeft = androidx.compose.ui.geometry.Offset(pillLeft(state.rtl, size.width, inset, tabWidth, position), inset),
           size = androidx.compose.ui.geometry.Size(tabWidth, height),
           cornerRadius = CornerRadius(height / 2f),
         )
@@ -561,7 +569,7 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
     Modifier
       // Moved in the draw phase so following the finger never waits for a layout pass.
       .graphicsLayer {
-        translationX = inset + state.value * tabWidth
+        translationX = pillLeft(state.rtl, state.widthPx.toFloat(), inset, tabWidth, state.value)
         translationY = inset
         // Fade with the press, eased so the lens melts into the pill instead of popping.
         // The drop stays fully glassy while it shrinks and only fades in the last part.
@@ -672,4 +680,16 @@ class LiquidTabBarViewManager : LiquidComposeHostManager() {
   companion object {
     const val NAME = "RNLiquidTabBar"
   }
+}
+
+/** Left edge of the pill at [position] in tabs, mirrored in right-to-left layout. */
+private fun pillLeft(rtl: Boolean, width: Float, inset: Float, tabWidth: Float, position: Float): Float =
+  if (rtl) width - inset - (position + 1f) * tabWidth else inset + position * tabWidth
+
+@Composable
+private fun LeftToRight(content: @Composable () -> Unit) {
+  androidx.compose.runtime.CompositionLocalProvider(
+    androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr,
+    content = content,
+  )
 }

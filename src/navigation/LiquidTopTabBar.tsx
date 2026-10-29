@@ -1,6 +1,8 @@
-import { memo, useRef } from 'react';
+import { memo, useMemo, useRef } from 'react';
 import {
   Animated,
+  I18nManager,
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -74,11 +76,15 @@ export type LiquidTopTabBarProps = MaterialTopTabBarProps &
  * <TopTab.Navigator tabBar={(props) => <LiquidTopTabBar {...props} />}>
  * ```
  */
+// react-native-pager-view on iOS measures its position from the left edge in
+// right-to-left layout.
+const MIRRORED_PAGER_POSITION = Platform.OS === 'ios' && I18nManager.isRTL;
+
 export function LiquidTopTabBar({
   state,
   descriptors,
   navigation,
-  position,
+  position: pagerPosition,
   glassStyle = 'clear',
   glassTintColor,
   blur = 0.8,
@@ -94,6 +100,19 @@ export function LiquidTopTabBar({
   containerStyle,
 }: LiquidTopTabBarProps) {
   const { colors } = useLiquidColors(colorScheme);
+  // In right-to-left layout the iOS pager reports its position from the
+  // left edge, so the first page (on the right) reads as the last one.
+  const position = useMemo(
+    () =>
+      MIRRORED_PAGER_POSITION && state.routes.length > 1
+        ? pagerPosition.interpolate({
+            inputRange: [0, state.routes.length - 1],
+            outputRange: [state.routes.length - 1, 0],
+            extrapolate: 'extend',
+          })
+        : pagerPosition,
+    [pagerPosition, state.routes.length]
+  );
 
   // Native events arrive asynchronously; read the latest navigation state.
   const latest = useRef({ state, navigation });

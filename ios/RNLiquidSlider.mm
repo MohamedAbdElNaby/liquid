@@ -12,6 +12,7 @@ using namespace facebook::react;
 // Wraps UISlider, which renders the native Liquid Glass slider on iOS 26:
 // the thumb turns into a glass lens while dragging.
 @implementation RNLiquidSlider {
+  BOOL _rtl;
   UISlider *_slider;
   float _step;
   float _lastValue;
@@ -44,6 +45,29 @@ using namespace facebook::react;
 {
   [super layoutSubviews];
   _slider.frame = self.bounds;
+}
+
+#pragma mark - Right to left
+
+// The control has no text, so right-to-left layout mirrors all of it: the
+// track fills from the right and touches are mirrored with it. Fabric sets
+// the layer transform from the `transform` style while finishing an update,
+// so the mirror is applied after that.
+- (void)updateLayoutMetrics:(LayoutMetrics const &)layoutMetrics
+           oldLayoutMetrics:(LayoutMetrics const &)oldLayoutMetrics
+{
+  [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
+  _rtl = layoutMetrics.layoutDirection == LayoutDirection::RightToLeft;
+}
+
+- (void)finalizeUpdates:(RNComponentViewUpdateMask)updateMask
+{
+  [super finalizeUpdates:updateMask];
+  CATransform3D transform = self.layer.transform;
+  BOOL mirrored = transform.m11 < 0;
+  if (_rtl != mirrored) {
+    self.layer.transform = CATransform3DScale(transform, -1, 1, 1);
+  }
 }
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps

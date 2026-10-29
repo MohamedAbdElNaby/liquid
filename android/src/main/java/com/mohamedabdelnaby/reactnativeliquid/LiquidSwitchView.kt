@@ -67,6 +67,8 @@ internal class SwitchState {
  */
 class LiquidSwitchView(context: Context) : LiquidComposeHost(context) {
 
+  override val mirrorsInRtl = true
+
   internal val state = SwitchState()
 
   init {

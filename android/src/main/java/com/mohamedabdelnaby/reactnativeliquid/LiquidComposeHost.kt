@@ -1,6 +1,7 @@
 package com.mohamedabdelnaby.reactnativeliquid
 
 import android.content.Context
+import com.facebook.react.modules.i18nmanager.I18nUtil
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.view.ViewGroup
@@ -174,9 +175,17 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
     layoutComposeViews()
   }
 
+  /**
+   * Controls without text (switch, slider) set this: in right-to-left layout their Compose
+   * content is mirrored, touches included.
+   */
+  protected open val mirrorsInRtl = false
+
   /** React lays out its own children; the ComposeViews are ours to size (once attached). */
   private fun layoutComposeViews() {
+    val mirrored = mirrorsInRtl && I18nUtil.instance.isRTL(context)
     for (view in hostedViews) {
+      view.scaleX = if (mirrored) -1f else 1f
       if (!view.isAttachedToWindow) {
         continue
       }

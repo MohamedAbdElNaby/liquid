@@ -1,4 +1,4 @@
-import { StyleSheet, View, type ColorValue } from 'react-native';
+import { I18nManager, StyleSheet, View, type ColorValue } from 'react-native';
 
 // Small glyphs drawn with views so the library has no icon dependency.
 
@@ -11,7 +11,14 @@ export function ChevronLeftIcon({ color, size = 20 }: IconProps) {
   const arm = size * 0.55;
 
   return (
-    <View style={[styles.center, { width: size, height: size }]}>
+    // Points the other way in right-to-left layout, like the system back button.
+    <View
+      style={[
+        styles.center,
+        { width: size, height: size },
+        I18nManager.isRTL ? styles.mirrored : null,
+      ]}
+    >
       <View
         style={{
           width: arm,
@@ -90,6 +97,9 @@ export function ClearIcon({
 }
 
 const styles = StyleSheet.create({
+  mirrored: {
+    transform: [{ scaleX: -1 }],
+  },
   center: {
     alignItems: 'center',
     justifyContent: 'center',

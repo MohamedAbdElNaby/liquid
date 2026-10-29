@@ -123,6 +123,11 @@ class LiquidGlassViewManager : ReactViewManager() {
     view.glass { rimEdgeColor = value }
   }
 
+  @ReactProp(name = "specularEdge")
+  fun setSpecularEdge(view: ReactViewGroup, value: Boolean) {
+    view.glass { specularEdge = value }
+  }
+
   @ReactProp(name = "rimGradient")
   fun setRimGradient(view: ReactViewGroup, value: String?) {
     view.glass { rimGradient = value ?: "diagonal" }

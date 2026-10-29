@@ -79,6 +79,13 @@ static void RNLiquidAnimate(void (^animations)(void))
   // Reflection (sheenOpacity): white fading down from the top, clipped to the shape.
   CAGradientLayer *_sheen;
   CGFloat _sheenOpacity;
+  // The iOS 26 light-glass edge (specularEdge): a white glow inside the top
+  // edge and a white line along the bottom, under a graded hairline.
+  BOOL _specularEdge;
+  CAGradientLayer *_specGlow;
+  CAShapeLayer *_specGlowMask;
+  CAGradientLayer *_specLine;
+  CAShapeLayer *_specLineMask;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -111,6 +118,10 @@ static void RNLiquidAnimate(void (^animations)(void))
   // The sheen, edge and rim stay above the content.
   if (_sheen != nil) {
     [_effectView.contentView.layer addSublayer:_sheen];
+  }
+  if (_specGlow != nil) {
+    [_effectView.contentView.layer addSublayer:_specGlow];
+    [_effectView.contentView.layer addSublayer:_specLine];
   }
   if (_rimEdge != nil) {
     [_effectView.contentView.layer addSublayer:_rimEdge];
@@ -206,6 +217,11 @@ static void RNLiquidAnimate(void (^animations)(void))
   if (_fadeBottom != newViewProps.fadeBottom) {
     _fadeBottom = newViewProps.fadeBottom;
     [self applyFade];
+  }
+
+  if (_specularEdge != newViewProps.specularEdge) {
+    _specularEdge = newViewProps.specularEdge;
+    [self applySpecularEdge];
   }
 
   if (_sheenOpacity != newViewProps.sheenOpacity) {
@@ -315,6 +331,75 @@ static void RNLiquidAnimate(void (^animations)(void))
   [CATransaction setDisableActions:YES];
   _sheen.frame = bounds;
   _sheen.cornerRadius = MAX(0, MIN(_cornerRadius, MIN(bounds.size.width, bounds.size.height) / 2));
+  [CATransaction commit];
+}
+
+- (void)applySpecularEdge
+{
+  if (!_specularEdge) {
+    [_specGlow removeFromSuperlayer];
+    [_specLine removeFromSuperlayer];
+    _specGlow = nil;
+    _specGlowMask = nil;
+    _specLine = nil;
+    _specLineMask = nil;
+    return;
+  }
+  if (_specGlow == nil) {
+    // Light from above: white just inside the top edge, fading into the glass,
+    // and a white line along the bottom edge.
+    _specGlow = [CAGradientLayer layer];
+    _specGlow.startPoint = CGPointMake(0.5, 0);
+    _specGlow.endPoint = CGPointMake(0.5, 1);
+    _specGlow.colors = @[
+      (__bridge id)[UIColor colorWithWhite:1 alpha:0.95].CGColor,
+      (__bridge id)[UIColor colorWithWhite:1 alpha:0].CGColor,
+      (__bridge id)[UIColor colorWithWhite:1 alpha:0].CGColor,
+      (__bridge id)[UIColor colorWithWhite:1 alpha:0.95].CGColor,
+    ];
+    _specGlow.locations = @[ @0, @0.16, @0.93, @1 ];
+    _specGlowMask = [CAShapeLayer layer];
+    _specGlowMask.fillColor = UIColor.blackColor.CGColor;
+    _specGlow.mask = _specGlowMask;
+
+    // The hairline: light grey along the top, darker down the sides, gone
+    // along the bottom where the white line is.
+    _specLine = [CAGradientLayer layer];
+    _specLine.startPoint = CGPointMake(0.5, 0);
+    _specLine.endPoint = CGPointMake(0.5, 1);
+    _specLine.colors = @[
+      (__bridge id)[UIColor colorWithWhite:0 alpha:0.13].CGColor,
+      (__bridge id)[UIColor colorWithWhite:0 alpha:0.3].CGColor,
+      (__bridge id)[UIColor colorWithWhite:0 alpha:0.24].CGColor,
+      (__bridge id)[UIColor colorWithWhite:0 alpha:0].CGColor,
+    ];
+    _specLine.locations = @[ @0, @0.45, @0.78, @1 ];
+    _specLineMask = [CAShapeLayer layer];
+    _specLineMask.fillColor = UIColor.clearColor.CGColor;
+    _specLineMask.strokeColor = UIColor.blackColor.CGColor;
+    _specLine.mask = _specLineMask;
+  }
+  // Inside the glass so they grow with it when pressed, above the content.
+  CALayer *host = _effectView.contentView.layer;
+  [host addSublayer:_specGlow];
+  [host addSublayer:_specLine];
+
+  CGRect bounds = (CGRect){CGPointZero, self.bounds.size};
+  CGFloat radius = MAX(0, MIN(_cornerRadius, MIN(bounds.size.width, bounds.size.height) / 2));
+  CGFloat scale = self.traitCollection.displayScale > 0 ? self.traitCollection.displayScale : 3;
+  // A hairline of about one and a half pixels.
+  CGFloat hair = 1.5 / scale;
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  _specGlow.frame = bounds;
+  _specGlowMask.frame = bounds;
+  _specGlowMask.path = [UIBezierPath bezierPathWithRoundedRect:bounds cornerRadius:radius].CGPath;
+  _specLine.frame = bounds;
+  _specLineMask.frame = bounds;
+  _specLineMask.lineWidth = hair;
+  _specLineMask.path = [UIBezierPath bezierPathWithRoundedRect:CGRectInset(bounds, hair / 2, hair / 2)
+                                                  cornerRadius:MAX(0, radius - hair / 2)]
+                           .CGPath;
   [CATransaction commit];
 }
 
@@ -505,6 +590,7 @@ static void RNLiquidAnimate(void (^animations)(void))
   [self applyCornerRadius];
   [self applyFade];
   [self applySheen];
+  [self applySpecularEdge];
   [self applyRim];
 }
 

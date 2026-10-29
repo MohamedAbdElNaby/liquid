@@ -40,6 +40,8 @@ export interface NativeProps extends ViewProps {
   rimGradient?: CodegenTypes.WithDefault<'diagonal' | 'vertical', 'diagonal'>;
   /** iOS: a soft white reflection across the top of the glass, 0 (off) to 1. */
   sheenOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
+  /** The iOS 26 light-glass edge: a hairline, a white glow inside the top edge and a white line along the bottom. */
+  specularEdge?: CodegenTypes.WithDefault<boolean, false>;
 
   // Android only (AndroidLiquidGlass by Kyant0)
   blurRadius?: CodegenTypes.WithDefault<CodegenTypes.Float, 3>;

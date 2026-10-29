@@ -434,7 +434,9 @@ inside another glass shape, such as a toolbar.
 the curves), `rimShadeColor` (a dark edge on the bottom-right, lit from the
 top-left, so the rim reads as a reflection on white pages), `rimEdgeColor`
 (a hairline all round the glass with the rim's light just inside it, so the
-edge shines on white pages), `rimGradient` (`'diagonal'` curves or
+edge shines on white pages), `specularEdge` (the iOS 26 light-glass edge, like
+the Messages call buttons: a hairline, a white glow inside the top edge and
+a white line along the bottom), `rimGradient` (`'diagonal'` curves or
 `'vertical'`: bright along the top and bottom edges, fading down the sides),
 `cornerRadius`, `morph`, `colorScheme`, `fadeBottom` (fades the glass out
 over this many points at its bottom edge, like a bar melting into the

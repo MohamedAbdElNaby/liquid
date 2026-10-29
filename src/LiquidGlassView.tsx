@@ -79,6 +79,13 @@ export type LiquidGlassViewProps = ViewProps & {
    */
   sheenOpacity?: number;
   /**
+   * The edge of iOS 26 glass in light mode (the Messages call buttons): a
+   * hairline, light grey along the top and darker down the sides, a white
+   * glow just inside the top edge and a white line along the bottom. Shines
+   * without tinting the glass. iOS and Android. @default false
+   */
+  specularEdge?: boolean;
+  /**
    * Forces the light or dark material.
    * @default 'system'
    */

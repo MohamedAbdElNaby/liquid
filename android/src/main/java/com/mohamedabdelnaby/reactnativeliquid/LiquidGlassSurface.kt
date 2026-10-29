@@ -66,6 +66,8 @@ internal class GlassState {
   var rimEdgeColor by mutableStateOf<Int?>(null)
   /** "vertical": the glint along the top and bottom edges instead of the diagonal curves. */
   var rimGradient by mutableStateOf("diagonal")
+  /** The iOS 26 light-glass edge (specularEdge): glow inside the top, white line along the bottom, graded hairline. */
+  var specularEdge by mutableStateOf(false)
   var shadow by mutableStateOf(true)
   /** Fades the glass out over this many dp at its bottom edge. */
   var fadeBottom by mutableFloatStateOf(0f)
@@ -153,6 +155,36 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
       // otherwise light it back up.
       .drawWithContent {
         drawContent()
+        if (state.specularEdge) {
+          val radius = min(state.cornerRadius * state.density, min(size.width, size.height) / 2f)
+          val corner = androidx.compose.ui.geometry.CornerRadius(radius)
+          // Light from above: white just inside the top edge, fading into the
+          // glass, and a white line along the bottom edge.
+          drawRoundRect(
+            brush = Brush.verticalGradient(
+              0f to Color.White.copy(alpha = 0.95f),
+              0.16f to Color.White.copy(alpha = 0f),
+              0.93f to Color.White.copy(alpha = 0f),
+              1f to Color.White.copy(alpha = 0.95f),
+            ),
+            cornerRadius = corner,
+          )
+          // The hairline: light grey along the top, darker down the sides,
+          // gone along the bottom where the white line is.
+          val hair = 0.5.dp.toPx()
+          drawRoundRect(
+            brush = Brush.verticalGradient(
+              0f to Color.Black.copy(alpha = 0.13f),
+              0.45f to Color.Black.copy(alpha = 0.3f),
+              0.78f to Color.Black.copy(alpha = 0.24f),
+              1f to Color.Black.copy(alpha = 0f),
+            ),
+            topLeft = androidx.compose.ui.geometry.Offset(hair / 2f, hair / 2f),
+            size = androidx.compose.ui.geometry.Size(size.width - hair, size.height - hair),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius((radius - hair / 2f).coerceAtLeast(0f)),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(hair),
+          )
+        }
         state.rimEdgeColor?.let { edgeArgb ->
           val radius = min(state.cornerRadius * state.density, min(size.width, size.height) / 2f)
           val edge = 1.dp.toPx()

@@ -1,7 +1,13 @@
 name: Publish to npm
 
-# Publishes to npm (public, anyone can install).
-# Needs a repository secret named NPM_TOKEN (an npm Automation token).
+# Publishes to npm (public, anyone can install) with npm trusted publishing:
+# GitHub Actions proves to npm which repository and workflow is publishing
+# (OIDC), so no long-lived npm token is needed. Set it up once on npmjs.com:
+# package Settings → Trusted publishing → GitHub Actions, with repository
+# MohamedAbdElNaby/liquid and workflow publish.yml.
+#
+# Until that is set up, a NPM_TOKEN repository secret still works. npm stops
+# accepting tokens that bypass 2FA for publishing around January 2027.
 on:
   release:
     types: [published]
@@ -14,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  # Lets npm verify this workflow (trusted publishing) and sign provenance.
   id-token: write
 
 jobs:
@@ -26,17 +33,26 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Use an npm with trusted publishing
+        # Trusted publishing needs npm 11.5.1 or later.
+        run: |
+          if ! npx -y semver -r ">=11.5.1" "$(npm --version)" > /dev/null; then
+            npm install -g npm@11
+          fi
+          npm --version
+
       - name: Build
         run: yarn prepare
 
       - name: Publish to npm
         if: ${{ github.event_name == 'release' || inputs.npm }}
         run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::error::Add an npm Automation token as the NPM_TOKEN repository secret."
-            exit 1
+          USERCONFIG="$RUNNER_TEMP/npm.npmrc"
+          echo "registry=https://registry.npmjs.org/" > "$USERCONFIG"
+          # Fallback while trusted publishing is not set up yet.
+          if [ -n "$NODE_AUTH_TOKEN" ]; then
+            echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" >> "$USERCONFIG"
           fi
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > "$RUNNER_TEMP/npm.npmrc"
-          npm publish --access public --registry https://registry.npmjs.org --provenance --ignore-scripts --userconfig "$RUNNER_TEMP/npm.npmrc"
+          npm publish --access public --provenance --ignore-scripts --userconfig "$USERCONFIG"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

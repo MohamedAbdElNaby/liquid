@@ -64,6 +64,8 @@ internal class GlassState {
   var rimShadeColor by mutableStateOf<Int?>(null)
   /** A hairline all round the outside (rimEdgeColor), with the rim's glint just inside it. */
   var rimEdgeColor by mutableStateOf<Int?>(null)
+  /** "vertical": the glint along the top and bottom edges instead of the diagonal curves. */
+  var rimGradient by mutableStateOf("diagonal")
   var shadow by mutableStateOf(true)
   /** Fades the glass out over this many dp at its bottom edge. */
   var fadeBottom by mutableFloatStateOf(0f)
@@ -169,14 +171,17 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
             val side = rim.copy(alpha = rim.alpha * 0.2f)
             val stroke = state.rimWidth.dp.toPx()
             val inset = edge + stroke / 2f
+            val vertical = state.rimGradient == "vertical"
             drawRoundRect(
               brush = Brush.linearGradient(
                 0f to rim,
-                0.38f to side,
-                0.62f to side,
+                (if (vertical) 0.3f else 0.38f) to side,
+                (if (vertical) 0.7f else 0.62f) to side,
                 1f to rim,
-                start = androidx.compose.ui.geometry.Offset.Zero,
-                end = androidx.compose.ui.geometry.Offset(size.width, size.height),
+                start = if (vertical) androidx.compose.ui.geometry.Offset(size.width / 2f, 0f)
+                else androidx.compose.ui.geometry.Offset.Zero,
+                end = if (vertical) androidx.compose.ui.geometry.Offset(size.width / 2f, size.height)
+                else androidx.compose.ui.geometry.Offset(size.width, size.height),
               ),
               topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
               size = androidx.compose.ui.geometry.Size(size.width - inset * 2f, size.height - inset * 2f),

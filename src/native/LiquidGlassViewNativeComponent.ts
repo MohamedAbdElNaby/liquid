@@ -36,6 +36,8 @@ export interface NativeProps extends ViewProps {
   rimShadeColor?: ColorValue;
   /** A hairline all round the outside of the glass, under the rim. */
   rimEdgeColor?: ColorValue;
+  /** Where the rim shines: diagonal curves, or the top and bottom edges. */
+  rimGradient?: CodegenTypes.WithDefault<'diagonal' | 'vertical', 'diagonal'>;
   /** iOS: a soft white reflection across the top of the glass, 0 (off) to 1. */
   sheenOpacity?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
 

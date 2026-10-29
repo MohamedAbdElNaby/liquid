@@ -74,6 +74,8 @@ static void RNLiquidAnimate(void (^animations)(void))
   // A hairline all round the outside (rimEdgeColor), under the rim.
   CAShapeLayer *_rimEdge;
   UIColor *_rimEdgeColor;
+  // Along the top and bottom edges instead of the diagonal curves (rimGradient).
+  BOOL _rimVertical;
   // Reflection (sheenOpacity): white fading down from the top, clipped to the shape.
   CAGradientLayer *_sheen;
   CGFloat _sheenOpacity;
@@ -216,7 +218,9 @@ static void RNLiquidAnimate(void (^animations)(void))
   if (![rimColor isEqual:_rimColor] || _rimWidth != newViewProps.rimWidth ||
       _rimSideOpacity != newViewProps.rimSideOpacity ||
       (rimShadeColor != _rimShadeColor && ![rimShadeColor isEqual:_rimShadeColor]) ||
-      (rimEdgeColor != _rimEdgeColor && ![rimEdgeColor isEqual:_rimEdgeColor])) {
+      (rimEdgeColor != _rimEdgeColor && ![rimEdgeColor isEqual:_rimEdgeColor]) ||
+      _rimVertical != (newViewProps.rimGradient == RNLiquidGlassViewRimGradient::Vertical)) {
+    _rimVertical = newViewProps.rimGradient == RNLiquidGlassViewRimGradient::Vertical;
     _rimColor = rimColor;
     _rimShadeColor = rimShadeColor;
     _rimEdgeColor = rimEdgeColor;
@@ -356,9 +360,6 @@ static void RNLiquidAnimate(void (^animations)(void))
   }
   if (_rim == nil) {
     _rim = [CAGradientLayer layer];
-    _rim.startPoint = CGPointMake(0, 0);
-    _rim.endPoint = CGPointMake(1, 1);
-    _rim.locations = @[ @0, @0.38, @0.62, @1 ];
     _rimMask = [CAShapeLayer layer];
     _rimMask.fillColor = UIColor.clearColor.CGColor;
     _rimMask.strokeColor = UIColor.blackColor.CGColor;
@@ -368,7 +369,12 @@ static void RNLiquidAnimate(void (^animations)(void))
   // the rim has to grow with it, or a second outline shows.
   [_effectView.contentView.layer addSublayer:_rim];
 
-  // Bright on the top-left and bottom-right curves, fainter along the sides.
+  // Bright on the top-left and bottom-right curves, fainter along the sides;
+  // or, vertical, bright along the top and bottom edges, fading down the
+  // left and right sides.
+  _rim.startPoint = _rimVertical ? CGPointMake(0.5, 0) : CGPointMake(0, 0);
+  _rim.endPoint = _rimVertical ? CGPointMake(0.5, 1) : CGPointMake(1, 1);
+  _rim.locations = _rimVertical ? @[ @0, @0.3, @0.7, @1 ] : @[ @0, @0.38, @0.62, @1 ];
   CGFloat alpha = CGColorGetAlpha(_rimColor.CGColor);
   CGColorRef side = [_rimColor colorWithAlphaComponent:alpha * MAX(0, MIN(1, _rimSideOpacity))].CGColor;
   if (_rimShadeColor != nil) {

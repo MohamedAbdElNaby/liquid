@@ -123,6 +123,11 @@ class LiquidGlassViewManager : ReactViewManager() {
     view.glass { rimEdgeColor = value }
   }
 
+  @ReactProp(name = "rimGradient")
+  fun setRimGradient(view: ReactViewGroup, value: String?) {
+    view.glass { rimGradient = value ?: "diagonal" }
+  }
+
   @ReactProp(name = "rimWidth", defaultFloat = 1f)
   fun setRimWidth(view: ReactViewGroup, value: Float) {
     view.glass { rimWidth = value }

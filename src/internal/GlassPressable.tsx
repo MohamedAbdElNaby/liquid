@@ -22,6 +22,7 @@ export type GlassPressableProps = Omit<PressableProps, 'style' | 'children'> &
     | 'rimSideOpacity'
     | 'rimShadeColor'
     | 'rimEdgeColor'
+    | 'rimGradient'
     | 'sheenOpacity'
     | 'blurRadius'
   > & {
@@ -43,6 +44,7 @@ export function GlassPressable({
   rimSideOpacity,
   rimShadeColor,
   rimEdgeColor,
+  rimGradient,
   sheenOpacity,
   blurRadius,
   style,
@@ -91,6 +93,7 @@ export function GlassPressable({
           rimSideOpacity={rimSideOpacity}
           rimShadeColor={rimShadeColor}
           rimEdgeColor={rimEdgeColor}
+          rimGradient={rimGradient}
           sheenOpacity={sheenOpacity}
           blurRadius={blurRadius}
           style={style}

@@ -84,6 +84,8 @@ export type LiquidHeaderGlass = {
   rimShadeColor?: ColorValue;
   /** A hairline all round the glass under the rim, so the rim's light shines against an edge on white. */
   rimEdgeColor?: ColorValue;
+  /** Where the rim shines: on the diagonal curves, or along the top and bottom edges. */
+  rimGradient?: 'diagonal' | 'vertical';
   /** iOS: a soft white reflection across the top of the glass, 0 to 1. */
   sheenOpacity?: number;
   /** Android: how blurry the glass is, in dp (iOS glass has a fixed blur). */
@@ -750,6 +752,7 @@ function FloatingHeader({
         rimSideOpacity={titleGlass.rimSideOpacity}
         rimShadeColor={titleGlass.rimShadeColor}
         rimEdgeColor={titleGlass.rimEdgeColor}
+        rimGradient={titleGlass.rimGradient}
         sheenOpacity={titleGlass.sheenOpacity}
         blurRadius={titleGlass.blurRadius}
         rimWidth={titleGlass.rimWidth}
@@ -957,6 +960,7 @@ function HeaderButton({
       rimSideOpacity={glass?.rimSideOpacity}
       rimShadeColor={glass?.rimShadeColor}
       rimEdgeColor={glass?.rimEdgeColor}
+      rimGradient={glass?.rimGradient}
       sheenOpacity={glass?.sheenOpacity}
       blurRadius={glass?.blurRadius}
       rimWidth={glass?.rimWidth}

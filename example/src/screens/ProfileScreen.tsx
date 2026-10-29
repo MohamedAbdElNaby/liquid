@@ -27,7 +27,7 @@ import type { RootStackParamList } from '../../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
 
-// Telegram's channel profile, opened by tapping the chat's avatar: the photo
+// A channel profile, opened by tapping the chat's avatar: the photo
 // grows out of the avatar circle into the hero. Scrolling turns it into a
 // round avatar, then lifts the name into the bar.
 export function ProfileScreen({ navigation, route }: Props) {

@@ -7,7 +7,7 @@
 
 ![React Native Liquid](docs/media/banner.jpg)
 
-Liquid Glass UI components for React Native, built to drop into React Navigation as custom tab bars and headers. Everything you need for iOS 26 / Telegram-style screens: a tab bar with Apple's liquid lens, one floating header whose buttons morph and merge between screens, search fields that grow out of their buttons, and a profile header that collapses as you scroll.
+Liquid Glass UI components for React Native, built to drop into React Navigation as custom tab bars and headers. Everything you need for iOS 26 style screens: a tab bar with Apple's liquid lens, one floating header whose buttons morph and merge between screens, search fields that grow out of their buttons, and a profile header that collapses as you scroll.
 
 **Highlights**
 
@@ -237,7 +237,7 @@ useLiquidNavigationHeader(navigation, {
 
 ### Search header
 
-`LiquidSearchHeader` is a full-width field under a header row that rises into it, like Telegram's Contacts. Put it under the shared header with `headerHeight={LIQUID_HEADER_HEIGHT}`, clear the header while searching, and hide the tab bar with `tabBarStyle: { display: 'none' }`.
+`LiquidSearchHeader` is a full-width field under a header row that rises into it, like a contacts list on iOS 26. Put it under the shared header with `headerHeight={LIQUID_HEADER_HEIGHT}`, clear the header while searching, and hide the tab bar with `tabBarStyle: { display: 'none' }`.
 
 ### Profile header
 
@@ -323,7 +323,7 @@ The glass effects (blur, vibrancy, lens, highlight, shadows) are adapted from [A
 
 ## Example app
 
-The `example` folder is a React Native CLI app in the style of Telegram on iOS 26: Contacts with a search header, Chats with Edit and merging buttons, a chat screen and channel profile, a Settings-style header search, a tab bar search screen, top tabs, controls, a glass lab, and light/dark and LTR/RTL switches. It installs the published package from npm.
+The `example` folder is a React Native CLI app in the iOS 26 style: Contacts with a search header, Chats with Edit and merging buttons, a chat screen and channel profile, a Settings-style header search, a tab bar search screen, top tabs, controls, a glass lab, and light/dark and LTR/RTL switches. It installs the published package from npm.
 
 ```sh
 cd example

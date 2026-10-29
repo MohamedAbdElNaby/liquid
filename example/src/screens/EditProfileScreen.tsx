@@ -11,7 +11,7 @@ import type { RootStackParamList } from '../../App';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EditProfile'>;
 
-// Telegram's Edit Profile: pushing it from Controls morphs the QR circle into
+// Edit Profile: pushing it from Controls morphs the QR circle into
 // X, and the search circle and Edit capsule melt into one blue ✓.
 export function EditProfileScreen({ navigation }: Props) {
   const headerHeight = useLiquidHeaderHeight();

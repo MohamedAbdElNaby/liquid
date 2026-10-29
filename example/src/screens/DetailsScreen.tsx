@@ -14,7 +14,7 @@ import { SearchIcon } from '../HeaderIcons';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Details'>;
 
-// Telegram-style chat screen. The floating header (shared with Home) morphs
+// Chat screen. The floating header (shared with Home) morphs
 // Edit into the back button, shows the title and a subtitle in a glass
 // capsule and an avatar circle. The bottom bar's Mute button morphs to Unmute.
 export function DetailsScreen({ navigation, route }: Props) {

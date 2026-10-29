@@ -305,7 +305,7 @@ figcaption { margin-top: 8px; font-size: 14px; color: var(--muted); text-align: 
   <a href="#bottom-tabs">Bottom tab bar</a>
   <a href="#top-tabs">Top tab bar</a>
   <a href="#header">Header</a>
-  <h4>Telegram-style screens</h4>
+  <h4>iOS 26 style screens</h4>
   <a href="#morphing-header">Morphing header</a>
   <a href="#search-screens">Search</a>
   <a href="#profile">Profile header</a>
@@ -555,8 +555,8 @@ useLiquidNavigationHeader(navigation, {
   <h2>Search</h2>
   <ul>
     <li><strong>Tab bar search screen</strong>: <code>createLiquidBottomTabBar({ search: { route: 'Search' } })</code> and a <code>Search</code> tab screen. The circle morphs into a field, the Search screen opens and reads <code>route.params?.query</code>; closing returns to the previous tab.</li>
-    <li><strong>Search under the header</strong> (Telegram Contacts): <code>LiquidSearchHeader</code> with <code>headerHeight={LIQUID_HEADER_HEIGHT}</code>; clear the shared header while searching so the field rises into its place.</li>
-    <li><strong>Header search circle</strong> (Telegram Settings): the <code>search</code> option of <code>useLiquidNavigationHeader</code>.</li>
+    <li><strong>Search under the header</strong> (a contacts list): <code>LiquidSearchHeader</code> with <code>headerHeight={LIQUID_HEADER_HEIGHT}</code>; clear the shared header while searching so the field rises into its place.</li>
+    <li><strong>Header search circle</strong> (a settings screen): the <code>search</code> option of <code>useLiquidNavigationHeader</code>.</li>
   </ul>
   <figure><img src="media/tab-search.jpg" alt="Search screen opened from the tab bar" width="300" loading="lazy"><figcaption>Search screen with the tab bar field open</figcaption></figure>
 </section>

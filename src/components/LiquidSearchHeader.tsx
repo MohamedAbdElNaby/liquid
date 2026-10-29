@@ -38,8 +38,8 @@ export type LiquidSearchHeaderProps = {
 };
 
 /**
- * A header row with a full-width glass search field under it, like the
- * Contacts screen of Telegram on iOS 26. Tapping the field raises it into the
+ * A header row with a full-width glass search field under it, like a
+ * contacts screen on iOS 26. Tapping the field raises it into the
  * header row while the row fades away and a close button slides in, all
  * animated natively. The content below moves up with it.
  *

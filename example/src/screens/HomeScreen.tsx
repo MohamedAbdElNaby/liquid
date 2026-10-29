@@ -70,7 +70,7 @@ export function HomeScreen() {
     onPress: () => setPressed(null),
   });
 
-  // Telegram's Chats header: Edit becomes Done and the circles blur away while
+  // Chats header: Edit becomes Done and the circles blur away while
   // editing; pushing a photo morphs Edit into the back button.
   useLiquidNavigationHeader(navigation, {
     title: 'Liquid',

@@ -31,7 +31,7 @@ const NAMES = [
 ];
 const AVATAR_COLORS = ['#FF9F0A', '#5E5CE6', '#30D158', '#FF375F', '#64D2FF'];
 
-// Telegram-style Contacts screen: a header row (Sort, title, +) with a
+// Contacts screen: a header row (Sort, title, +) with a
 // full-width search field under it. Searching raises the field into the row
 // and hides the tab bar.
 export function ContactsScreen() {

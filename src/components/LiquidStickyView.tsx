@@ -19,7 +19,7 @@ export type LiquidStickyViewProps = {
 
 /**
  * Scrolls with the content, then stays under a header, like the Media and
- * Links control of a Telegram profile. Place it over the scroll view and
+ * Links control of a profile screen. Place it over the scroll view and
  * leave a gap of its height in the content at `offset`. Runs on the native
  * driver.
  */

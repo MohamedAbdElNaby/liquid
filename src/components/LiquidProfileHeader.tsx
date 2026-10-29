@@ -140,7 +140,7 @@ export function useLiquidProfileEntrance(): LiquidProfileEntrance {
 }
 
 /**
- * A profile header like Telegram's on iOS 26. It opens on the full-width
+ * A profile header in the iOS 26 style. It opens on the full-width
  * photo, its bottom melting into a blur behind the name and a row of
  * buttons. Scrolling turns the photo into a round avatar over the blurred
  * photo and centers the name under it, then shrinks the avatar away and

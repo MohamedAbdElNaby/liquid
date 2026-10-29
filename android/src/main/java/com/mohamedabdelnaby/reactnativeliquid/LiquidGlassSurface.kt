@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.unit.dp
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.Backdrop
@@ -68,6 +69,16 @@ internal class GlassState {
   var rimGradient by mutableStateOf("diagonal")
   /** The iOS 26 light-glass edge (specularEdge): glow inside the top, white line along the bottom, graded hairline. */
   var specularEdge by mutableStateOf(false)
+  /** Its strengths (0 to 1) and how far the top glow / bottom shine reach (fractions of the height). */
+  var specularTopOpacity by mutableFloatStateOf(0.95f)
+  var specularBottomOpacity by mutableFloatStateOf(0.95f)
+  var specularHairlineOpacity by mutableFloatStateOf(1f)
+  var specularGlowHeight by mutableFloatStateOf(0.16f)
+  var specularBottomHeight by mutableFloatStateOf(0.07f)
+  /** Light catching the top-left and bottom-right corners (cornerReflection), 0 to 1. */
+  var cornerReflection by mutableFloatStateOf(0f)
+  /** Blur of the page behind the glass in dp (backdropBlur); 0 uses [blurRadius]. */
+  var backdropBlur by mutableFloatStateOf(0f)
   var shadow by mutableStateOf(true)
   /** Fades the glass out over this many dp at its bottom edge. */
   var fadeBottom by mutableFloatStateOf(0f)
@@ -166,29 +177,41 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
       // otherwise light it back up.
       .drawWithContent {
         drawContent()
+        if (state.cornerReflection > 0f) {
+          drawCornerReflection(state)
+        }
         if (state.specularEdge) {
           val radius = min(state.cornerRadius * state.density, min(size.width, size.height) / 2f)
           val corner = androidx.compose.ui.geometry.CornerRadius(radius)
+          val top = state.specularTopOpacity.coerceIn(0f, 1f)
+          val bottom = state.specularBottomOpacity.coerceIn(0f, 1f)
+          val hairline = state.specularHairlineOpacity.coerceIn(0f, 1f)
+          // The top glow reaches this far down; the bottom shine this far up (a
+          // thin line at the default 7%, a glow like the top one when taller).
+          val glowEnd = state.specularGlowHeight.coerceIn(0.02f, 0.9f)
+          val lineStart = maxOf(glowEnd, 1f - state.specularBottomHeight.coerceIn(0.02f, 0.9f))
           // Light from above: white just inside the top edge, fading into the
-          // glass, and a white line along the bottom edge.
+          // glass, and white along the bottom edge.
           drawRoundRect(
             brush = Brush.verticalGradient(
-              0f to Color.White.copy(alpha = 0.95f),
-              0.16f to Color.White.copy(alpha = 0f),
-              0.93f to Color.White.copy(alpha = 0f),
-              1f to Color.White.copy(alpha = 0.95f),
+              0f to Color.White.copy(alpha = top),
+              glowEnd to Color.White.copy(alpha = 0f),
+              lineStart to Color.White.copy(alpha = 0f),
+              1f to Color.White.copy(alpha = bottom),
             ),
             cornerRadius = corner,
           )
           // The hairline: light grey along the top, darker down the sides,
-          // gone along the bottom where the white line is.
+          // gone along the bottom under a white line; a bottom glow mirrors
+          // the top, light grey along the bottom too.
+          val mirrored = state.specularBottomHeight > 0.071f
           val hair = 0.5.dp.toPx()
           drawRoundRect(
             brush = Brush.verticalGradient(
-              0f to Color.Black.copy(alpha = 0.13f),
-              0.45f to Color.Black.copy(alpha = 0.3f),
-              0.78f to Color.Black.copy(alpha = 0.24f),
-              1f to Color.Black.copy(alpha = 0f),
+              0f to Color.Black.copy(alpha = 0.13f * hairline),
+              0.45f to Color.Black.copy(alpha = 0.3f * hairline),
+              (if (mirrored) 0.55f else 0.78f) to Color.Black.copy(alpha = (if (mirrored) 0.3f else 0.24f) * hairline),
+              1f to Color.Black.copy(alpha = (if (mirrored) 0.13f else 0f) * hairline),
             ),
             topLeft = androidx.compose.ui.geometry.Offset(hair / 2f, hair / 2f),
             size = androidx.compose.ui.geometry.Size(size.width - hair, size.height - hair),
@@ -267,7 +290,7 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
         },
         effects = {
           vibrancy()
-          blur(state.blurRadius.dp.toPx())
+          blur((if (state.backdropBlur > 0f) state.backdropBlur else state.blurRadius).dp.toPx())
           val maxHeight = state.maxRadiusPx
           lens(
             refractionHeight = min(state.refractionHeight.dp.toPx() * (1f + 0.25f * pressProgress), maxHeight),
@@ -312,4 +335,46 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
         },
       ),
   )
+}
+
+/**
+ * Light catching the top-left and bottom-right corners (cornerReflection): a
+ * soft bloom inside the glass and a brighter glint on the edge there, like iOS.
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCornerReflection(state: GlassState) {
+  val alpha = state.cornerReflection.coerceIn(0f, 1f)
+  val radius = min(state.cornerRadius * state.density, min(size.width, size.height) / 2f)
+  // The middle of each corner's curve, where the light sits.
+  val inset = radius * (1f - 0.70710677f)
+  val corners = listOf(
+    androidx.compose.ui.geometry.Offset(inset, inset),
+    androidx.compose.ui.geometry.Offset(size.width - inset, size.height - inset),
+  )
+  val bloomReach = maxOf(12.dp.toPx(), radius * 1.6f)
+  val glintReach = maxOf(10.dp.toPx(), radius * 1.3f)
+  val glintWidth = 1.2.dp.toPx()
+  fun light(center: androidx.compose.ui.geometry.Offset, reach: Float, a: Float) = Brush.radialGradient(
+    0f to Color.White.copy(alpha = a),
+    0.4f to Color.White.copy(alpha = a * 0.4f),
+    1f to Color.Transparent,
+    center = center,
+    radius = reach,
+  )
+  val shape = androidx.compose.ui.graphics.Path().apply {
+    addRoundRect(androidx.compose.ui.geometry.RoundRect(0f, 0f, size.width, size.height, radius, radius))
+  }
+  clipPath(shape) {
+    corners.forEach { drawRect(light(it, bloomReach, alpha)) }
+  }
+  // The edge catches more light than the glass behind it.
+  val glintAlpha = min(1f, alpha * 4f)
+  corners.forEach {
+    drawRoundRect(
+      brush = light(it, glintReach, glintAlpha),
+      topLeft = androidx.compose.ui.geometry.Offset(glintWidth / 2f, glintWidth / 2f),
+      size = androidx.compose.ui.geometry.Size(size.width - glintWidth, size.height - glintWidth),
+      cornerRadius = androidx.compose.ui.geometry.CornerRadius((radius - glintWidth / 2f).coerceAtLeast(0f)),
+      style = androidx.compose.ui.graphics.drawscope.Stroke(glintWidth),
+    )
+  }
 }

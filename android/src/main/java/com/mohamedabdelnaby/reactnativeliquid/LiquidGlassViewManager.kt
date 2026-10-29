@@ -133,6 +133,41 @@ class LiquidGlassViewManager : ReactViewManager() {
     view.glass { specularEdge = value }
   }
 
+  @ReactProp(name = "specularTopOpacity", defaultFloat = 0.95f)
+  fun setSpecularTopOpacity(view: ReactViewGroup, value: Float) {
+    view.glass { specularTopOpacity = value }
+  }
+
+  @ReactProp(name = "specularBottomOpacity", defaultFloat = 0.95f)
+  fun setSpecularBottomOpacity(view: ReactViewGroup, value: Float) {
+    view.glass { specularBottomOpacity = value }
+  }
+
+  @ReactProp(name = "specularHairlineOpacity", defaultFloat = 1f)
+  fun setSpecularHairlineOpacity(view: ReactViewGroup, value: Float) {
+    view.glass { specularHairlineOpacity = value }
+  }
+
+  @ReactProp(name = "specularGlowHeight", defaultFloat = 0.16f)
+  fun setSpecularGlowHeight(view: ReactViewGroup, value: Float) {
+    view.glass { specularGlowHeight = value }
+  }
+
+  @ReactProp(name = "specularBottomHeight", defaultFloat = 0.07f)
+  fun setSpecularBottomHeight(view: ReactViewGroup, value: Float) {
+    view.glass { specularBottomHeight = value }
+  }
+
+  @ReactProp(name = "cornerReflection", defaultFloat = 0f)
+  fun setCornerReflection(view: ReactViewGroup, value: Float) {
+    view.glass { cornerReflection = value }
+  }
+
+  @ReactProp(name = "backdropBlur", defaultFloat = 0f)
+  fun setBackdropBlur(view: ReactViewGroup, value: Float) {
+    view.glass { backdropBlur = value }
+  }
+
   @ReactProp(name = "rimGradient")
   fun setRimGradient(view: ReactViewGroup, value: String?) {
     view.glass { rimGradient = value ?: "diagonal" }

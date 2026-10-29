@@ -103,6 +103,13 @@ static void RNLiquidAnimate(void (^animations)(void))
 - (void)mountChildComponentView:(UIView<RCTComponentViewProtocol> *)childComponentView index:(NSInteger)index
 {
   [_effectView.contentView insertSubview:childComponentView atIndex:index];
+  // The sheen and rim stay above the content.
+  if (_sheen != nil) {
+    [_effectView.contentView.layer addSublayer:_sheen];
+  }
+  if (_rim != nil) {
+    [_effectView.contentView.layer addSublayer:_rim];
+  }
   if ([self animatesContentChanges]) {
     [self markContentSwapped];
     // The new content sharpens and grows into place.
@@ -274,11 +281,12 @@ static void RNLiquidAnimate(void (^animations)(void))
     _sheen.masksToBounds = YES;
     _sheen.cornerCurve = kCACornerCurveContinuous;
   }
-  // Under the rim when there is one.
-  if (_rim.superlayer == self.layer) {
-    [self.layer insertSublayer:_sheen below:_rim];
+  // Inside the glass, so it grows with it when pressed; under the rim.
+  CALayer *host = _effectView.contentView.layer;
+  if (_rim.superlayer == host) {
+    [host insertSublayer:_sheen below:_rim];
   } else {
-    [self.layer addSublayer:_sheen];
+    [host addSublayer:_sheen];
   }
   CGFloat alpha = MAX(0, MIN(1, _sheenOpacity));
   // Like light on a lens: bright at the top, clear through the middle, a
@@ -289,7 +297,7 @@ static void RNLiquidAnimate(void (^animations)(void))
     (__bridge id)[UIColor colorWithWhite:1 alpha:0].CGColor,
     (__bridge id)[UIColor colorWithWhite:0 alpha:alpha * 0.14].CGColor,
   ];
-  CGRect bounds = self.bounds;
+  CGRect bounds = (CGRect){CGPointZero, self.bounds.size};
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
   _sheen.frame = bounds;
@@ -315,8 +323,9 @@ static void RNLiquidAnimate(void (^animations)(void))
     _rimMask.strokeColor = UIColor.blackColor.CGColor;
     _rim.mask = _rimMask;
   }
-  // Above the effect view and its content.
-  [self.layer addSublayer:_rim];
+  // Inside the glass, above its content: the glass grows when pressed and
+  // the rim has to grow with it, or a second outline shows.
+  [_effectView.contentView.layer addSublayer:_rim];
 
   // Bright on the top-left and bottom-right curves, fainter along the sides.
   CGFloat alpha = CGColorGetAlpha(_rimColor.CGColor);
@@ -332,7 +341,7 @@ static void RNLiquidAnimate(void (^animations)(void))
     _rim.colors = @[ (__bridge id)_rimColor.CGColor, (__bridge id)side, (__bridge id)side, (__bridge id)_rimColor.CGColor ];
   }
 
-  CGRect bounds = self.bounds;
+  CGRect bounds = (CGRect){CGPointZero, self.bounds.size};
   CGFloat radius = MAX(0, MIN(_cornerRadius, MIN(bounds.size.width, bounds.size.height) / 2));
   CGFloat inset = _rimWidth / 2;
   [CATransaction begin];

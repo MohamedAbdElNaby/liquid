@@ -201,9 +201,9 @@ class LiquidMenuView(context: Context) : LiquidComposeHost(context) {
         source.alpha = 1f
         dispatchLiquidEvent("OpenChange") { putBoolean("open", false) }
       },
-      // The button stays on screen under the drop, which shows it through its glass at first,
-      // and only goes once the drop has grown over it (and comes back as it shrinks).
-      onCovered = { covered -> source.alpha = if (covered) 0f else 1f },
+      // The button and the drop cross-fade while the drop is about the button's size: the button
+      // fades out as the drop grows over it, and back in as the menu shrinks into it.
+      onProgress = { size -> source.alpha = ((SOURCE_GONE - size) / (SOURCE_GONE - SOURCE_BACK)).coerceIn(0f, 1f) },
     ).also { root.addView(it, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)) }
 
     dispatchLiquidEvent("OpenChange") { putBoolean("open", true) }
@@ -292,7 +292,7 @@ private class MenuOverlay(
   private val trigger: Rect,
   private val onSelect: (String) -> Unit,
   private val onClosed: () -> Unit,
-  private val onCovered: (Boolean) -> Unit,
+  private val onProgress: (Float) -> Unit,
 ) : FrameLayout(context) {
 
   private val lifecycleOwner = GlassLifecycleOwner()
@@ -311,7 +311,7 @@ private class MenuOverlay(
     lifecycleOwner.install(composeView)
     composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
     composeView.setContent {
-      MenuPanel(state, trigger, backdrop, onSelect, onCovered) { post { onClosed() } }
+      MenuPanel(state, trigger, backdrop, onSelect, onProgress) { post { onClosed() } }
     }
     addView(composeView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
   }
@@ -337,7 +337,7 @@ private fun MenuPanel(
   trigger: Rect,
   backdrop: Backdrop,
   onSelect: (String) -> Unit,
-  onCovered: (Boolean) -> Unit,
+  onProgress: (Float) -> Unit,
   onClosed: () -> Unit,
 ) {
   val dark = isDarkScheme(state.colorScheme)
@@ -347,7 +347,6 @@ private fun MenuPanel(
   val openX = remember { mutableFloatStateOf(0f) }
   val openY = remember { mutableFloatStateOf(0f) }
   var morph by remember { mutableStateOf<Job?>(null) }
-  var covered by remember { mutableStateOf(false) }
 
   // Stepped per drawn frame (at most a 30 fps frame at a time), so the stall of opening the
   // overlay cannot make the drop jump ahead: it always grows out of the button.
@@ -366,12 +365,11 @@ private fun MenuPanel(
         val moving = x.step(dt) or y.step(dt)
         openX.floatValue = x.value
         openY.floatValue = y.value
-        val nowCovered = minOf(x.value, y.value) > 0.5f
-        if (nowCovered != covered) {
-          covered = nowCovered
-          onCovered(nowCovered)
-        }
-        if (!moving) break
+        // How far the drop is from the button's size, in either direction.
+        val size = maxOf(x.value, y.value)
+        onProgress(size)
+        // Closing ends once the drop has faded into the button, not in the spring's slow tail.
+        if (!moving || (target == 0f && size < DROP_GONE)) break
       }
       then?.invoke()
     }
@@ -441,6 +439,11 @@ private fun MenuPanel(
           layout(constraints.maxWidth, constraints.maxHeight) {
             placeable.place(left.roundToInt(), top.roundToInt())
           }
+        }
+        // Fades in over the button as it lifts, and out as it lands back on it, so the two
+        // never show as two glasses on top of each other.
+        .graphicsLayer {
+          alpha = ((maxOf(openX.value, openY.value) - DROP_GONE) / (DROP_SHOWN - DROP_GONE)).coerceIn(0f, 1f)
         }
         .drawBackdrop(
           backdrop = backdrop,
@@ -658,3 +661,18 @@ class LiquidMenuViewManager : LiquidComposeHostManager() {
     const val NAME = "RNLiquidMenu"
   }
 }
+
+// The drop and its button cross-fade only while the drop is nearly the button's size (its
+// larger side within these fractions of the way to the menu's), so they never show apart.
+
+/** Size by which the drop is fully shown over its button. */
+private const val DROP_SHOWN = 0.12f
+
+/** Size below which the drop is gone (and closing ends). */
+private const val DROP_GONE = 0.02f
+
+/** Size below which the button is fully back, under the drop before it fades. */
+private const val SOURCE_BACK = 0.12f
+
+/** Size by which the button under the drop is gone. */
+private const val SOURCE_GONE = 0.3f

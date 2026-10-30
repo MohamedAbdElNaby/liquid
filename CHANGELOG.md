@@ -13,6 +13,10 @@
 - Android: a `bare` `LiquidMenu` inside a glass (a toolbar capsule) opens out of
   that whole glass, like iOS: the capsule becomes the drop that grows into the
   menu, and the menu shrinks back into the capsule when it closes.
+- Android: the end of a menu's close is smooth, like iOS. The drop and the
+  button it shrinks into cross-fade while the drop is nearly the button's size,
+  instead of the button popping back under a drop still on screen, and the
+  close ends there rather than in the spring's slow tail.
 - Android: a morph could snap to its end. Its spring ran on the clock, so when
   the app stalled as the morph started (a busy GPU, a screen recorder), it had
   already finished by the next frame. It now advances once per drawn frame, by

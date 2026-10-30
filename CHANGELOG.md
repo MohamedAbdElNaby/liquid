@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.4.2 (2026-10-30)
+
+Includes the 1.4.1 changes below: 1.4.1 was tagged on GitHub but never
+published to npm.
 
 ### Fixed
 
@@ -27,7 +30,7 @@
   re-blurred on every frame of any animation. Busy screens animate faster
   (Glass Lab: UI thread per frame 25 ms → 8 ms).
 
-## 1.4.1 (2026-10-30)
+## 1.4.1 (2026-10-30, not published to npm; shipped in 1.4.2)
 
 ### Changed
 

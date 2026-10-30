@@ -10,6 +10,9 @@
   starts on the first frame and grows frame by frame, so it no longer pauses
   or jumps when opening the menu stalls the app. The button stays under the
   drop until the drop covers it, and comes back as the menu shrinks into it.
+- Android: a `bare` `LiquidMenu` inside a glass (a toolbar capsule) opens out of
+  that whole glass, like iOS: the capsule becomes the drop that grows into the
+  menu, and the menu shrinks back into the capsule when it closes.
 - Android: a morph could snap to its end. Its spring ran on the clock, so when
   the app stalled as the morph started (a busy GPU, a screen recorder), it had
   already finished by the next frame. It now advances once per drawn frame, by

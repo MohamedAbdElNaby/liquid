@@ -178,13 +178,16 @@ class LiquidMenuView(context: Context) : LiquidComposeHost(context) {
     val activity = (context as? ReactContext)?.currentActivity ?: return
     val root = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
 
+    // A bare menu sits inside a glass (a toolbar capsule): like iOS, that whole glass turns
+    // into the menu, not just the menu's own spot in it.
+    val source: View = if (state.bare) enclosingGlass() ?: this else this
     val rootLocation = IntArray(2).also { root.getLocationInWindow(it) }
-    val location = IntArray(2).also { getLocationInWindow(it) }
+    val location = IntArray(2).also { source.getLocationInWindow(it) }
     val trigger = Rect(
       location[0] - rootLocation[0],
       location[1] - rootLocation[1],
-      location[0] - rootLocation[0] + width,
-      location[1] - rootLocation[1] + height,
+      location[0] - rootLocation[0] + source.width,
+      location[1] - rootLocation[1] + source.height,
     )
 
     overlay = MenuOverlay(
@@ -195,15 +198,27 @@ class LiquidMenuView(context: Context) : LiquidComposeHost(context) {
       onClosed = {
         root.removeView(overlay)
         overlay = null
-        alpha = 1f
+        source.alpha = 1f
         dispatchLiquidEvent("OpenChange") { putBoolean("open", false) }
       },
       // The button stays on screen under the drop, which shows it through its glass at first,
       // and only goes once the drop has grown over it (and comes back as it shrinks).
-      onCovered = { covered -> alpha = if (covered) 0f else 1f },
+      onCovered = { covered -> source.alpha = if (covered) 0f else 1f },
     ).also { root.addView(it, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)) }
 
     dispatchLiquidEvent("OpenChange") { putBoolean("open", true) }
+  }
+
+  /** The nearest glass view this menu is drawn in, if any. */
+  private fun enclosingGlass(): View? {
+    var view = parent
+    while (view is View) {
+      if (view is LiquidGlassView) {
+        return view
+      }
+      view = view.parent
+    }
+    return null
   }
 
   override fun dispose() {

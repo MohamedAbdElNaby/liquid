@@ -227,6 +227,12 @@ export type LiquidHeaderSearch = Pick<
   | 'placeholder'
 >;
 
+/** The navigation event data the header reads. */
+type LiquidHeaderEvent = {
+  data?: { closing?: boolean };
+  defaultPrevented?: boolean;
+};
+
 /** The parts of a React Navigation `navigation` object the header uses. */
 export type LiquidHeaderNavigation = {
   canGoBack: () => boolean;
@@ -238,13 +244,12 @@ export type LiquidHeaderNavigation = {
    * `transitionStart` (native stack) lets it leave as its screen starts to,
    * on Android, where `blur` only comes once the screen is gone.
    */
-  addListener: (
-    event: 'focus' | 'blur' | 'beforeRemove' | 'transitionStart',
-    callback: (event: {
-      data?: { closing?: boolean };
-      defaultPrevented?: boolean;
-    }) => void
-  ) => () => void;
+  // Typed loosely on purpose: React Navigation's `addListener` is generic over
+  // each navigator's own event names, so a narrower signature would reject
+  // some navigator's `navigation`. The header listens to `focus`, `blur`,
+  // `beforeRemove` and `transitionStart` (see `LiquidHeaderEvent`).
+
+  addListener(event: any, callback: (event: any) => void): () => void;
   getState?: () => { type?: string } | undefined;
 };
 
@@ -536,23 +541,26 @@ export function useLiquidNavigationHeader(
   useEffect(() => {
     const focus = navigation.addListener('focus', () => setFocused(true));
     const blur = navigation.addListener('blur', () => setFocused(false));
-    const beforeRemove = navigation.addListener('beforeRemove', (event) => {
-      removing.current = true;
-      if (!SLIDES_WITH_SCREEN) {
-        // Android: leave as the pop starts, unless a later listener keeps
-        // the screen.
-        Promise.resolve().then(() => {
-          if (event.defaultPrevented) {
-            removing.current = false;
-          } else {
-            setFocused(false);
-          }
-        });
+    const beforeRemove = navigation.addListener(
+      'beforeRemove',
+      (event: LiquidHeaderEvent) => {
+        removing.current = true;
+        if (!SLIDES_WITH_SCREEN) {
+          // Android: leave as the pop starts, unless a later listener keeps
+          // the screen.
+          Promise.resolve().then(() => {
+            if (event.defaultPrevented) {
+              removing.current = false;
+            } else {
+              setFocused(false);
+            }
+          });
+        }
       }
-    });
+    );
     const transitionStart = navigation.addListener(
       'transitionStart',
-      (event) => {
+      (event: LiquidHeaderEvent) => {
         if (!SLIDES_WITH_SCREEN && event.data?.closing) {
           setFocused(false);
         }

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Changed
+
+- Android: regular glass blurs at 20 dp by default (was 8), a frost closer to
+  iOS regular glass; in dark mode it lightens what is behind it, like iOS,
+  instead of dimming it into navy pills. Pass `blurRadius` to keep the old
+  look.
+
 ### Fixed
 
 - Header: `useLiquidNavigationHeader(navigation, …)` gave a TypeScript error
@@ -14,6 +21,12 @@
   the new size already starts from it.
 - Android: the tab bars' lifted drop (bottom and top) had a thick white
   outline. Its edge is now a faint glint on a hairline, like iOS.
+- Android: content in a morphing glass could stay half faded (e.g. the ✕ of
+  the example's toolbar) when a second morph started during the fade. The
+  fade now always returns to the content's own opacity.
+- Android: in dark mode a neighbouring glass was drawn into a lens as a dark
+  grey pill, showing as a dark smudge during morphs. It is now the same light
+  frost as the glass itself.
 - Bottom tab bar search: no more "Passing an object as the argument to
   'navigate' is deprecated" warning from React Navigation 7 when the search
   opens, changes or closes.

@@ -101,13 +101,20 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
     layoutComposeView()
   }
 
+  // The opacity React gave each child, kept while our fades run: reading `alpha` mid-fade would
+  // pick up a partial value, and the next fade would end there, leaving the content faded.
+  private val contentAlpha = java.util.WeakHashMap<View, Float>()
+
   /** The React content jumps to its new layout, so fade it in while the glass morphs. */
   private fun fadeInContent() {
     for (i in RESERVED_CHILDREN until childCount) {
       val child = getChildAt(i) ?: continue
-      val alpha = child.alpha
+      val target = contentAlpha.getOrPut(child) { child.alpha }
+      child.animate().cancel()
       child.alpha = 0f
-      child.animate().alpha(alpha).setStartDelay(120).setDuration(300).start()
+      child.animate().alpha(target).setStartDelay(120).setDuration(300)
+        .withEndAction { contentAlpha.remove(child) }
+        .start()
     }
   }
 
@@ -125,10 +132,13 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
       return
     }
     contentSwappedAt = SystemClock.uptimeMillis()
+    val target = contentAlpha.getOrPut(child) { child.alpha }
     child.alpha = 0f
     child.scaleX = 0.85f
     child.scaleY = 0.85f
-    child.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(60).setDuration(380).start()
+    child.animate().alpha(target).scaleX(1f).scaleY(1f).setStartDelay(60).setDuration(380)
+      .withEndAction { contentAlpha.remove(child) }
+      .start()
     animateBlur(child, from = CONTENT_BLUR_DP, to = 0f, durationMs = 380) {}
   }
 

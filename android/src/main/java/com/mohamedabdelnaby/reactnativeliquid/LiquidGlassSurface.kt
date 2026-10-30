@@ -315,7 +315,10 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
           val surface = when {
             !isGlassEffectSupported && dark -> Color(0xF21C1C1E)
             !isGlassEffectSupported -> Color(0xF2F2F2F7)
-            dark -> Color(0xFF1C1C1E).copy(alpha = if (clear) 0.12f else 0.38f)
+            // iOS regular glass is a frost, not a dim: it lightens what is behind it in dark mode
+            // too (bright blue stays a lighter blue, black becomes dark grey). Dark fills turned it
+            // into navy pills over bright content.
+            dark -> if (clear) Color(0xFF1C1C1E).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.14f)
             else -> Color.White.copy(alpha = if (clear) 0.08f else 0.32f)
           }
           drawRect(surface)

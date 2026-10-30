@@ -126,7 +126,7 @@ export type LiquidGlassViewProps = ViewProps & {
   colorScheme?: LiquidColorSchemeSetting;
   /**
    * Android: blur radius of the backdrop in dp.
-   * @default 8 for `regular`, 2 for `clear`
+   * @default 20 for `regular` (a frost like iOS regular glass), 2 for `clear`
    */
   blurRadius?: number;
   /** Android 13+: height of the refracting edge in dp. @default 12 */
@@ -153,7 +153,7 @@ export function LiquidGlassView({
   interactive = false,
   cornerRadius,
   colorScheme = 'system',
-  blurRadius = glassStyle === 'clear' ? 2 : 8,
+  blurRadius = glassStyle === 'clear' ? 2 : 20,
   style,
   ...rest
 }: LiquidGlassViewProps) {

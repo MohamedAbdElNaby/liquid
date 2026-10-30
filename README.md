@@ -282,7 +282,7 @@ Keep a container's `spacing` below the gap between its children: the shapes then
 | `backdropBlur` | `0` | Blurs the page behind the glass (points; Android dp). With `'clear'` glass it sits between clear and regular. |
 | `rimColor`, `rimWidth`, `rimGradient`, `rimShadeColor`, `rimEdgeColor` | | A specular rim: diagonal or vertical, with an optional shade and hairline. |
 | `colorScheme` | `'system'` | Forces the light or dark material. |
-| `blurRadius` | `8` (`clear`: `2`) | Android: backdrop blur in dp. |
+| `blurRadius` | `20` (`clear`: `2`) | Android: backdrop blur in dp. |
 | `refractionHeight` / `refractionAmount` | `12` / `24` | Android 13+: lens refraction in dp. |
 | `chromaticAberration`, `depthEffect` | `false` | Android 13+: lens options. |
 | `highlight`, `shadow` | `true` | Android: rim highlight and drop shadow. |

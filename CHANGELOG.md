@@ -21,6 +21,10 @@
   the new size already starts from it.
 - Android: the tab bars' lifted drop (bottom and top) had a thick white
   outline. Its edge is now a faint glint on a hairline, like iOS.
+- Android: when a morph also added or removed a child (e.g. the toolbar's
+  "•••" menu), the content that stayed (the "≡") jumped to its new place
+  while the glass was still stretching. Like iOS, it now fades out and back
+  in with the rest.
 - Android: content in a morphing glass could stay half faded (e.g. the ✕ of
   the example's toolbar) when a second morph started during the fade. The
   fade now always returns to the content's own opacity.

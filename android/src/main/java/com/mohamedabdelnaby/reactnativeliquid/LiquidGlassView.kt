@@ -92,10 +92,9 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
       glassState.morphRight = (previous.right - right).toFloat()
       glassState.morphBottom = (previous.bottom - bottom).toFloat()
       glassState.morphGeneration++
-      // A content swap animates itself (see onViewAdded); only fade a plain relayout.
-      if (SystemClock.uptimeMillis() - contentSwappedAt > 100) {
-        fadeInContent()
-      }
+      // Like iOS, the content that stays fades back in at its new place instead of jumping
+      // there while the glass is still stretching. Content just added animates itself.
+      fadeInContent()
     }
     lastFrame = android.graphics.Rect(left, top, right, bottom)
     layoutComposeView()
@@ -107,8 +106,12 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
 
   /** The React content jumps to its new layout, so fade it in while the glass morphs. */
   private fun fadeInContent() {
+    val now = SystemClock.uptimeMillis()
     for (i in RESERVED_CHILDREN until childCount) {
       val child = getChildAt(i) ?: continue
+      if (now - (addedAt[child] ?: 0L) < 100) {
+        continue
+      }
       val target = contentAlpha.getOrPut(child) { child.alpha }
       child.animate().cancel()
       child.alpha = 0f
@@ -118,8 +121,9 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
     }
   }
 
-  // When React last swapped this morphing view's content, see onViewAdded.
-  private var contentSwappedAt = 0L
+  // When each child was added: it animates in by itself (see onViewAdded), so the morph's fade
+  // leaves it alone. Old content blurs away in removeViewAt.
+  private val addedAt = java.util.WeakHashMap<View, Long>()
 
   /** Content changes animate only on a morphing view that is already on screen. */
   private val animatesContentChanges: Boolean
@@ -131,7 +135,7 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
     if (child === composeView || !animatesContentChanges) {
       return
     }
-    contentSwappedAt = SystemClock.uptimeMillis()
+    addedAt[child] = SystemClock.uptimeMillis()
     val target = contentAlpha.getOrPut(child) { child.alpha }
     child.alpha = 0f
     child.scaleX = 0.85f
@@ -149,7 +153,6 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
       super.removeViewAt(index)
       return
     }
-    contentSwappedAt = SystemClock.uptimeMillis()
     startViewTransition(child)
     super.removeViewAt(index)
     child.animate().alpha(0f).scaleX(0.85f).scaleY(0.85f).setStartDelay(0).setDuration(260)

@@ -1,0 +1,80 @@
+# Changelog
+
+## 1.4.0 (not released yet)
+
+Glass edges that shine, a progressive blur, and a header that follows its
+screen. Adds native props and two native views on iOS: after upgrading run
+`cd ios && pod install` and rebuild the app (a JS reload is not enough).
+
+### New
+
+**Glass edges** (`LiquidGlassView`, `LiquidButton`, `LiquidIconButton`, the header's glass)
+
+- `specularEdge`: the iOS 26 light-glass edge, like the Messages call buttons:
+  a fine hairline, a white glow inside the top edge and a white line along the
+  bottom. It shines without tinting the glass. iOS and Android.
+  - Tune it with `specularTopOpacity`, `specularBottomOpacity`,
+    `specularHairlineOpacity`, `specularGlowHeight` and `specularBottomHeight`
+    (a tall bottom shine mirrors the top: glow and hairline).
+- `cornerReflection`: light catching the top-left and bottom-right corners like
+  a lens (a soft bloom and a brighter glint).
+- `backdropBlur`: blurs the page behind the glass, inside its shape. With
+  `glassStyle: 'clear'` the glass shows the page softly blurred and bent at the
+  edges, between clear and regular. Android: dp.
+- `rimColor` / `rimWidth`: a specular rim on the edge. `rimSideOpacity` (iOS)
+  keeps some of it along the sides, `rimGradient: 'vertical'` runs it along the
+  top and bottom edges and fades it down the sides, `rimShadeColor` adds a dark
+  edge on the far side, `rimEdgeColor` a hairline all round the glass.
+- `sheenOpacity` (iOS): a soft white reflection across the top of the glass.
+- `fadeCurve: 'ease'` for `fadeBottom`: an S-curve that melts into the content
+  with no visible start or end (iOS and Android).
+
+**`LiquidProgressiveBlur`** (new component, new native view on iOS)
+
+A blur that is strongest at the top and weakens downwards, with a tint that
+fades out with it: the scroll edge behind a bar in iOS 26 Photos. iOS uses a
+variable blur; Android stacks glass layers that blur more and fade out higher.
+An iOS binary built before this view falls back to one fading glass, so an
+over-the-air JS update never shows "Unimplemented component".
+
+**Header** (`useLiquidNavigationHeader`, `<LiquidNavigationHeader>`)
+
+- `edgeGlass: true | { … }`: liquid glass behind the buttons, from the top of
+  the screen, melting into the content. `style: 'blur'` draws a progressive
+  blur instead (`maxBlur`, `tintColor`, `fadeHeight`, `fadeCurve`). `edge`
+  still takes your own element.
+- `glass`, `backGlass` and `titleGlass` style the back button, the buttons and
+  the title capsule (`titleGlass: false` is plain text). They take every glass
+  prop above. `titleAlign: 'start' | 'center' | 'end'`.
+- `LiquidHeaderProvider`: `direction` (`'ltr'` or `'rtl'`, for apps that flip
+  their layout in JS), `scrollEdgeEffect={false}` (hides iOS 26's top scroll
+  edge) and `extendScrollEdge` (experimental: extends the system scroll edge
+  behind the header).
+- New native views `RNLiquidScrollEdge` and `RNLiquidScrollEdgeContainer`
+  (iOS; no-ops on Android).
+- With no other header to morph into, the header now follows its screen: it
+  slides in and out with the screen on iOS and fades with it on Android,
+  instead of lingering over the previous screen. The navigation object passed
+  to the header may expose `beforeRemove` and `transitionStart` listeners for
+  this (React Navigation's does); without them the header behaves as before.
+
+### Fixed
+
+- iOS: the rim and sheen of a pressed button stayed the old size inside the
+  grown glass, so it looked like two buttons. They now live in the glass and
+  grow with it.
+- Android: the glass behind a fading edge (`fadeBottom`) ignored the fade, so
+  buttons over it turned flat white.
+- Android: the back chevron no longer points down in right-to-left layouts.
+
+### Docs
+
+`USAGE.md`, `CONTEXT.md` and the README describe the new props, the progressive
+blur and `edgeGlass`. `CONTEXT.md` has a new section on glass edges.
+
+## 1.3.0
+
+- Header: your own back icon, title and subtitle components, a leading title
+  that melts with the back button.
+- iOS: `LiquidGlassContainer` passes touches on its empty glass through when it
+  is `box-none`.

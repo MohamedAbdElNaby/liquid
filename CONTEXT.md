@@ -86,6 +86,9 @@ Rules that make the header morph:
   the title capsule; `backGlass` / `titleGlass` override it, `titleGlass: false`
   drops the title's glass. `<LiquidNavigationHeader navigation={…} {...options} />`
   is the same as the hook, as JSX.
+- `edgeGlass: true | {…}` puts liquid glass, or with `style: 'blur'` a
+  progressive blur with a fading tint (the Photos scroll edge), behind the
+  buttons from the top of the screen, melting into the content. iOS and Android.
 - `edge` (JSX, per screen) is drawn across the top of the screen behind the
   buttons, e.g. your own status-bar glass; without it the system's scroll
   edge effect shows.
@@ -195,6 +198,23 @@ pins under the bar.
 `<LiquidIconButton morph contentKey={liked ? 'liked' : 'like'}>`: the glass
 resizes and the content blurs across. Without `morph` the content just
 swaps.
+
+## Glass edges and blur
+
+- The shine of an edge is native: do not fake it with extra views. Use
+  `specularEdge` for the iOS 26 light-glass edge (hairline, glow inside the
+  top, line along the bottom), tune it with `specular*Opacity`,
+  `specularGlowHeight` and `specularBottomHeight`, and add `cornerReflection`
+  for a lens-like glint. `rimColor` / `rimGradient` / `rimShadeColor` /
+  `rimEdgeColor` are the older rim options.
+- Do not tint the glass grey to make an edge show on white pages: it looks
+  dirty. Make the edge itself brighter, or use `glassStyle: 'clear'` with
+  `backdropBlur` (e.g. `4`) for a softly blurred, bent page.
+- Android: `glassStyle: 'clear'` and a heavy edge flatten the lens, so the glass
+  stops looking liquid. Keep `'regular'` with a light `blurRadius` there if it
+  looks flat.
+- `LiquidProgressiveBlur` goes under a bar, over a scroll view. It is a new
+  native view on iOS: rebuild after installing.
 
 ## Pitfalls
 

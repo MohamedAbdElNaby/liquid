@@ -52,6 +52,7 @@ Liquid Glass UI components for React Native, built to drop into React Navigation
 | `LiquidTopTabBar` | Floating segmented glass bar for `@react-navigation/material-top-tabs`. |
 | `LiquidHeader` | Glass header for native-stack, stack, bottom-tabs and drawer navigators. |
 | `LiquidHeaderProvider`, `useLiquidNavigationHeader` | One floating header over a navigator whose glass buttons morph and merge between screens (Edit → back, two circles → one). |
+| `LiquidProgressiveBlur` | A blur strongest at the top that weakens downwards with a fading tint: the scroll edge behind a bar in iOS 26 Photos. |
 | `LiquidProfileHeader` | Profile header with a photo hero that turns into a round avatar, then a glass bar, as you scroll. |
 | `LiquidStickyView` | Scrolls with the content, then stays under a header. |
 | `LiquidButton`, `LiquidIconButton` | Glass and tinted (`prominent`) buttons that bulge when pressed. |
@@ -234,6 +235,9 @@ useLiquidNavigationHeader(navigation, {
 - Fewer items: the extra ones slide into their neighbour and fuse. Use `null` to keep a place empty, e.g. `right: [closeButton, null]` merges the second button into the first one, which you pressed.
 - `stretch: true` makes an item take the free width.
 - The back button appears in stacks, not in tabs (`backButton` overrides it).
+- With nothing to morph into, the header follows its screen: it slides in and out with the screen on iOS and fades with it on Android, instead of lingering over the previous screen.
+- `edgeGlass: true | { style: 'glass' | 'blur', … }` draws liquid glass or a progressive blur behind the buttons, from the top of the screen, melting into the content (iOS and Android).
+- `glass` / `backGlass` / `titleGlass` style the buttons, including the new `specularEdge`, `cornerReflection` and `backdropBlur`. See [USAGE.md](USAGE.md).
 
 ### Search header
 
@@ -271,7 +275,12 @@ Keep a container's `spacing` below the gap between its children: the shapes then
 | `interactive` | `false` | Native interactive glass on iOS 26. Press highlight on Android. |
 | `cornerRadius` | `style.borderRadius` | Values above half of the shortest side make a capsule. |
 | `morph` | `false` | Animates size and position changes as a liquid morph, and blurs content across when the children change. |
-| `fadeBottom` | `0` | iOS: fades the glass out over this many points at its bottom edge. |
+| `fadeBottom` | `0` | Fades the glass out over this many points at its bottom edge. |
+| `fadeCurve` | `'linear'` | `'ease'` fades along an S-curve with no visible start or end. |
+| `specularEdge` | `false` | The iOS 26 light-glass edge: a hairline, a white glow inside the top edge, a white line along the bottom. Tune with `specularTopOpacity`, `specularBottomOpacity`, `specularHairlineOpacity`, `specularGlowHeight`, `specularBottomHeight`. |
+| `cornerReflection` | `0` | Light catching the top-left and bottom-right corners, 0 to 1. |
+| `backdropBlur` | `0` | Blurs the page behind the glass (points; Android dp). With `'clear'` glass it sits between clear and regular. |
+| `rimColor`, `rimWidth`, `rimGradient`, `rimShadeColor`, `rimEdgeColor` | | A specular rim: diagonal or vertical, with an optional shade and hairline. |
 | `colorScheme` | `'system'` | Forces the light or dark material. |
 | `blurRadius` | `8` (`clear`: `2`) | Android: backdrop blur in dp. |
 | `refractionHeight` / `refractionAmount` | `12` / `24` | Android 13+: lens refraction in dp. |

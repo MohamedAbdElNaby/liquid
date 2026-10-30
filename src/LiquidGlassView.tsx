@@ -41,7 +41,7 @@ export type LiquidGlassViewProps = ViewProps & {
    */
   fadeBottom?: number;
   /**
-   * iOS: how `fadeBottom` fades: `'linear'`, or `'ease'` along an S-curve
+   * How `fadeBottom` fades: `'linear'`, or `'ease'` along an S-curve
    * that melts into the content with no visible start or end.
    * @default 'linear'
    */
@@ -91,29 +91,29 @@ export type LiquidGlassViewProps = ViewProps & {
    * without tinting the glass. iOS and Android. @default false
    */
   specularEdge?: boolean;
-  /** iOS: strength of the specular edge's white glow inside the top edge, 0 to 1. @default 0.95 */
+  /** Strength of the specular edge's white glow inside the top edge, 0 to 1. @default 0.95 */
   specularTopOpacity?: number;
-  /** iOS: strength of the specular edge's white line along the bottom, 0 to 1. @default 0.95 */
+  /** Strength of the specular edge's white line along the bottom, 0 to 1. @default 0.95 */
   specularBottomOpacity?: number;
-  /** iOS: strength of the specular edge's grey hairline, 0 to 1. @default 1 */
+  /** Strength of the specular edge's grey hairline, 0 to 1. @default 1 */
   specularHairlineOpacity?: number;
-  /** iOS: how far down the specular edge's top glow reaches, as a fraction of the height. @default 0.16 */
+  /** How far down the specular edge's top glow reaches, as a fraction of the height. @default 0.16 */
   specularGlowHeight?: number;
   /**
-   * iOS: how far up the specular edge's bottom shine reaches, as a fraction of
+   * How far up the specular edge's bottom shine reaches, as a fraction of
    * the height: `0.07` is a white line (the hairline fades out under it);
    * taller is a glow, and the bottom edge then mirrors the top one, glow and
    * hairline (e.g. the same value as `specularGlowHeight`). @default 0.07
    */
   specularBottomHeight?: number;
   /**
-   * iOS: light catching the top-left and bottom-right corners, like a lens:
+   * Light catching the top-left and bottom-right corners, like a lens:
    * a soft bloom inside the glass and a brighter glint on the edge there,
    * 0 (off) to 1. `0.1` is a subtle reflection. @default 0
    */
   cornerReflection?: number;
   /**
-   * iOS: blurs the page behind the glass by this many points, inside its
+   * Blurs the page behind the glass by this many points (Android: dp), inside its
    * shape. With `glassStyle: 'clear'` the glass then shows the page softly
    * blurred and bent at the edges, between clear (sharp) and regular
    * (frosted), e.g. `4`. 0 keeps the material's own blur. @default 0

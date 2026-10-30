@@ -207,10 +207,37 @@ The glass of the header, all of it or per part:
 useLiquidNavigationHeader(navigation, {
   title: 'Measures',
   glass: { glassStyle: 'regular', colorScheme: 'light', tintColor: 'rgba(255, 255, 255, 0.3)', rimColor: 'white', rimWidth: 1.5 },
+  // Or the light-glass edge of the iOS 26 Messages call buttons:
+  // glass: { glassStyle: 'clear', tintColor: 'rgba(255, 255, 255, 0.3)', specularEdge: true, backdropBlur: 4 },
   backGlass: { tintColor: 'rgba(255, 255, 255, 0.5)' }, // overrides `glass` for the back button
   titleGlass: false, // the title as plain text, no capsule (or a glass object to restyle it)
 });
 ```
+
+Glass or a blur behind the buttons, from the top of the screen, melting into
+the content (the edge of iOS 26 Photos). `edgeGlass: true` uses the defaults;
+iOS and Android:
+
+```tsx
+useLiquidNavigationHeader(navigation, {
+  title: 'Measures',
+  // Liquid glass that fades out:
+  edgeGlass: { glassStyle: 'clear', tintColor: 'rgba(255, 255, 255, 0.8)', fadeCurve: 'ease' },
+});
+
+useLiquidNavigationHeader(navigation, {
+  title: 'Measures',
+  // A progressive blur: strongest at the top, weaker down the bar, the tint
+  // fading out with it (like the scroll edge of Photos).
+  edgeGlass: { style: 'blur', maxBlur: 20, tintColor: 'rgba(255, 255, 255, 0.8)' },
+});
+```
+
+`edgeGlass` options: `style` (`'glass'` or `'blur'`), `glassStyle`,
+`colorScheme`, `tintColor`, `blurRadius` (Android, dp), `maxBlur` (`'blur'`
+style, points), `height` (below the status bar), `fadeHeight` (how many
+points at the bottom fade out) and `fadeCurve` (`'linear'`, or `'ease'`: an
+S-curve with no visible start or end).
 
 Your own status-bar edge, per screen (leave it out to keep the system's
 scroll edge effect under the status bar):
@@ -429,19 +456,64 @@ inside another glass shape, such as a toolbar.
 </LiquidGlassContainer>
 ```
 
-`LiquidGlassView` props: `glassStyle`, `tintColor`, `interactive`, `rimColor` / `rimWidth` (a specular rim, brightest on the top-left and bottom-right curves),
-`rimSideOpacity` (iOS: how much of the rim stays along the sides; 0 keeps only
-the curves), `rimShadeColor` (a dark edge on the bottom-right, lit from the
-top-left, so the rim reads as a reflection on white pages), `rimEdgeColor`
-(a hairline all round the glass with the rim's light just inside it, so the
-edge shines on white pages), `specularEdge` (the iOS 26 light-glass edge, like
-the Messages call buttons: a hairline, a white glow inside the top edge and
-a white line along the bottom), `rimGradient` (`'diagonal'` curves or
-`'vertical'`: bright along the top and bottom edges, fading down the sides),
-`cornerRadius`, `morph`, `colorScheme`, `fadeBottom` (fades the glass out
+`LiquidGlassView` props: `glassStyle`, `tintColor`, `interactive`,
+`cornerRadius`, `morph`, `colorScheme`, and `fadeBottom` (fades the glass out
 over this many points at its bottom edge, like a bar melting into the
-content), and on Android `blurRadius`, `refractionHeight`, `refractionAmount`,
-`chromaticAberration`, `depthEffect`, `highlight`, `shadow`.
+content) with `fadeCurve` (`'linear'`, or `'ease'`: an S-curve that melts
+into the content with no visible start or end). On Android also
+`blurRadius`, `refractionHeight`, `refractionAmount`, `chromaticAberration`,
+`depthEffect`, `highlight` and `shadow`.
+
+The edge of the glass (iOS and Android):
+
+| Prop | Default | What it does |
+| --- | --- | --- |
+| `rimColor` / `rimWidth` | | A specular rim, brightest on the top-left and bottom-right curves. |
+| `rimSideOpacity` | `0.35` | iOS: how much of the rim stays along the sides; `0` keeps only the curves. |
+| `rimGradient` | `'diagonal'` | `'vertical'`: the rim is bright along the top and bottom edges and fades down the sides. |
+| `rimShadeColor` | | A dark edge on the bottom-right (with `'vertical'`, down the sides), so the rim reads as a reflection on white pages. |
+| `rimEdgeColor` | | A hairline all round the glass with the rim's light just inside it. |
+| `specularEdge` | `false` | The iOS 26 light-glass edge, like the Messages call buttons: a hairline, a white glow inside the top edge and a white line along the bottom. It shines without tinting the glass. |
+| `specularTopOpacity` / `specularBottomOpacity` | `0.95` | Strength of the top glow and the bottom shine, 0 to 1. |
+| `specularHairlineOpacity` | `1` | Strength of the grey hairline, 0 to 1. |
+| `specularGlowHeight` | `0.16` | How far down the top glow reaches, as a fraction of the height. |
+| `specularBottomHeight` | `0.07` | How far up the bottom shine reaches: `0.07` is a white line; as tall as `specularGlowHeight`, the bottom mirrors the top (glow and hairline). |
+| `cornerReflection` | `0` | Light catching the top-left and bottom-right corners like a lens, 0 to 1 (`0.1` is subtle). |
+| `backdropBlur` | `0` | Blurs the page behind the glass by this many points (Android: dp), inside its shape. With `glassStyle: 'clear'` the glass shows the page softly blurred and bent at the edges, between clear and regular, e.g. `4`. |
+| `sheenOpacity` | `0` | iOS: a soft white reflection across the top of the glass. |
+
+```tsx
+// Clear glass with a soft blur and the Messages call-button edge:
+<LiquidGlassView
+  glassStyle="clear"
+  tintColor="rgba(255, 255, 255, 0.3)"
+  backdropBlur={4}
+  specularEdge
+  cornerRadius={22}
+/>
+```
+
+### Progressive blur
+
+`LiquidProgressiveBlur` is a blur that is strongest at the top and weakens
+down the view, with a tint fading out with it: the scroll edge behind a bar
+in iOS 26 Photos. Put it over a scroll view, under your header.
+
+```tsx
+<LiquidProgressiveBlur
+  maxBlur={20}                              // blur radius where it is full
+  tintColor="rgba(255, 255, 255, 0.8)"      // fades out with the blur
+  fadeHeight={90}                           // points at the bottom that fade (default: the whole height)
+  fadeCurve="ease"                          // or 'linear'
+  style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140 }}
+/>
+```
+
+iOS uses a real variable blur (rebuild the app after installing: it is a new
+native view). Android stacks glass layers that blur more and fade out higher.
+An iOS binary built before this view gets one fading glass instead, so an
+over-the-air JS update cannot show "Unimplemented component". It ignores
+touches by default (`pointerEvents="none"`).
 
 With `morph`, replacing the children (give them a new `key`) blurs the old
 content out and the new content in while the glass springs to its new size.

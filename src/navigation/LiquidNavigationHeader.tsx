@@ -91,19 +91,19 @@ export type LiquidHeaderGlass = {
   sheenOpacity?: number;
   /** The iOS 26 light-glass edge: hairline, white glow inside the top, white line along the bottom. */
   specularEdge?: boolean;
-  /** iOS: the specular edge's white glow inside the top edge, 0 to 1. @default 0.95 */
+  /** The specular edge's white glow inside the top edge, 0 to 1. @default 0.95 */
   specularTopOpacity?: number;
-  /** iOS: the specular edge's white line along the bottom, 0 to 1. @default 0.95 */
+  /** The specular edge's white line along the bottom, 0 to 1. @default 0.95 */
   specularBottomOpacity?: number;
-  /** iOS: the specular edge's grey hairline, 0 to 1. @default 1 */
+  /** The specular edge's grey hairline, 0 to 1. @default 1 */
   specularHairlineOpacity?: number;
-  /** iOS: how far down the top glow reaches, as a fraction of the height. @default 0.16 */
+  /** How far down the top glow reaches, as a fraction of the height. @default 0.16 */
   specularGlowHeight?: number;
-  /** iOS: how far up the bottom shine reaches, as a fraction of the height (0.07 = a line). @default 0.07 */
+  /** How far up the bottom shine reaches, as a fraction of the height (0.07 = a line). @default 0.07 */
   specularBottomHeight?: number;
-  /** iOS: light catching the top-left and bottom-right corners, 0 (off) to 1, e.g. `0.1`. */
+  /** Light catching the top-left and bottom-right corners, 0 (off) to 1, e.g. `0.1`. */
   cornerReflection?: number;
-  /** iOS: blurs the page behind the glass this many points, e.g. `4` with clear glass. */
+  /** Blurs the page behind the glass this many points (Android: dp), e.g. `4` with clear glass. */
   backdropBlur?: number;
   /** Android: how blurry the glass is, in dp (iOS glass has a fixed blur). */
   blurRadius?: number;
@@ -122,7 +122,7 @@ export type LiquidHeaderEdgeGlass = {
    * lens, rim or shadow, fading along the same curve). @default 'glass'
    */
   style?: 'glass' | 'blur';
-  /** `style: 'blur'`, iOS: blur radius at the top, in points. @default 20 */
+  /** `style: 'blur'`: blur radius at the top, in points (Android: dp). @default 20 */
   maxBlur?: number;
   /** @default 'regular' */
   glassStyle?: 'regular' | 'clear';
@@ -137,7 +137,7 @@ export type LiquidHeaderEdgeGlass = {
   /** How many points at the bottom fade out. @default the whole height below the status bar */
   fadeHeight?: number;
   /**
-   * iOS: `'ease'` fades along an S-curve, melting into the content with no
+   * `'ease'` fades along an S-curve, melting into the content with no
    * visible start or end; `'linear'` in a straight line. @default 'linear'
    */
   fadeCurve?: 'linear' | 'ease';

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.4.0 (not released yet)
+## 1.4.0 (2026-10-30)
 
 Glass edges that shine, a progressive blur, and a header that follows its
 screen. Adds native props and two native views on iOS: after upgrading run

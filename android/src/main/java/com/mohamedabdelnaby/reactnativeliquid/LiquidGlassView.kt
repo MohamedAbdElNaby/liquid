@@ -85,12 +85,12 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
     if (glassState.morph && previous != null && isAttachedToWindow &&
       (previous.left != left || previous.top != top || previous.right != right || previous.bottom != bottom)
     ) {
-      glassState.morphFrom = android.graphics.RectF(
-        (previous.left - left).toFloat(),
-        (previous.top - top).toFloat(),
-        (previous.right - left).toFloat(),
-        (previous.bottom - top).toFloat(),
-      )
+      // Written before the compose view is measured below, so the first frame at the new size
+      // already starts from the old shape.
+      glassState.morphLeft = (previous.left - left).toFloat()
+      glassState.morphTop = (previous.top - top).toFloat()
+      glassState.morphRight = (previous.right - right).toFloat()
+      glassState.morphBottom = (previous.bottom - bottom).toFloat()
       glassState.morphGeneration++
       // A content swap animates itself (see onViewAdded); only fade a plain relayout.
       if (SystemClock.uptimeMillis() - contentSwappedAt > 100) {

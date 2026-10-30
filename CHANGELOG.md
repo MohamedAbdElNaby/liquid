@@ -8,6 +8,12 @@
   (TS2345) with React Navigation's own `navigation` object in 1.4.0. The
   header's `addListener` type is loose again, so every navigator's
   `navigation` is accepted.
+- Android: a `morph` glass flashed its final shape for one frame before
+  animating from the old one (the Select / menu buttons of the example). The
+  old shape is now applied while the view is laid out, so the first frame at
+  the new size already starts from it.
+- Android: the tab bars' lifted drop (bottom and top) had a thick white
+  outline. Its edge is now a faint glint on a hairline, like iOS.
 - Bottom tab bar search: no more "Passing an object as the argument to
   'navigate' is deprecated" warning from React Navigation 7 when the search
   opens, changes or closes.

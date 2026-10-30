@@ -1,7 +1,7 @@
 package com.mohamedabdelnaby.reactnativeliquid
 
 import android.os.Build
-import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -87,8 +86,15 @@ internal class GlassState {
 
   /** Animate layout changes as a liquid morph. */
   var morph = false
-  /** Previous frame relative to the current one, in px; animated back to the current frame. */
-  var morphFrom by mutableStateOf<android.graphics.RectF?>(null)
+  /**
+   * How far each edge of the previous frame is from the current one, in px, animated back to 0.
+   * Set synchronously while the view is laid out, so the very first frame drawn at the new size
+   * already starts from the old shape instead of flashing the final one.
+   */
+  var morphLeft by mutableFloatStateOf(0f)
+  var morphTop by mutableFloatStateOf(0f)
+  var morphRight by mutableFloatStateOf(0f)
+  var morphBottom by mutableFloatStateOf(0f)
   var morphGeneration by mutableIntStateOf(0)
 
   /** Size of the hosting view in px, used to clamp radii. */
@@ -116,23 +122,15 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
     label = "press",
   )
 
-  // Offsets of each edge from the current frame, animated to 0 when the view morphs.
-  val left = remember { Animatable(0f) }
-  val top = remember { Animatable(0f) }
-  val right = remember { Animatable(0f) }
-  val bottom = remember { Animatable(0f) }
+  // The edge offsets start at the old frame (set while laying out) and animate to 0.
   LaunchedEffect(state.morphGeneration) {
-    val from = state.morphFrom ?: return@LaunchedEffect
-    left.snapTo(from.left)
-    top.snapTo(from.top)
-    right.snapTo(from.right - state.widthPx)
-    bottom.snapTo(from.bottom - state.heightPx)
+    if (state.morphGeneration == 0) return@LaunchedEffect
     // Slightly different springs per edge make the glass stretch like liquid. About 0.55 s, like
     // the iOS 26 morph.
-    launch { left.animateTo(0f, spring(0.72f, 135f)) }
-    launch { right.animateTo(0f, spring(0.68f, 115f)) }
-    launch { top.animateTo(0f, spring(0.76f, 160f)) }
-    launch { bottom.animateTo(0f, spring(0.76f, 150f)) }
+    launch { animate(state.morphLeft, 0f, animationSpec = spring(0.72f, 135f)) { v, _ -> state.morphLeft = v } }
+    launch { animate(state.morphRight, 0f, animationSpec = spring(0.68f, 115f)) { v, _ -> state.morphRight = v } }
+    launch { animate(state.morphTop, 0f, animationSpec = spring(0.76f, 160f)) { v, _ -> state.morphTop = v } }
+    launch { animate(state.morphBottom, 0f, animationSpec = spring(0.76f, 150f)) { v, _ -> state.morphBottom = v } }
   }
 
   Box(
@@ -141,10 +139,10 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
       .layout { measurable, constraints ->
         val width = constraints.maxWidth
         val height = constraints.maxHeight
-        val x = left.value
-        val y = top.value
-        val w = (width + right.value - x).roundToInt().coerceAtLeast(1)
-        val h = (height + bottom.value - y).roundToInt().coerceAtLeast(1)
+        val x = state.morphLeft
+        val y = state.morphTop
+        val w = (width + state.morphRight - x).roundToInt().coerceAtLeast(1)
+        val h = (height + state.morphBottom - y).roundToInt().coerceAtLeast(1)
         val placeable = measurable.measure(Constraints.fixed(w, h))
         layout(width, height) { placeable.place(x.roundToInt(), y.roundToInt()) }
       }

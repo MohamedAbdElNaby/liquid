@@ -595,10 +595,11 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
         highlight = {
           // Spread over most of the settle and eased with smootherstep, so it fades gently.
           val reflect = ((state.press - 0.2f) / 0.8f).coerceIn(0f, 1f).let { it * it * it * (it * (it * 6f - 15f) + 10f) }
-          Highlight.Default.copy(width = 1.5.dp, alpha = reflect)
+          // Like the iOS drop: a faint glint on a hairline, not a bold white outline.
+          Highlight.Default.copy(width = 0.75.dp, alpha = 0.45f * reflect)
         },
         shadow = null,
-        innerShadow = { InnerShadow(radius = 8f.dp * state.press, alpha = state.press) },
+        innerShadow = { InnerShadow(radius = 8f.dp * state.press, alpha = 0.6f * state.press) },
         // A light fill gives the drop density while it stays see-through.
         onDrawSurface = {
           // Drawn in the drop's own shape so the fill never shows square corners.
@@ -606,8 +607,17 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
             color = state.lensTintColor?.let { tint -> Color(tint).let { it.copy(alpha = it.alpha * state.press) } }
               // Dark glass in dark mode, so the drop matches the dark bar.
               ?: if (dark) Color(0xFF1C1C1E).copy(alpha = 0.42f * state.press)
-              else Color.White.copy(alpha = 0.32f * state.press),
+              else Color.White.copy(alpha = 0.22f * state.press),
             cornerRadius = CornerRadius(size.height / 2f),
+          )
+          // The drop's edge, like iOS: a fine hairline in the glass's own shade.
+          val hair = 0.5.dp.toPx()
+          drawRoundRect(
+            color = (if (dark) Color.White else Color.Black).copy(alpha = 0.2f * state.press),
+            topLeft = androidx.compose.ui.geometry.Offset(hair / 2f, hair / 2f),
+            size = androidx.compose.ui.geometry.Size(size.width - hair, size.height - hair),
+            cornerRadius = CornerRadius((size.height - hair) / 2f),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(hair),
           )
         },
       ),

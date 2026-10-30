@@ -42,10 +42,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -72,6 +74,7 @@ import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.lens
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.vibrancy
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.highlight.Highlight
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.shadow.Shadow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import kotlin.math.roundToInt
@@ -195,10 +198,11 @@ class LiquidMenuView(context: Context) : LiquidComposeHost(context) {
         alpha = 1f
         dispatchLiquidEvent("OpenChange") { putBoolean("open", false) }
       },
+      // The button stays on screen under the drop, which shows it through its glass at first,
+      // and only goes once the drop has grown over it (and comes back as it shrinks).
+      onCovered = { covered -> alpha = if (covered) 0f else 1f },
     ).also { root.addView(it, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)) }
 
-    // The button turns into the menu.
-    alpha = 0f
     dispatchLiquidEvent("OpenChange") { putBoolean("open", true) }
   }
 
@@ -273,6 +277,7 @@ private class MenuOverlay(
   private val trigger: Rect,
   private val onSelect: (String) -> Unit,
   private val onClosed: () -> Unit,
+  private val onCovered: (Boolean) -> Unit,
 ) : FrameLayout(context) {
 
   private val lifecycleOwner = GlassLifecycleOwner()
@@ -291,7 +296,7 @@ private class MenuOverlay(
     lifecycleOwner.install(composeView)
     composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
     composeView.setContent {
-      MenuPanel(state, trigger, backdrop, onSelect) { post { onClosed() } }
+      MenuPanel(state, trigger, backdrop, onSelect, onCovered) { post { onClosed() } }
     }
     addView(composeView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
   }
@@ -317,14 +322,45 @@ private fun MenuPanel(
   trigger: Rect,
   backdrop: Backdrop,
   onSelect: (String) -> Unit,
+  onCovered: (Boolean) -> Unit,
   onClosed: () -> Unit,
 ) {
   val dark = isDarkScheme(state.colorScheme)
   val density = LocalDensity.current
   val scope = rememberCoroutineScope()
   // Two springs with different stiffness make the glass morph like a droplet.
-  val openX = remember { Animatable(0f) }
-  val openY = remember { Animatable(0f) }
+  val openX = remember { mutableFloatStateOf(0f) }
+  val openY = remember { mutableFloatStateOf(0f) }
+  var morph by remember { mutableStateOf<Job?>(null) }
+  var covered by remember { mutableStateOf(false) }
+
+  // Stepped per drawn frame (at most a 30 fps frame at a time), so the stall of opening the
+  // overlay cannot make the drop jump ahead: it always grows out of the button.
+  fun morphTo(target: Float, x: LiquidSpring, y: LiquidSpring, then: (() -> Unit)? = null) {
+    morph?.cancel()
+    morph = scope.launch {
+      x.value = openX.floatValue
+      y.value = openY.floatValue
+      x.target = target
+      y.target = target
+      var last = 0L
+      while (true) {
+        val now = withFrameNanos { it }
+        val dt = if (last == 0L) 1f / 60f else ((now - last) / 1e9f).coerceIn(1f / 240f, 1f / 30f)
+        last = now
+        val moving = x.step(dt) or y.step(dt)
+        openX.floatValue = x.value
+        openY.floatValue = y.value
+        val nowCovered = minOf(x.value, y.value) > 0.5f
+        if (nowCovered != covered) {
+          covered = nowCovered
+          onCovered(nowCovered)
+        }
+        if (!moving) break
+      }
+      then?.invoke()
+    }
+  }
   var contentHeight by remember { mutableFloatStateOf(0f) }
   var closing by remember { mutableStateOf(false) }
   var expandedId by remember { mutableStateOf<String?>(null) }
@@ -338,18 +374,12 @@ private fun MenuPanel(
     }
     closing = true
     then?.invoke()
-    scope.launch {
-      launch { openY.animateTo(0f, spring(1f, 520f)) }
-      openX.animateTo(0f, spring(1f, 600f))
-      onClosed()
-    }
+    morphTo(0f, LiquidSpring(1f, 600f, 0.001f), LiquidSpring(1f, 520f, 0.001f)) { onClosed() }
   }
 
-  LaunchedEffect(contentHeight > 0f) {
-    if (contentHeight > 0f) {
-      launch { openX.animateTo(1f, spring(0.72f, 340f)) }
-      launch { openY.animateTo(1f, spring(0.8f, 240f)) }
-    }
+  // Starts growing on the first frame, like iOS; the height aims at the menu's once measured.
+  LaunchedEffect(Unit) {
+    morphTo(1f, LiquidSpring(0.72f, 340f, 0.001f), LiquidSpring(0.8f, 240f, 0.001f))
   }
 
   val labelColor = if (dark) Color.White else Color.Black
@@ -375,7 +405,8 @@ private fun MenuPanel(
           val alignRight = trigger.centerX() > screenWidth / 2
           val finalLeft = (if (alignRight) trigger.right - menuWidthPx else trigger.left.toFloat())
             .coerceIn(margin, (screenWidth - menuWidthPx - margin).coerceAtLeast(margin))
-          val finalHeight = contentHeight.coerceAtMost(screenHeight - margin * 2)
+          val finalHeight = (if (contentHeight > 0f) contentHeight else trigger.height().toFloat())
+            .coerceAtMost(screenHeight - margin * 2)
           val finalTop = if (trigger.top + finalHeight + margin <= screenHeight) trigger.top.toFloat()
           else (trigger.bottom - finalHeight).coerceAtLeast(margin)
 
@@ -404,12 +435,29 @@ private fun MenuPanel(
           },
           effects = {
             vibrancy()
-            blur(16f.dp.toPx())
+            // A clear drop at first, so the button shows through it; the blur of the menu
+            // builds up as it grows.
+            val progress = minOf(openX.value, openY.value).coerceIn(0f, 1f)
+            blur(16f.dp.toPx() * progress)
             lens(16f.dp.toPx(), 24f.dp.toPx())
           },
           highlight = { Highlight.Default },
-          shadow = { Shadow(radius = 24.dp, color = Color.Black.copy(alpha = if (dark) 0.35f else 0.15f)) },
-          onDrawSurface = { drawRect(glassSurfaceColor(dark, state.glassStyle == "clear")) },
+          shadow = {
+            val progress = minOf(openX.value, openY.value).coerceIn(0f, 1f)
+            Shadow(radius = 24.dp, color = Color.Black.copy(alpha = (if (dark) 0.35f else 0.15f) * progress))
+          },
+          onDrawSurface = {
+            // The drop starts in the button's light glass and turns into the menu's material.
+            val progress = minOf(openX.value, openY.value).coerceIn(0f, 1f)
+            val clear = state.glassStyle == "clear"
+            val drop = when {
+              clear && dark -> Color(0xFF1C1C1E).copy(alpha = 0.12f)
+              clear -> Color.White.copy(alpha = 0.08f)
+              dark -> Color.White.copy(alpha = 0.14f)
+              else -> Color.White.copy(alpha = 0.32f)
+            }
+            drawRect(androidx.compose.ui.graphics.lerp(drop, glassSurfaceColor(dark, clear), progress))
+          },
         )
         .pointerInput(Unit) { detectTapGestures { } },
     ) {
@@ -425,7 +473,15 @@ private fun MenuPanel(
             }
           }
           .graphicsLayer {
-            alpha = ((minOf(openX.value, openY.value) - 0.4f) / 0.5f).coerceIn(0f, 1f)
+            val shown = ((minOf(openX.value, openY.value) - 0.4f) / 0.5f).coerceIn(0f, 1f)
+            alpha = shown
+            // The items sharpen as they appear, like iOS.
+            val radius = 8.dp.toPx() * (1f - shown)
+            renderEffect = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S && radius > 0.5f) {
+              BlurEffect(radius, radius)
+            } else {
+              null
+            }
           }
           .animateContentSize(spring(0.85f, Spring.StiffnessMediumLow))
           .padding(vertical = 8.dp),

@@ -1,7 +1,6 @@
 package com.mohamedabdelnaby.reactnativeliquid
 
 import android.os.Build
-import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -16,11 +15,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -122,15 +121,30 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
     label = "press",
   )
 
-  // The edge offsets start at the old frame (set while laying out) and animate to 0.
+  // The edge offsets start at the old frame (set while laying out) and spring to 0.
   LaunchedEffect(state.morphGeneration) {
     if (state.morphGeneration == 0) return@LaunchedEffect
     // Slightly different springs per edge make the glass stretch like liquid. About 0.55 s, like
     // the iOS 26 morph.
-    launch { animate(state.morphLeft, 0f, animationSpec = spring(0.72f, 135f)) { v, _ -> state.morphLeft = v } }
-    launch { animate(state.morphRight, 0f, animationSpec = spring(0.68f, 115f)) { v, _ -> state.morphRight = v } }
-    launch { animate(state.morphTop, 0f, animationSpec = spring(0.76f, 160f)) { v, _ -> state.morphTop = v } }
-    launch { animate(state.morphBottom, 0f, animationSpec = spring(0.76f, 150f)) { v, _ -> state.morphBottom = v } }
+    val left = LiquidSpring(0.72f, 135f, 0.5f).apply { value = state.morphLeft }
+    val right = LiquidSpring(0.68f, 115f, 0.5f).apply { value = state.morphRight }
+    val top = LiquidSpring(0.76f, 160f, 0.5f).apply { value = state.morphTop }
+    val bottom = LiquidSpring(0.76f, 150f, 0.5f).apply { value = state.morphBottom }
+    // Stepped per drawn frame, at most a 30 fps frame at a time: when the app stalls (a new
+    // screen, a busy GPU), the morph carries on from where it was instead of jumping to its end
+    // the way a clock-based animation does.
+    var last = 0L
+    while (true) {
+      val now = withFrameNanos { it }
+      val dt = if (last == 0L) 1f / 60f else ((now - last) / 1e9f).coerceIn(1f / 240f, 1f / 30f)
+      last = now
+      val moving = left.step(dt) or right.step(dt) or top.step(dt) or bottom.step(dt)
+      state.morphLeft = left.value
+      state.morphRight = right.value
+      state.morphTop = top.value
+      state.morphBottom = bottom.value
+      if (!moving) break
+    }
   }
 
   Box(

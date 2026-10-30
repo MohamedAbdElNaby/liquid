@@ -126,14 +126,25 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
     coordinatesDependent: Boolean = true,
     magnification: () -> Float = { 1f },
     enabled: () -> Boolean = { true },
-    childPaint: (parent: ViewGroup, child: View) -> Paint? = { _, _ -> null },
-    drawChildContent: (parent: ViewGroup, child: View, canvas: Canvas) -> Boolean = { _, _, _ -> false },
+    childPaint: (parent: ViewGroup, child: View) -> Paint? = NO_CHILD_PAINT,
+    drawChildContent: ((parent: ViewGroup, child: View, canvas: Canvas) -> Boolean)? = null,
   ): Backdrop {
     if (!isGlassEffectSupported) {
       return emptyBackdrop()
     }
-    return ViewTreeBackdrop(target, coordinatesDependent, magnification, enabled, childPaint, drawChildContent)
-      .also { backdrops.add(it) }
+    // A backdrop that only samples what is behind its glass keeps its recording while that does
+    // not change. One that paints or draws children itself (a tab bar lens) depends on state it
+    // cannot see, so it records every frame.
+    val plain = childPaint === NO_CHILD_PAINT && drawChildContent == null
+    return ViewTreeBackdrop(
+      target,
+      coordinatesDependent,
+      magnification,
+      enabled,
+      childPaint,
+      drawChildContent ?: { _, _, _ -> false },
+      skipUnchanged = plain,
+    ).also { backdrops.add(it) }
   }
 
   override fun onAttachedToWindow() {
@@ -311,3 +322,5 @@ internal fun LeftToRight(content: @Composable () -> Unit) {
     content = content,
   )
 }
+
+private val NO_CHILD_PAINT: (parent: ViewGroup, child: View) -> Paint? = { _, _ -> null }

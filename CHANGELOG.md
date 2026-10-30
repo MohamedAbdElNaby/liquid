@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Android: a morph could snap to its end. Its spring ran on the clock, so when
+  the app stalled as the morph started (a busy GPU, a screen recorder), it had
+  already finished by the next frame. It now advances once per drawn frame, by
+  at most a 30 fps frame, so it always stretches through.
+- Android: glass no longer re-records what is behind it on every frame when
+  nothing there changed, and glass that is off screen is skipped. A new
+  recording makes the GPU blur that glass again, so every glass on screen was
+  re-blurred on every frame of any animation. Busy screens animate faster
+  (Glass Lab: UI thread per frame 25 ms → 8 ms).
+
 ## 1.4.1 (2026-10-30)
 
 ### Changed

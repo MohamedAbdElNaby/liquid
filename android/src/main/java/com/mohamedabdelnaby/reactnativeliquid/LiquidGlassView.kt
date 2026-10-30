@@ -28,7 +28,7 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
   internal val glassState = GlassState().apply { density = resources.displayMetrics.density }
 
   private val viewTreeBackdrop: ViewTreeBackdrop? =
-    if (isGlassEffectSupported) ViewTreeBackdrop(this) else null
+    if (isGlassEffectSupported) ViewTreeBackdrop(this, skipUnchanged = true) else null
 
   private val backdrop: Backdrop = viewTreeBackdrop ?: emptyBackdrop()
 

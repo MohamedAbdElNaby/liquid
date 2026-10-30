@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Header: `useLiquidNavigationHeader(navigation, …)` gave a TypeScript error
+  (TS2345) with React Navigation's own `navigation` object in 1.4.0. The
+  header's `addListener` type is loose again, so every navigator's
+  `navigation` is accepted.
+- Bottom tab bar search: no more "Passing an object as the argument to
+  'navigate' is deprecated" warning from React Navigation 7 when the search
+  opens, changes or closes.
+
 ## 1.4.0 (2026-10-30)
 
 Glass edges that shine, a progressive blur, and a header that follows its

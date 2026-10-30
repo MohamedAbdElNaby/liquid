@@ -328,11 +328,13 @@ export function LiquidBottomTabBar({
             onChangeText={(text) => {
               setOwnQuery(text);
               if (searchRoute != null) {
-                latest.current.navigation.navigate({
-                  name: searchRoute,
-                  params: { query: text },
-                  merge: true,
-                } as never);
+                (
+                  latest.current.navigation.navigate as (
+                    name: string,
+                    params: object,
+                    options: { merge: boolean }
+                  ) => void
+                )(searchRoute, { query: text }, { merge: true });
               }
               search.onChangeText?.(text);
             }}
@@ -341,11 +343,13 @@ export function LiquidBottomTabBar({
               if (searchRoute != null) {
                 const nav = latest.current.navigation;
                 if (next) {
-                  nav.navigate({
-                    name: searchRoute,
-                    params: { query },
-                    merge: true,
-                  } as never);
+                  (
+                    nav.navigate as (
+                      name: string,
+                      params: object,
+                      options: { merge: boolean }
+                    ) => void
+                  )(searchRoute, { query }, { merge: true });
                 } else {
                   setOwnQuery('');
                   nav.navigate(lastTab.current as never);

@@ -170,6 +170,9 @@
         },
         "RNLiquidProgressiveBlur": {
           "className": "RNLiquidProgressiveBlur"
+        },
+        "RNLiquidGlassV2": {
+          "className": "RNLiquidGlassV2"
         }
       }
     }

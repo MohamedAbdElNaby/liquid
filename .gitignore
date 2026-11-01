@@ -80,3 +80,6 @@ android/generated
 
 # React Native Nitro Modules
 nitrogen/
+
+# Reference captures for the v2 glass study (local only)
+references/

@@ -151,6 +151,10 @@ export function HomeScreen() {
               title="Merge example"
               onPress={() => navigation.navigate('Merge')}
             />
+            <LiquidButton
+              title="Compare v1 / v2"
+              onPress={() => navigation.navigate('Compare')}
+            />
           </View>
         </View>
       }

@@ -6,6 +6,8 @@ import LiquidSliderNativeComponent from './native/LiquidSliderNativeComponent';
 import LiquidTabBarNativeComponent from './native/LiquidTabBarNativeComponent';
 import LiquidMenuNativeComponent from './native/LiquidMenuNativeComponent';
 import LiquidSearchNativeComponent from './native/LiquidSearchNativeComponent';
+import LiquidGlassV2NativeComponent from './native/LiquidGlassV2NativeComponent';
+import LiquidGlassGroupV2NativeComponent from './native/LiquidGlassGroupV2NativeComponent';
 
 export { default as NativeLiquidGlassContainerView } from './native/LiquidGlassContainerViewNativeComponent';
 export { default as NativeLiquidScrollEdge } from './native/LiquidScrollEdgeNativeComponent';
@@ -56,4 +58,10 @@ export const NativeLiquidMenu = withResolvedColorScheme(
 );
 export const NativeLiquidSearch = withResolvedColorScheme(
   LiquidSearchNativeComponent
+);
+export const NativeLiquidGlassV2 = withResolvedColorScheme(
+  LiquidGlassV2NativeComponent
+);
+export const NativeLiquidGlassGroupV2 = withResolvedColorScheme(
+  LiquidGlassGroupV2NativeComponent
 );

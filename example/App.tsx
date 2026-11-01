@@ -17,6 +17,7 @@ import { GlassLabScreen } from './src/screens/GlassLabScreen';
 import { EditProfileScreen } from './src/screens/EditProfileScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { MergeScreen } from './src/screens/MergeScreen';
+import { CompareScreen } from './src/screens/CompareScreen';
 
 export type RootStackParamList = {
   Tabs: undefined;
@@ -26,6 +27,12 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Profile: { title: string; image: string };
   Merge: undefined;
+  Compare:
+    | {
+        example?:
+          'buttons' | 'shape' | 'tabbar' | 'morph' | 'bars' | 'controller';
+      }
+    | undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -70,6 +77,11 @@ export default function App() {
             <Stack.Screen
               name="Merge"
               component={MergeScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Compare"
+              component={CompareScreen}
               options={{ headerShown: false }}
             />
             <Stack.Screen

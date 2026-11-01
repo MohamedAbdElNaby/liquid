@@ -113,3 +113,27 @@ export {
   createLiquidBottomTabBar,
   createLiquidTopTabBar,
 } from './navigation/factories';
+
+// v2 (iOS 26 references study; see references/ANALYSIS.md)
+export { GlassShapeV2, type GlassShapeV2Props } from './v2/GlassShapeV2';
+export {
+  GlassButtonV2,
+  GLASS_BUTTON_V2_SIZE,
+  type GlassButtonV2Props,
+} from './v2/GlassButtonV2';
+export {
+  GlassTabBarV2,
+  type GlassTabBarV2Item,
+  type GlassTabBarV2Props,
+} from './v2/GlassTabBarV2';
+export {
+  GlassHeaderV2,
+  GLASS_HEADER_V2_HEIGHT,
+  type GlassHeaderV2Props,
+} from './v2/GlassHeaderV2';
+export { GlassGroupV2, type GlassGroupV2Props } from './v2/GlassGroupV2';
+export {
+  GlassTopTabsV2,
+  type GlassTopTabsV2Item,
+  type GlassTopTabsV2Props,
+} from './v2/GlassTopTabsV2';

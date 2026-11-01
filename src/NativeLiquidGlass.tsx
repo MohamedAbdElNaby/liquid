@@ -1,4 +1,5 @@
 import {
+  StyleSheet,
   Switch,
   View,
   type ColorValue,
@@ -12,6 +13,8 @@ import type { NativeProps as SliderProps } from './native/LiquidSliderNativeComp
 import type { NativeProps as TabBarProps } from './native/LiquidTabBarNativeComponent';
 import type { NativeProps as MenuProps } from './native/LiquidMenuNativeComponent';
 import type { NativeProps as SearchProps } from './native/LiquidSearchNativeComponent';
+import type { NativeProps as GlassV2Props } from './native/LiquidGlassV2NativeComponent';
+import type { NativeProps as GlassGroupV2Props } from './native/LiquidGlassGroupV2NativeComponent';
 
 // Fallbacks for platforms without the native components (e.g. web).
 
@@ -200,5 +203,59 @@ export function NativeLiquidScrollEdgeContainer({
   screenKey: _screenKey,
   ...props
 }: ViewProps & { extendScrollEdge?: boolean; screenKey?: string }) {
+  return <View {...props} />;
+}
+
+/** v2 glass elsewhere: a translucent fill in the same shape. */
+export function NativeLiquidGlassV2({
+  glassStyle,
+  tintColor,
+  cornerRadius,
+  colorScheme,
+  interactive: _interactive,
+  reduceTransparency: _reduceTransparency,
+  grouped: _grouped,
+  clarity: _clarity,
+  refraction: _refraction,
+  shine: _shine,
+  style,
+  ...rest
+}: GlassV2Props) {
+  const dark = colorScheme === 'dark';
+  const clear = glassStyle === 'clear';
+  return (
+    <View
+      {...rest}
+      style={[
+        {
+          backgroundColor:
+            tintColor ??
+            (dark
+              ? `rgba(44, 44, 46, ${clear ? 0.35 : 0.7})`
+              : `rgba(255, 255, 255, ${clear ? 0.3 : 0.7})`),
+          borderRadius: cornerRadius ?? undefined,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: dark
+            ? 'rgba(255, 255, 255, 0.16)'
+            : 'rgba(0, 0, 0, 0.1)',
+          overflow: 'hidden',
+        } as ViewStyle,
+        style,
+      ]}
+    />
+  );
+}
+
+/** No glass merging elsewhere: a plain view. */
+export function NativeLiquidGlassGroupV2({
+  spacing: _spacing,
+  colorScheme: _colorScheme,
+  glassStyle: _glassStyle,
+  reduceTransparency: _reduceTransparency,
+  clarity: _clarity,
+  refraction: _refraction,
+  shine: _shine,
+  ...props
+}: GlassGroupV2Props) {
   return <View {...props} />;
 }

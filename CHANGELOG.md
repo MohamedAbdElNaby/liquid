@@ -1,5 +1,52 @@
 # Changelog
 
+## 1.5.0 (2026-11-02)
+
+### Added
+
+- `GlassHeaderV2`: a floating iOS 26 header (glass buttons over the page) with
+  a scroll edge. iOS uses the system scroll edge; Android draws a fade (no
+  per-frame cost) or, with `edge="blur"`, a glass band. `edgeBlurRadius`,
+  `edgeStrength`, `edgeHeight` and `spacing` tune it.
+- `LiquidGlassView`: `blur` (0 clear to 1 fully frosted, a real blur of the
+  page on both platforms), `frost` (a wash, white in light mode and black in
+  dark mode, or pick with `frostTone`), and `white` / `black` (0 to 1 washes in
+  any theme; together they make a grey). Also on `LiquidButton`,
+  `LiquidIconButton`, morphing buttons and the header's `glass` options.
+- Tab bars: `frost` and `frostTone`; liquid drop controls `lensScale`,
+  `lensMagnification`, `lensRefraction`, `lensFrost` and `lensWash`; Android
+  `selectionBlur` frosts the resting active pill (on by default for the top
+  tabs).
+- Android 13+: `LiquidGlassContainer` merges the glass inside it, like iOS:
+  neighbours closer than `spacing` melt together, so a pressed button that
+  swells reaches into its neighbour.
+- Android: interactive glass stretches toward the finger while dragged and
+  wobbles back on release, with a bulge under the finger.
+- `whiteBlackColor()` and the `LiquidFrostTone` type.
+
+### Changed
+
+- Android 13+: glass uses an iOS 26 lens: the page bends into a compressed band
+  at the rim and the rim is lit top-left and bottom-right. Adapted from
+  [Liquid-Glass-Android](https://github.com/QWEA0/Liquid-Glass-Android) by
+  pandadog (MIT, see `LICENSE-Liquid-Glass-Android`). Pass
+  `androidLens="classic"` to keep the earlier look.
+- Android: a bottom tab tap navigates once the selection is nearly at its tab
+  (at most 250 ms) instead of on release, so building the new screen no
+  longer stutters the slide.
+
+### Fixed
+
+- Android: changing a glass prop (blur, tint, lens) redraws at once; it used
+  to wait for a tap or anything else to redraw.
+- Android: glass that drew before its backdrop was ready stayed empty until
+  something else redrew it.
+- Android: the header morph between screens (Edit into the back button) froze
+  on its first frame while the next screen was built; it now waits for the
+  screen and plays through.
+- Android: the active top tab took its colour only after the app confirmed the
+  tap; it now changes as soon as the drop lands.
+
 ## 1.4.2 (2026-10-30)
 
 Includes the 1.4.1 changes below: 1.4.1 was tagged on GitHub but never

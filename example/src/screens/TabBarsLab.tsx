@@ -73,7 +73,7 @@ export function useTabBarsLab({
 }) {
   const colorScheme = dark ? 'dark' : 'light';
   const [style, setStyle] = useState(1);
-  const [blur, setBlur] = useState(85);
+  const [blur, setBlur] = useState(50);
   const [frost, setFrost] = useState(0);
   const [tint, setTint] = useState(0);
   const [lens, setLens] = useState(true);
@@ -98,7 +98,9 @@ export function useTabBarsLab({
 
   const glass = {
     glassStyle: (style === 0 ? 'regular' : 'clear') as LiquidGlassStyle,
-    blur: blur / 100,
+    // Clear keeps the bars' own frost; Blur % starts from fully clear glass
+    // at 0% and frosts up to 100%.
+    blur: style === 2 ? blur / 100 : undefined,
     frost: frost / 100,
     glassTintColor: TINTS[tint],
     lens,
@@ -177,12 +179,16 @@ export function useTabBarsLab({
       <Row label="Style" labelStyle={labelStyle}>
         <LiquidSegmentedControl
           colorScheme={colorScheme}
-          segments={['Regular', 'Clear']}
+          segments={['Regular', 'Clear', 'Blur %']}
           selectedIndex={style}
           onChange={setStyle}
         />
       </Row>
-      {percent('Blur', blur, setBlur)}
+      {percent('Blur', blur, value => {
+        // Moving it is choosing it.
+        setBlur(value);
+        setStyle(2);
+      })}
       {percent(dark ? 'Black' : 'White', frost, setFrost)}
       <Row label="Tint" labelStyle={labelStyle}>
         <LiquidSegmentedControl

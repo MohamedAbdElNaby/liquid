@@ -242,7 +242,7 @@ export function GlassLabScreen() {
             selectedIndex={lens}
             onChange={setLens}
           />
-          <Label>Blur {blur.toFixed(1)} dp</Label>
+          <Label>Blur {blur.toFixed(1)} dp (Regular)</Label>
           <LiquidSlider
             value={blur}
             maximumValue={20}
@@ -329,8 +329,9 @@ export function GlassLabScreen() {
           colorScheme={appearance}
           interactive={interactive}
           cornerRadius={radius}
-          // Blur % sets the Android blur itself; this slider is for the other styles.
-          blurRadius={style === 2 ? undefined : blur}
+          // Clear and Blur % keep the library's own blur, so Blur % at 0%
+          // looks exactly like Clear; this slider tunes Regular.
+          blurRadius={style === 0 ? blur : undefined}
           refractionHeight={refractionHeight}
           refractionAmount={refractionAmount}
           chromaticAberration={chromatic}

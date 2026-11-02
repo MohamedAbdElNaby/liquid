@@ -344,6 +344,34 @@ export type LiquidHeaderProviderProps = {
  * </LiquidHeaderProvider>
  * ```
  */
+/** Longest an Android header change waits for the UI thread to catch up. */
+const SETTLE_MAX_MS = 500;
+
+/**
+ * Runs `callback` once two frames in a row arrive on time (a new screen being
+ * built on Android stalls the UI thread), or after SETTLE_MAX_MS. The pending
+ * frame request is kept in `ref` so it can be cancelled.
+ */
+function whenFramesSettle(
+  ref: { current: number | null },
+  callback: () => void
+) {
+  const start = Date.now();
+  let last = 0;
+  let onTime = 0;
+  const tick = (time: number) => {
+    onTime = last !== 0 && time - last < 25 ? onTime + 1 : 0;
+    last = time;
+    if (onTime >= 2 || Date.now() - start > SETTLE_MAX_MS) {
+      ref.current = null;
+      callback();
+      return;
+    }
+    ref.current = requestAnimationFrame(tick);
+  };
+  ref.current = requestAnimationFrame(tick);
+}
+
 export function LiquidHeaderProvider({
   children,
   colorScheme,
@@ -355,6 +383,10 @@ export function LiquidHeaderProvider({
   const [active, setActive] = useState<ActiveHeader | null>(null);
   const activeRef = useRef<ActiveHeader | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Android: a header taking over from another waits for the new screen to
+  // be built (see `show`).
+  const pendingShow = useRef<number | null>(null);
+  const pendingHide = useRef<number | null>(null);
   // Moves the whole header (buttons, title, edge) with its screen.
   const slide = useRef(new Animated.Value(0)).current;
   // Android: fades the whole header with its screen instead.
@@ -397,46 +429,73 @@ export function LiquidHeaderProvider({
         }
       });
 
+    const apply = (header: ActiveHeader) => {
+      if (hideTimer.current != null) {
+        clearTimeout(hideTimer.current);
+        hideTimer.current = null;
+      }
+      const fromNothing = activeRef.current == null;
+      if (exiting.current) {
+        // Another header takes over while this one leaves: morph instead.
+        exiting.current = false;
+        slide.stopAnimation();
+        slide.setValue(0);
+        fade.stopAnimation();
+        fade.setValue(1);
+      } else if (fromNothing && header.enter) {
+        // Nothing to morph from: come in with the screen.
+        setGeneration((value) => value + 1);
+        setSlidingIn(true);
+        const done = () => setSlidingIn(false);
+        if (SLIDES_WITH_SCREEN) {
+          slide.setValue(offset(header.enter));
+          run(0, SCREEN_SLIDE_MS, SCREEN_SLIDE_EASING, done);
+        } else {
+          // The screen starts to fade in a frame or two after its focus.
+          fade.setValue(0);
+          Animated.timing(fade, {
+            toValue: 1,
+            duration: SCREEN_FADE_MS,
+            delay: 50,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }).start(done);
+        }
+      } else if (fromNothing) {
+        // Put back here, not when the last header left: it would show
+        // again for a frame before being unmounted.
+        slide.setValue(0);
+        fade.setValue(1);
+      }
+      setHeader(header);
+    };
+
     return {
       show: (header) => {
-        if (hideTimer.current != null) {
-          clearTimeout(hideTimer.current);
-          hideTimer.current = null;
+        if (pendingHide.current != null) {
+          // A new header takes over: it morphs from this one instead.
+          cancelAnimationFrame(pendingHide.current);
+          pendingHide.current = null;
         }
-        const fromNothing = activeRef.current == null;
-        if (exiting.current) {
-          // Another header takes over while this one leaves: morph instead.
-          exiting.current = false;
-          slide.stopAnimation();
-          slide.setValue(0);
-          fade.stopAnimation();
-          fade.setValue(1);
-        } else if (fromNothing && header.enter) {
-          // Nothing to morph from: come in with the screen.
-          setGeneration((value) => value + 1);
-          setSlidingIn(true);
-          const done = () => setSlidingIn(false);
-          if (SLIDES_WITH_SCREEN) {
-            slide.setValue(offset(header.enter));
-            run(0, SCREEN_SLIDE_MS, SCREEN_SLIDE_EASING, done);
-          } else {
-            // The screen starts to fade in a frame or two after its focus.
-            fade.setValue(0);
-            Animated.timing(fade, {
-              toValue: 1,
-              duration: SCREEN_FADE_MS,
-              delay: 50,
-              easing: Easing.out(Easing.quad),
-              useNativeDriver: true,
-            }).start(done);
-          }
-        } else if (fromNothing) {
-          // Put back here, not when the last header left: it would show
-          // again for a frame before being unmounted.
-          slide.setValue(0);
-          fade.setValue(1);
+        if (pendingShow.current != null) {
+          cancelAnimationFrame(pendingShow.current);
+          pendingShow.current = null;
         }
-        setHeader(header);
+        const current = activeRef.current;
+        if (
+          Platform.OS === 'android' &&
+          current != null &&
+          current.id !== header.id
+        ) {
+          // Android builds the new screen's views on the UI thread right
+          // after this, which stalls every animation for a moment. Starting
+          // the morph then froze it on its first frame (the old title gone,
+          // buttons half-way) until the screen was built. Once frames come
+          // on time again the morph plays through, like iOS.
+          whenFramesSettle(pendingShow, () => apply(header));
+          return;
+        }
+        apply(header);
       },
       hide: (id, exit) => {
         // The next screen usually takes over in the same moment; wait a
@@ -456,11 +515,25 @@ export function LiquidHeaderProvider({
           if (activeRef.current?.id !== id || exiting.current) {
             return;
           }
-          // Android: fade out at once, on the UI thread, since the JS thread
-          // is often busy with the next screen. The fade starts slowly, so
-          // a header that takes over right away stops it before it shows.
-          exiting.current = true;
-          run(0, SCREEN_FADE_MS, Easing.in(Easing.cubic), done, fade);
+          // Android: fade out on the UI thread once frames come on time: a
+          // header that takes over in the meantime morphs from this one
+          // instead (the next screen is often still being built, which
+          // stalls the UI thread; a fade started now would end during the
+          // stall and blink the header out).
+          if (pendingHide.current != null) {
+            cancelAnimationFrame(pendingHide.current);
+          }
+          whenFramesSettle(pendingHide, () => {
+            if (
+              activeRef.current?.id !== id ||
+              exiting.current ||
+              pendingShow.current != null
+            ) {
+              return;
+            }
+            exiting.current = true;
+            run(0, SCREEN_FADE_MS, Easing.in(Easing.cubic), done, fade);
+          });
           return;
         }
         hideTimer.current = setTimeout(() => {

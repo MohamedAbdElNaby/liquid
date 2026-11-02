@@ -82,14 +82,22 @@ export function useLiquidColors(setting?: LiquidColorSchemeSetting) {
  * The wash of the `frost` props (0 to 1) as a glass tint: milky white in
  * light mode, black in dark mode.
  */
+export type LiquidFrostTone = 'auto' | 'white' | 'black';
+
+/** Whether a frost of [tone] is black in this appearance. */
+function frostIsBlack(tone: LiquidFrostTone, dark: boolean) {
+  return tone === 'auto' ? dark : tone === 'black';
+}
+
 export function frostColor(
   frost: number,
   dark: boolean,
   /** The tint's opacity at full frost. */
-  max = 0.7
+  max = 0.7,
+  tone: LiquidFrostTone = 'auto'
 ): string {
   const amount = Math.min(Math.max(frost, 0), 1);
-  return dark
+  return frostIsBlack(tone, dark)
     ? `rgba(0, 0, 0, ${max * amount})`
     : `rgba(255, 255, 255, ${max * amount})`;
 }
@@ -97,13 +105,16 @@ export function frostColor(
 /** The tab bars' drop tint for a `lensWash` (0 to 1), or undefined for the default. */
 export function lensWashColor(
   wash: number | undefined,
-  dark: boolean
+  dark: boolean,
+  tone: LiquidFrostTone = 'auto'
 ): string | undefined {
   if (wash == null || wash <= 0) {
     return undefined;
   }
   const amount = Math.min(wash, 1) * 0.75;
-  return dark ? `rgba(0, 0, 0, ${amount})` : `rgba(255, 255, 255, ${amount})`;
+  return frostIsBlack(tone, dark)
+    ? `rgba(0, 0, 0, ${amount})`
+    : `rgba(255, 255, 255, ${amount})`;
 }
 
 /** Android tab bars draw their tint at 60%; this makes full frost as milky there. */
@@ -117,15 +128,38 @@ const TAB_BAR_FROST_MAX = Platform.OS === 'android' ? 1 : 0.7;
 export function tabBarFrostColor(
   frost: number,
   colors: LiquidColors,
-  dark: boolean
+  dark: boolean,
+  tone: LiquidFrostTone = 'auto'
 ): string {
   const amount = Math.min(Math.max(frost, 0), 1);
   if (amount === 0) {
     return colors.tabBarGlass;
   }
   // From the default tint's strength (18% white, 28% dark gray) to the max:
-  // white in light mode, black in dark mode.
+  // white in light mode, black in dark mode, unless a tone is given.
   const base = dark ? 0.28 : 0.18;
   const alpha = base + (TAB_BAR_FROST_MAX - base) * amount;
-  return dark ? `rgba(0, 0, 0, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+  return frostIsBlack(tone, dark)
+    ? `rgba(0, 0, 0, ${alpha})`
+    : `rgba(255, 255, 255, ${alpha})`;
+}
+
+/**
+ * One tint for a white wash and a black wash over the glass (each 0 to 1),
+ * as if the black layer lay over the white one; undefined when both are 0.
+ */
+export function whiteBlackColor(
+  white = 0,
+  black = 0,
+  /** Opacity of each wash at 1. */
+  max = 0.7
+): string | undefined {
+  const w = Math.min(Math.max(white, 0), 1) * max;
+  const b = Math.min(Math.max(black, 0), 1) * max;
+  const alpha = 1 - (1 - w) * (1 - b);
+  if (alpha <= 0) {
+    return undefined;
+  }
+  const gray = Math.round((255 * (1 - b) * w) / alpha);
+  return `rgba(${gray}, ${gray}, ${gray}, ${alpha})`;
 }

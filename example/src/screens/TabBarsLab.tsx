@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import type { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs';
 import {
@@ -9,6 +9,7 @@ import {
   LiquidToggle,
   LiquidTopTabBar,
   type LiquidGlassStyle,
+  whiteBlackColor,
 } from '@mohamed_abd_elnaby/react-native-liquid';
 import { ContactsIcon, DiscoverIcon, HomeIcon, LabIcon } from '../TabIcons';
 
@@ -75,6 +76,11 @@ export function useTabBarsLab({
   const [style, setStyle] = useState(1);
   const [blur, setBlur] = useState(50);
   const [frost, setFrost] = useState(0);
+  const [tone, setTone] = useState(0);
+  const [selectionBlur, setSelectionBlur] = useState(100);
+  // The resting active pill only (not the drop): white and black, Android.
+  const [activeWhite, setActiveWhite] = useState(0);
+  const [activeBlack, setActiveBlack] = useState(0);
   const [tint, setTint] = useState(0);
   const [lens, setLens] = useState(true);
   const [lensScale, setLensScale] = useState(100);
@@ -102,6 +108,12 @@ export function useTabBarsLab({
     // at 0% and frosts up to 100%.
     blur: style === 2 ? blur / 100 : undefined,
     frost: frost / 100,
+    frostTone: (['auto', 'white', 'black'] as const)[tone],
+    selectionBlur: selectionBlur / 100,
+    selectionColor:
+      Platform.OS === 'android'
+        ? whiteBlackColor(activeWhite / 100, activeBlack / 100, 0.8)
+        : undefined,
     glassTintColor: TINTS[tint],
     lens,
     lensScale: lensScale / 100,
@@ -155,6 +167,9 @@ export function useTabBarsLab({
     </View>
   );
 
+  const washName =
+    tone === 0 ? (dark ? 'Black' : 'White') : tone === 1 ? 'White' : 'Black';
+
   const percent = (
     label: string,
     value: number,
@@ -189,7 +204,15 @@ export function useTabBarsLab({
         setBlur(value);
         setStyle(2);
       })}
-      {percent(dark ? 'Black' : 'White', frost, setFrost)}
+      <Row label="Wash (bars and drop)" labelStyle={labelStyle}>
+        <LiquidSegmentedControl
+          colorScheme={colorScheme}
+          segments={['Auto', 'White', 'Black']}
+          selectedIndex={tone}
+          onChange={setTone}
+        />
+      </Row>
+      {percent(washName, frost, setFrost)}
       <Row label="Tint" labelStyle={labelStyle}>
         <LiquidSegmentedControl
           colorScheme={colorScheme}
@@ -199,6 +222,11 @@ export function useTabBarsLab({
         />
       </Row>
 
+      <Text style={labelStyle}>Active tab, after the animation (Android)</Text>
+      {percent('Active frost', selectionBlur, setSelectionBlur)}
+      {percent('Active white', activeWhite, setActiveWhite)}
+      {percent('Active black', activeBlack, setActiveBlack)}
+
       <View style={styles.toggle}>
         <Text style={labelStyle}>Liquid drop on press</Text>
         <LiquidToggle value={lens} onValueChange={setLens} />
@@ -206,7 +234,7 @@ export function useTabBarsLab({
       {percent('Drop size', lensScale, setLensScale, 200)}
       {percent('Drop magnify', lensMagnification, setLensMagnification, 300)}
       {percent('Drop bend (Android)', lensRefraction, setLensRefraction, 300)}
-      {percent(dark ? 'Drop black' : 'Drop white', lensWash, setLensWash)}
+      {percent(`Drop ${washName.toLowerCase()}`, lensWash, setLensWash)}
       {percent('Drop milkiness (Android)', lensFrost, setLensFrost, 200)}
     </View>
   );

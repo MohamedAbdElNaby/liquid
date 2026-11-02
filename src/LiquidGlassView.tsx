@@ -10,6 +10,8 @@ import {
 } from './NativeLiquidGlass';
 import {
   frostColor,
+  whiteBlackColor,
+  type LiquidFrostTone,
   useLiquidColorScheme,
   type LiquidColorSchemeSetting,
 } from './theme';
@@ -37,6 +39,17 @@ export type LiquidGlassViewProps = ViewProps & {
    * @default 0
    */
   frost?: number;
+  /**
+   * The colour of `frost`: `auto` is white in light mode and black in dark
+   * mode; `white` or `black` in either. @default 'auto'
+   */
+  frostTone?: LiquidFrostTone;
+  /**
+   * A white wash and a black wash over the glass, each 0 to 1, in any theme;
+   * together they make a grey. Set either to use them instead of `frost`.
+   */
+  white?: number;
+  black?: number;
   /**
    * Reacts to touches: native interactive glass on iOS 26+, a press highlight
    * and stronger refraction on Android.
@@ -182,6 +195,9 @@ export function LiquidGlassView({
   tintColor,
   blur,
   frost = 0,
+  frostTone = 'auto',
+  white,
+  black,
   interactive = false,
   cornerRadius,
   colorScheme = 'system',
@@ -203,7 +219,12 @@ export function LiquidGlassView({
       style={style}
       glassStyle={amount == null ? glassStyle : 'clear'}
       glassTintColor={
-        tintColor ?? (wash > 0 ? frostColor(wash, dark) : undefined)
+        tintColor ??
+        (white != null || black != null
+          ? whiteBlackColor(white, black)
+          : wash > 0
+            ? frostColor(wash, dark, undefined, frostTone)
+            : undefined)
       }
       interactive={interactive}
       cornerRadius={radius}

@@ -11,9 +11,11 @@ export {
   getLiquidColors,
   useLiquidColorScheme,
   useLiquidColors,
+  whiteBlackColor,
   type LiquidColors,
   type LiquidColorScheme,
   type LiquidColorSchemeSetting,
+  type LiquidFrostTone,
 } from './theme';
 
 // Controls

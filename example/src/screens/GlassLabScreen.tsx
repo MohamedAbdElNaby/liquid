@@ -56,6 +56,8 @@ export function GlassLabScreen() {
   const [style, setStyle] = useState(0);
   const [blurPercent, setBlurPercent] = useState(50);
   const [white, setWhite] = useState(0);
+  // White and black washes, in either theme; together they make a grey.
+  const [black, setBlack] = useState(0);
   const blurAmount = style === 2 ? blurPercent / 100 : undefined;
   // One appearance for the whole lab: the card, the buttons, the header
   // buttons, the panels and the tab bars.
@@ -67,7 +69,8 @@ export function GlassLabScreen() {
   const glass = {
     glassStyle: (style === 1 ? 'clear' : 'regular') as LiquidGlassStyle,
     blur: blurAmount,
-    frost: white / 100,
+    white: white / 100,
+    black: black / 100,
     colorScheme: appearance,
   };
   const tabBars = useTabBarsLab({ dark, labelStyle: styles.label });
@@ -177,15 +180,21 @@ export function GlassLabScreen() {
               setStyle(2);
             }}
           />
-          <Label>
-            {dark ? 'Black' : 'White'} {Math.round(white)}%
-          </Label>
+          <Label>White {Math.round(white)}%</Label>
           <LiquidSlider
             value={white}
             minimumValue={0}
             maximumValue={100}
             step={1}
             onValueChange={setWhite}
+          />
+          <Label>Black {Math.round(black)}%</Label>
+          <LiquidSlider
+            value={black}
+            minimumValue={0}
+            maximumValue={100}
+            step={1}
+            onValueChange={setBlack}
           />
           <Label>Tint</Label>
           <LiquidSegmentedControl

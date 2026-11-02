@@ -18,6 +18,7 @@ import type { LiquidGlassStyle } from '../LiquidGlassView';
 import { NativeLiquidTabBar } from '../NativeLiquidGlass';
 import {
   lensWashColor,
+  type LiquidFrostTone,
   tabBarFrostColor,
   useLiquidColorScheme,
   useLiquidColors,
@@ -73,6 +74,16 @@ export type LiquidTopTabBarOptions = {
    * white in light mode and black in dark mode.
    */
   lensWash?: number;
+  /**
+   * The colour of `frost`: `auto` is white in light mode and black in dark
+   * mode; `white` or `black` in either. @default 'auto'
+   */
+  frostTone?: LiquidFrostTone;
+  /**
+   * Android: frosts the resting selection pill with a real blur of the page,
+   * 0 (flat) to 1 (default 1), so the active tab reads over busy content.
+   */
+  selectionBlur?: number;
   /** Height of the glass capsule. @default 44 */
   height?: number;
   /**
@@ -125,6 +136,8 @@ export function LiquidTopTabBar({
   lensRefraction,
   lensFrost,
   lensWash,
+  frostTone = 'auto',
+  selectionBlur = 1,
   height = 44,
   floating = true,
   style,
@@ -193,11 +206,15 @@ export function LiquidTopTabBar({
         pagerPosition={position}
         glassStyle={glassStyle}
         // Same frosted bar and soft pill as the bottom tab bar.
-        glassTintColor={glassTintColor ?? tabBarFrostColor(frost, colors, dark)}
+        glassTintColor={
+          glassTintColor ?? tabBarFrostColor(frost, colors, dark, frostTone)
+        }
         backdropBlur={blur}
         selectionColor={selectionColor ?? colors.tabSelection}
         lensTintColor={
-          lensTintColor ?? lensWashColor(lensWash, dark) ?? colors.topTabLens
+          lensTintColor ??
+          lensWashColor(lensWash, dark, frostTone) ??
+          colors.topTabLens
         }
         // The same color as the active label, so the lens and the labels match.
         focusedTintColor={
@@ -211,6 +228,7 @@ export function LiquidTopTabBar({
         lensMagnification={lensMagnification}
         lensRefraction={lensRefraction}
         lensFrost={lensFrost}
+        selectionBlur={selectionBlur}
         onTabSelect={(event) => selectTab(event.nativeEvent.index)}
         onTabLongPress={(event) => longPressTab(event.nativeEvent.index)}
         style={[styles.bar, { height }, style]}

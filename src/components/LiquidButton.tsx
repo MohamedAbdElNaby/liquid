@@ -251,6 +251,9 @@ export function MorphGlass({
   blurRadius,
   blur,
   frost,
+  frostTone,
+  white,
+  black,
   ...rest
 }: MorphGlassProps) {
   return (
@@ -279,6 +282,9 @@ export function MorphGlass({
       blurRadius={blurRadius}
       blur={blur}
       frost={frost}
+      frostTone={frostTone}
+      white={white}
+      black={black}
       style={[style, disabled ? styles.disabled : null]}
     >
       <Pressable

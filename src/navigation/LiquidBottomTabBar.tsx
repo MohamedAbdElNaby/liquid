@@ -38,6 +38,7 @@ import {
 } from '../components/LiquidExpandableSearch';
 import {
   lensWashColor,
+  type LiquidFrostTone,
   tabBarFrostColor,
   useLiquidColorScheme,
   useLiquidColors,
@@ -135,6 +136,16 @@ export type LiquidBottomTabBarOptions = {
    * white in light mode and black in dark mode.
    */
   lensWash?: number;
+  /**
+   * The colour of `frost`: `auto` is white in light mode and black in dark
+   * mode; `white` or `black` in either. @default 'auto'
+   */
+  frostTone?: LiquidFrostTone;
+  /**
+   * Android: frosts the resting selection pill with a real blur of the page,
+   * 0 (flat) to 1 (default 0), so the active tab reads over busy content.
+   */
+  selectionBlur?: number;
   /** Style of the glass capsule. */
   style?: StyleProp<ViewStyle>;
 };
@@ -185,13 +196,15 @@ export function LiquidBottomTabBar({
   lensRefraction,
   lensFrost,
   lensWash,
+  frostTone = 'auto',
+  selectionBlur = 0,
   style,
 }: LiquidBottomTabBarProps) {
   const { colors } = useLiquidColors(colorScheme);
   const dark = useLiquidColorScheme(colorScheme) === 'dark';
   // A light tint keeps the tabs readable on the clear glass.
   const glassTintColor =
-    glassTintColorProp ?? tabBarFrostColor(frost, colors, dark);
+    glassTintColorProp ?? tabBarFrostColor(frost, colors, dark, frostTone);
   const onHeightChange = useContext(HeightCallbackContext);
   const keyboardVisible = useKeyboardVisible();
   const [ownSearchExpanded, setOwnSearchExpanded] = useState(
@@ -294,7 +307,8 @@ export function LiquidBottomTabBar({
       lensMagnification={lensMagnification}
       lensRefraction={lensRefraction}
       lensFrost={lensFrost}
-      lensTintColor={lensWashColor(lensWash, dark)}
+      selectionBlur={selectionBlur}
+      lensTintColor={lensWashColor(lensWash, dark, frostTone)}
       onTabSelect={(event) => selectTab(event.nativeEvent.index)}
       onTabLongPress={(event) => longPressTab(event.nativeEvent.index)}
       style={[styles.bar, { height }, style]}

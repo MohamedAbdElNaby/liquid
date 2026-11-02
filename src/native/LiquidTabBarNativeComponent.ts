@@ -33,6 +33,8 @@ export interface NativeProps extends ViewProps {
   lensRefraction?: CodegenTypes.WithDefault<CodegenTypes.Float, 1>;
   /** Android: the drop's milky fill: 0 crystal clear, 1 default. */
   lensFrost?: CodegenTypes.WithDefault<CodegenTypes.Float, 1>;
+  /** Android: frosts the resting selection pill, 0 (flat) to 1. */
+  selectionBlur?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
   /**
    * Scroll position of a pager in tabs (fractional while swiping). The pill
    * follows it while the bar is not touched. Negative values are ignored.

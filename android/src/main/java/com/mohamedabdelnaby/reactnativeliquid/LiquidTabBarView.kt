@@ -107,6 +107,8 @@ internal class TabBarState {
   var lensMagnification by mutableFloatStateOf(1f)
   var lensRefraction by mutableFloatStateOf(1f)
   var lensFrost by mutableFloatStateOf(1f)
+  /** Frosts the resting selection pill with a real blur of the page, 0 (flat) to 1. */
+  var selectionBlur by mutableFloatStateOf(0f)
   var tabCount by mutableIntStateOf(1)
   var widthPx by mutableIntStateOf(0)
   var heightPx by mutableIntStateOf(0)
@@ -151,6 +153,10 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
   // After a tap the pager is still scrolling to the new page; ignore its position until it gets
   // there so the pill doesn't jump back.
   private var awaitingIndex = -1
+  // The tab tapped last, shown in the focused color until React selects it, so the active tab
+  // reads as soon as the drop lands instead of after the round trip.
+  private var landingIndex = -1
+  private var tintedChild: View? = null
   // Tab chosen on release, reported right away (see flushPendingSelect).
   private var pendingSelect = -1
   private var awaitingSince = 0L
@@ -291,6 +297,9 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
     val animated = hasSelection && isAttachedToWindow && abs(value.value - index) > 0.05f
     hasSelection = true
     selectedIndex = index
+    // React now colors the tabs itself.
+    landingIndex = -1
+    tintLanding()
     if (touching) {
       return
     }
@@ -351,6 +360,7 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
         handler.removeCallbacks(longPressRunnable)
         touching = false
         val index = indexFor(event.x)
+        landingIndex = if (longPressed) -1 else index
         value.target = index.toFloat()
         releasePending = true
         startAnimating()
@@ -366,6 +376,7 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
       MotionEvent.ACTION_CANCEL -> {
         handler.removeCallbacks(longPressRunnable)
         touching = false
+        landingIndex = -1
         pendingSelect = -1
         value.target = selectedIndex.toFloat()
         releasePending = true
@@ -500,6 +511,18 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
       item.scaleX = scale
       item.scaleY = scale
     }
+    tintLanding()
+  }
+
+  /** Paints the tab being landed on in the focused color until React selects it. */
+  private fun tintLanding() {
+    val target = if (landingIndex >= 0 && landingIndex != selectedIndex) getChildAt(leading + landingIndex) else null
+    if (target === tintedChild) return
+    tintedChild?.setLayerType(View.LAYER_TYPE_NONE, null)
+    tintedChild = null
+    val paint = focusedPaint() ?: return
+    target?.setLayerType(View.LAYER_TYPE_HARDWARE, paint)
+    tintedChild = target
   }
 
   override fun dispose() {
@@ -559,6 +582,10 @@ private fun TabBarBackground(state: TabBarState, backdrop: Backdrop) {
         val tabWidth = (size.width - inset * 2) / state.tabCount
         val height = size.height - inset * 2
         val position = state.value.coerceIn(0f, (state.tabCount - 1).toFloat())
+        if (state.selectionBlur > 0f && isGlassEffectSupported) {
+          // Drawn as frosted glass by SelectionGlass instead.
+          return@drawBehind
+        }
         drawRoundRect(
           color = pillColor.copy(alpha = pillColor.alpha * (1f - state.press)),
           topLeft = androidx.compose.ui.geometry.Offset(pillLeft(state.rtl, size.width, inset, tabWidth, position), inset),
@@ -567,6 +594,50 @@ private fun TabBarBackground(state: TabBarState, backdrop: Backdrop) {
         )
       },
   )
+  if (state.selectionBlur > 0f && isGlassEffectSupported) {
+    SelectionGlass(state, backdrop, pillColor, dark)
+  }
+}
+
+/**
+ * The resting selection as frosted glass (selectionBlur): it blurs the page under the selected
+ * tab, so the active tab reads over busy content. It fades out while the drop lifts off it.
+ */
+@Composable
+private fun SelectionGlass(state: TabBarState, backdrop: Backdrop, pillColor: Color, dark: Boolean) {
+  if (state.widthPx <= 0 || state.tabCount <= 0) return
+  val density = LocalDensity.current
+  val inset = INSET_DP * density.density
+  val tabWidth = (state.widthPx - inset * 2) / state.tabCount
+  val height = state.heightPx - inset * 2
+  val capsule = RoundedCornerShape(percent = 50)
+  Box(Modifier.fillMaxSize()) {
+    Box(
+      Modifier
+        .graphicsLayer {
+          val position = state.value.coerceIn(0f, (state.tabCount - 1).toFloat())
+          translationX = pillLeft(state.rtl, state.widthPx.toFloat(), inset, tabWidth, position)
+          translationY = inset
+          alpha = 1f - state.press
+        }
+        .size(with(density) { tabWidth.toDp() }, with(density) { height.toDp() })
+        .drawBackdrop(
+          backdrop = backdrop,
+          shape = { capsule },
+          effects = {
+            vibrancy()
+            blur((6f + 18f * state.selectionBlur.coerceIn(0f, 1f)).dp.toPx())
+          },
+          highlight = null,
+          shadow = null,
+          onDrawSurface = {
+            // A frost that reads in both themes, plus the usual pill shade.
+            drawRect(Color.White.copy(alpha = (if (dark) 0.10f else 0.35f) * state.selectionBlur.coerceIn(0f, 1f)))
+            drawRect(pillColor)
+          },
+        ),
+    )
+  }
 }
 
 /** The clear glass lens, drawn above the tab items so it refracts and magnifies them. */
@@ -700,6 +771,11 @@ class LiquidTabBarViewManager : LiquidComposeHostManager() {
   @ReactProp(name = "colorScheme")
   fun setColorScheme(view: ReactViewGroup, value: String?) {
     bar(view)?.state?.colorScheme = value ?: "system"
+  }
+
+  @ReactProp(name = "selectionBlur", defaultFloat = 0f)
+  fun setSelectionBlur(view: ReactViewGroup, value: Float) {
+    bar(view)?.state?.selectionBlur = value.coerceIn(0f, 1f)
   }
 
   @ReactProp(name = "lensScale", defaultFloat = 1f)

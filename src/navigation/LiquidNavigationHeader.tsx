@@ -111,6 +111,11 @@ export type LiquidHeaderGlass = {
   blur?: number;
   /** A wash over the glass, 0 to 1 (white in light, black in dark); see `LiquidGlassView`. */
   frost?: number;
+  /** White or black frost in either theme; see `LiquidGlassView`. */
+  frostTone?: 'auto' | 'white' | 'black';
+  /** White and black washes in any theme, 0 to 1; see `LiquidGlassView`. */
+  white?: number;
+  black?: number;
 };
 
 /**
@@ -1114,6 +1119,9 @@ function HeaderButton({
       blurRadius={glass?.blurRadius}
       blur={glass?.blur}
       frost={glass?.frost}
+      frostTone={glass?.frostTone}
+      white={glass?.white}
+      black={glass?.black}
       rimWidth={glass?.rimWidth}
       cornerRadius={SLOT_SIZE / 2}
       contentKey={item.key ?? item.title ?? ''}

@@ -26,11 +26,8 @@
 
 ### Changed
 
-- Android 13+: glass uses an iOS 26 lens: the page bends into a compressed band
-  at the rim and the rim is lit top-left and bottom-right. Adapted from
-  [Liquid-Glass-Android](https://github.com/QWEA0/Liquid-Glass-Android) by
-  pandadog (MIT, see `LICENSE-Liquid-Glass-Android`). Pass
-  `androidLens="classic"` to keep the earlier look.
+- Android 13+: glass uses an iOS 26 lens: the page bends into a compressed
+  band. Pass `androidLens="classic"` to keep the earlier look.
 - Android: a bottom tab tap navigates once the selection is nearly at its tab
   (at most 250 ms) instead of on release, so building the new screen no
   longer stutters the slide.

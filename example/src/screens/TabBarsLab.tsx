@@ -78,7 +78,7 @@ export function useTabBarsLab({
   const [frost, setFrost] = useState(0);
   const [tone, setTone] = useState(0);
   const [selectionBlur, setSelectionBlur] = useState(100);
-  // The resting active pill only (not the drop): white and black, Android.
+  // The resting active pill only (not the drop): white and black.
   const [activeWhite, setActiveWhite] = useState(0);
   const [activeBlack, setActiveBlack] = useState(0);
   const [tint, setTint] = useState(0);
@@ -110,10 +110,7 @@ export function useTabBarsLab({
     frost: frost / 100,
     frostTone: (['auto', 'white', 'black'] as const)[tone],
     selectionBlur: selectionBlur / 100,
-    selectionColor:
-      Platform.OS === 'android'
-        ? whiteBlackColor(activeWhite / 100, activeBlack / 100, 0.8)
-        : undefined,
+    selectionColor: whiteBlackColor(activeWhite / 100, activeBlack / 100, 0.8),
     glassTintColor: TINTS[tint],
     lens,
     lensScale: lensScale / 100,
@@ -222,8 +219,9 @@ export function useTabBarsLab({
         />
       </Row>
 
-      <Text style={labelStyle}>Active tab, after the animation (Android)</Text>
-      {percent('Active frost', selectionBlur, setSelectionBlur)}
+      <Text style={labelStyle}>Active tab, after the animation</Text>
+      {Platform.OS === 'android' &&
+        percent('Active frost', selectionBlur, setSelectionBlur)}
       {percent('Active white', activeWhite, setActiveWhite)}
       {percent('Active black', activeBlack, setActiveBlack)}
 

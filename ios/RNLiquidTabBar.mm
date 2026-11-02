@@ -104,6 +104,8 @@ static const CGFloat kBarStretch = 0.45;
   CGFloat _touchStartX;
   BOOL _releasePending;
   BOOL _lensEnabled;
+  CGFloat _lensScale;
+  CGFloat _lensMagnification;
   BOOL _hasProps;
   // Set once a pager drives the bar (top tabs): tab changes then glide the pill.
   BOOL _followsPager;
@@ -142,6 +144,8 @@ static const CGFloat kBarStretch = 0.45;
     _scaleX.snap(1);
     _scaleY.snap(1);
     _lensEnabled = YES;
+    _lensScale = 1;
+    _lensMagnification = 1;
 
     self.clipsToBounds = NO;
 
@@ -308,6 +312,8 @@ static const CGFloat kBarStretch = 0.45;
   _restingBackground.backgroundColor = _pillView.backgroundColor;
 
   _lensEnabled = newViewProps.lensEnabled;
+  _lensScale = MAX(newViewProps.lensScale, 0);
+  _lensMagnification = MAX(newViewProps.lensMagnification, 0);
   [self applyFrost:newViewProps.backdropBlur];
   UIColor *lensTint = RCTUIColorFromSharedColor(newViewProps.lensTintColor);
   if (lensTint != _lensTintColor && ![lensTint isEqual:_lensTintColor]) {
@@ -536,8 +542,8 @@ static const CGFloat kBarStretch = 0.45;
   _scaleY.dampingRatio = 0.9;
   _scaleX.stiffness = 600;
   _scaleY.stiffness = 600;
-  _scaleX.target = kPressedScaleX;
-  _scaleY.target = kPressedScaleY;
+  _scaleX.target = 1 + (kPressedScaleX - 1) * _lensScale;
+  _scaleY.target = 1 + (kPressedScaleY - 1) * _lensScale;
   [self setSystemLensLifted:YES];
 }
 
@@ -872,7 +878,7 @@ static void RNLiquidSetBool(UIView *view, NSString *name, BOOL value)
   NSArray<UIView *> *items = _itemsView.subviews;
   for (NSUInteger i = 0; i < items.count; i++) {
     double proximity = MAX(0.0, 1.0 - std::fabs(clamped - (double)i));
-    CGFloat scale = 1 + kTabMagnification * proximity * press;
+    CGFloat scale = 1 + kTabMagnification * _lensMagnification * proximity * press;
     items[i].transform = CGAffineTransformMakeScale(scale, scale);
     // The resting background is the first subview; the copies follow in tab order.
     if (i + 1 < _selectedContent.subviews.count) {
@@ -1026,7 +1032,7 @@ static void RNLiquidSetBool(UIView *view, NSString *name, BOOL value)
   for (NSUInteger i = 0; i < items.count; i++) {
     double distance = std::fabs(clamped - (double)i);
     double proximity = MAX(0.0, 1.0 - distance);
-    CGFloat scale = 1 + (kTabLiftScale + kTabMagnification * proximity) * press;
+    CGFloat scale = 1 + (kTabLiftScale + kTabMagnification * _lensMagnification * proximity) * press;
     items[i].transform = CGAffineTransformMakeScale(scale, scale);
     for (UIView *tintView in @[ _tintUnderView, _tintView ]) {
       if (i < tintView.subviews.count) {

@@ -8,10 +8,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LiquidGlassView } from '../LiquidGlassView';
+import { LiquidGlassContainer, LiquidGlassView } from '../LiquidGlassView';
 import { NativeLiquidScrollEdgeContainer } from '../NativeLiquidGlass';
 import { useLiquidColorScheme, type LiquidColorSchemeSetting } from '../theme';
-import { GlassGroupV2 } from './GlassGroupV2';
 
 /** Row height under the status bar (buttons are 44/48 high, centred). */
 export const GLASS_HEADER_V2_HEIGHT = 52;
@@ -51,8 +50,8 @@ export type GlassHeaderV2Props = {
   /** `fade` and `blur` edges: how far the band reaches below the buttons. @default 28 */
   edgeHeight?: number;
   /**
-   * Header buttons closer than this melt together (GlassGroupV2), like the
-   * grouped buttons of an iOS 26 toolbar. @default 0
+   * iOS 26: header buttons closer than this melt together (a glass
+   * container), like the grouped buttons of an iOS 26 toolbar. @default 0
    */
   spacing?: number;
   colorScheme?: LiquidColorSchemeSetting;
@@ -184,11 +183,9 @@ export const GlassHeaderV2 = memo(function GlassHeaderV2Impl({
           )}
         </Animated.View>
       ) : null}
-      <GlassGroupV2
+      <LiquidGlassContainer
         pointerEvents="box-none"
         spacing={spacing}
-        colorScheme={colorScheme}
-        reduceTransparency={reduceTransparency}
         style={[
           styles.row,
           {
@@ -210,7 +207,7 @@ export const GlassHeaderV2 = memo(function GlassHeaderV2Impl({
         <View pointerEvents="box-none" style={[styles.side, styles.end]}>
           {right}
         </View>
-      </GlassGroupV2>
+      </LiquidGlassContainer>
     </NativeLiquidScrollEdgeContainer>
   );
 });

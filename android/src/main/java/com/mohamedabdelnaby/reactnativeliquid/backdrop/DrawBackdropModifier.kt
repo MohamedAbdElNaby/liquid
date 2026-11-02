@@ -38,6 +38,7 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.node.GlobalPositionAwareModifierNode
 import androidx.compose.ui.node.LayoutModifierNode
@@ -380,6 +381,11 @@ private class DrawBackdropNode(
             effectScope.apply(effects)
             graphicsLayer?.renderEffect = effectScope.renderEffect?.asComposeRenderEffect()
             padding = effectScope.padding
+            // Modified: a new effect (a changed blur, lens or press) needs a new
+            // frame; without it the old effect stayed until something else drew.
+            if (isAttached) {
+                invalidateDraw()
+            }
         }
     }
 

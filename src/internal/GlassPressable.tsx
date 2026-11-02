@@ -26,6 +26,8 @@ export type GlassPressableProps = Omit<PressableProps, 'style' | 'children'> &
     | 'sheenOpacity'
     | 'specularEdge'
     | 'blurRadius'
+    | 'blur'
+    | 'frost'
   > & {
     /** Style of the glass surface. */
     style?: StyleProp<ViewStyle>;
@@ -49,6 +51,8 @@ export function GlassPressable({
   sheenOpacity,
   specularEdge,
   blurRadius,
+  blur,
+  frost,
   style,
   pressScale = 1.06,
   disabled,
@@ -99,6 +103,8 @@ export function GlassPressable({
           sheenOpacity={sheenOpacity}
           specularEdge={specularEdge}
           blurRadius={blurRadius}
+          blur={blur}
+          frost={frost}
           style={style}
         >
           {children}

@@ -17,6 +17,7 @@
     "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.md",
     "LICENSE-AndroidLiquidGlass",
+    "LICENSE-Liquid-Glass-Android",
     "src",
     "lib",
     "android",
@@ -170,9 +171,6 @@
         },
         "RNLiquidProgressiveBlur": {
           "className": "RNLiquidProgressiveBlur"
-        },
-        "RNLiquidGlassV2": {
-          "className": "RNLiquidGlassV2"
         }
       }
     }

@@ -1,5 +1,7 @@
 package com.mohamedabdelnaby.reactnativeliquid
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
@@ -54,6 +56,13 @@ internal class ViewTreeBackdrop(
 ) : Backdrop {
 
   private val node = RenderNode("LiquidGlassBackdrop").apply { setClipToBounds(false) }
+
+  /**
+   * Bumped when the first recording lands. Glass that drew before it (with nothing to show) reads
+   * this while drawing, so it draws again; otherwise static glass stayed empty until something
+   * else redrew it.
+   */
+  private var recordings by androidx.compose.runtime.mutableIntStateOf(0)
   private val targetToRoot = Matrix()
   private val rootToTarget = Matrix()
   private val ancestors = ArrayList<View>()
@@ -105,6 +114,8 @@ internal class ViewTreeBackdrop(
     coordinates: LayoutCoordinates?,
     layerBlock: (GraphicsLayerScope.() -> Unit)?,
   ) {
+    @Suppress("UNUSED_VARIABLE")
+    val observed = recordings
     val canvas = drawContext.canvas.nativeCanvas
     if (canvas !is RecordingCanvas || !node.hasDisplayList()) {
       return
@@ -182,6 +193,7 @@ internal class ViewTreeBackdrop(
     if (skipUnchanged) {
       computeSampleArea(recordArea)
     }
+    val first = !node.hasDisplayList()
     node.setPosition(0, 0, width, height)
     val canvas = node.beginRecording(width, height)
     try {
@@ -189,6 +201,10 @@ internal class ViewTreeBackdrop(
       drawBehindTarget(canvas)
     } finally {
       node.endRecording()
+    }
+    if (first) {
+      recordings++
+      androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
     }
     if (skipUnchanged) {
       recordedTargetToRoot.set(targetToRoot)

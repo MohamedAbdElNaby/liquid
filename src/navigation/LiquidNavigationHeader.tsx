@@ -107,6 +107,10 @@ export type LiquidHeaderGlass = {
   backdropBlur?: number;
   /** Android: how blurry the glass is, in dp (iOS glass has a fixed blur). */
   blurRadius?: number;
+  /** 0 (clear) to 1 (fully frosted) on both platforms; see `LiquidGlassView`. */
+  blur?: number;
+  /** A wash over the glass, 0 to 1 (white in light, black in dark); see `LiquidGlassView`. */
+  frost?: number;
 };
 
 /**
@@ -1035,6 +1039,8 @@ function HeaderButton({
       cornerReflection={glass?.cornerReflection}
       backdropBlur={glass?.backdropBlur}
       blurRadius={glass?.blurRadius}
+      blur={glass?.blur}
+      frost={glass?.frost}
       rimWidth={glass?.rimWidth}
       cornerRadius={SLOT_SIZE / 2}
       contentKey={item.key ?? item.title ?? ''}

@@ -249,6 +249,8 @@ export function MorphGlass({
   cornerReflection,
   backdropBlur,
   blurRadius,
+  blur,
+  frost,
   ...rest
 }: MorphGlassProps) {
   return (
@@ -275,6 +277,8 @@ export function MorphGlass({
       cornerReflection={cornerReflection}
       backdropBlur={backdropBlur}
       blurRadius={blurRadius}
+      blur={blur}
+      frost={frost}
       style={[style, disabled ? styles.disabled : null]}
     >
       <Pressable

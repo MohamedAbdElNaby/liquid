@@ -16,7 +16,13 @@ import type {
 } from '@react-navigation/material-top-tabs';
 import type { LiquidGlassStyle } from '../LiquidGlassView';
 import { NativeLiquidTabBar } from '../NativeLiquidGlass';
-import { useLiquidColors, type LiquidColorSchemeSetting } from '../theme';
+import {
+  lensWashColor,
+  tabBarFrostColor,
+  useLiquidColorScheme,
+  useLiquidColors,
+  type LiquidColorSchemeSetting,
+} from '../theme';
 
 // Lets the pager's Animated position drive the native `pagerPosition` prop
 // without re-rendering React on every frame.
@@ -33,6 +39,12 @@ export type LiquidTopTabBarOptions = {
   glassTintColor?: ColorValue;
   /** Frosts the content under the bar, from 0 to 1. @default 0.8 */
   blur?: number;
+  /**
+   * A wash over the glass, from 0 (none) to 1 (milky): white in light mode, like the light header buttons, black in dark mode. Ignored with `glassTintColor`.
+   * @default 0
+   */
+  frost?: number;
+
   /** @default 'system' */
   colorScheme?: LiquidColorSchemeSetting;
   /** Overrides `tabBarActiveTintColor` from the screen options. */
@@ -48,6 +60,19 @@ export type LiquidTopTabBarOptions = {
    * bottom tab bar. @default true
    */
   lens?: boolean;
+  /** How much the drop swells while pressed: 0 none, 1 iOS 26, 2 twice as much. @default 1 */
+  lensScale?: number;
+  /** How much the tab under the drop is magnified: 0 none, 1 default. @default 1 */
+  lensMagnification?: number;
+  /** Android: how strongly the drop's rim bends the tabs: 0 none, 1 default. @default 1 */
+  lensRefraction?: number;
+  /** Android: the drop's milky fill: 0 crystal clear, 1 default, 2 twice as milky. @default 1 */
+  lensFrost?: number;
+  /**
+   * Washes the drop: 0 leaves its default fill, up to 1 for a strong wash,
+   * white in light mode and black in dark mode.
+   */
+  lensWash?: number;
   /** Height of the glass capsule. @default 44 */
   height?: number;
   /**
@@ -88,18 +113,25 @@ export function LiquidTopTabBar({
   glassStyle = 'clear',
   glassTintColor,
   blur = 0.8,
+  frost = 0,
   colorScheme = 'system',
   activeTintColor,
   inactiveTintColor,
   selectionColor,
   lensTintColor,
   lens = true,
+  lensScale,
+  lensMagnification,
+  lensRefraction,
+  lensFrost,
+  lensWash,
   height = 44,
   floating = true,
   style,
   containerStyle,
 }: LiquidTopTabBarProps) {
   const { colors } = useLiquidColors(colorScheme);
+  const dark = useLiquidColorScheme(colorScheme) === 'dark';
   // In right-to-left layout the iOS pager reports its position from the
   // left edge, so the first page (on the right) reads as the last one.
   const position = useMemo(
@@ -161,10 +193,12 @@ export function LiquidTopTabBar({
         pagerPosition={position}
         glassStyle={glassStyle}
         // Same frosted bar and soft pill as the bottom tab bar.
-        glassTintColor={glassTintColor ?? colors.tabBarGlass}
+        glassTintColor={glassTintColor ?? tabBarFrostColor(frost, colors, dark)}
         backdropBlur={blur}
         selectionColor={selectionColor ?? colors.tabSelection}
-        lensTintColor={lensTintColor ?? colors.topTabLens}
+        lensTintColor={
+          lensTintColor ?? lensWashColor(lensWash, dark) ?? colors.topTabLens
+        }
         // The same color as the active label, so the lens and the labels match.
         focusedTintColor={
           activeTintColor ??
@@ -173,6 +207,10 @@ export function LiquidTopTabBar({
         }
         colorScheme={colorScheme}
         lensEnabled={lens}
+        lensScale={lensScale}
+        lensMagnification={lensMagnification}
+        lensRefraction={lensRefraction}
+        lensFrost={lensFrost}
         onTabSelect={(event) => selectTab(event.nativeEvent.index)}
         onTabLongPress={(event) => longPressTab(event.nativeEvent.index)}
         style={[styles.bar, { height }, style]}

@@ -67,6 +67,8 @@ export interface NativeProps extends ViewProps {
   depthEffect?: CodegenTypes.WithDefault<boolean, false>;
   highlight?: CodegenTypes.WithDefault<boolean, true>;
   shadow?: CodegenTypes.WithDefault<boolean, true>;
+  /** Android 13+: `ios` refracts and lights the rim like iOS 26; `classic` is the earlier lens. */
+  androidLens?: CodegenTypes.WithDefault<'ios' | 'classic', 'ios'>;
 }
 
 export default codegenNativeComponent<NativeProps>('RNLiquidGlassView');

@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 
 export type LiquidColorScheme = 'light' | 'dark';
 
@@ -76,4 +76,56 @@ export function useLiquidColors(setting?: LiquidColorSchemeSetting) {
   const scheme = useLiquidColorScheme(setting);
 
   return { scheme, colors: getLiquidColors(scheme) };
+}
+
+/**
+ * The wash of the `frost` props (0 to 1) as a glass tint: milky white in
+ * light mode, black in dark mode.
+ */
+export function frostColor(
+  frost: number,
+  dark: boolean,
+  /** The tint's opacity at full frost. */
+  max = 0.7
+): string {
+  const amount = Math.min(Math.max(frost, 0), 1);
+  return dark
+    ? `rgba(0, 0, 0, ${max * amount})`
+    : `rgba(255, 255, 255, ${max * amount})`;
+}
+
+/** The tab bars' drop tint for a `lensWash` (0 to 1), or undefined for the default. */
+export function lensWashColor(
+  wash: number | undefined,
+  dark: boolean
+): string | undefined {
+  if (wash == null || wash <= 0) {
+    return undefined;
+  }
+  const amount = Math.min(wash, 1) * 0.75;
+  return dark ? `rgba(0, 0, 0, ${amount})` : `rgba(255, 255, 255, ${amount})`;
+}
+
+/** Android tab bars draw their tint at 60%; this makes full frost as milky there. */
+const TAB_BAR_FROST_MAX = Platform.OS === 'android' ? 1 : 0.7;
+
+/**
+ * The tab bars' glass tint for a `frost` (0 to 1): their usual tint at 0,
+ * rising smoothly to milky white (black in dark mode), so a little frost
+ * never looks lighter than none.
+ */
+export function tabBarFrostColor(
+  frost: number,
+  colors: LiquidColors,
+  dark: boolean
+): string {
+  const amount = Math.min(Math.max(frost, 0), 1);
+  if (amount === 0) {
+    return colors.tabBarGlass;
+  }
+  // From the default tint's strength (18% white, 28% dark gray) to the max:
+  // white in light mode, black in dark mode.
+  const base = dark ? 0.28 : 0.18;
+  const alpha = base + (TAB_BAR_FROST_MAX - base) * amount;
+  return dark ? `rgba(0, 0, 0, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
 }

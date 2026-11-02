@@ -1,17 +1,9 @@
-import {
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type ReactNode,
-} from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Animated,
   Image,
-  Pressable,
   StatusBar,
   StyleSheet,
-  Switch,
   Text,
   View,
   type ColorValue,
@@ -20,63 +12,23 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  GlassButtonV2,
   GlassHeaderV2,
-  GlassShapeV2,
-  GlassTabBarV2,
   LiquidBottomTabBar,
   LiquidButton,
-  LiquidGlassView,
   LiquidIconButton,
   LiquidSegmentedControl,
   LiquidSlider,
   useLiquidNavigationHeader,
-  type GlassTabBarV2Item,
 } from '@mohamed_abd_elnaby/react-native-liquid';
 import type { RootStackParamList } from '../../App';
 import { PHOTOS } from '../data';
-import { ComposeIcon, PlusIcon, SearchIcon } from '../HeaderIcons';
+import { ComposeIcon, PlusIcon } from '../HeaderIcons';
 import { ContactsIcon, DiscoverIcon, HomeIcon, LabIcon } from '../TabIcons';
-import { CompareController } from './CompareController';
-import { CompareMorph } from './CompareMorph';
-import { GlassControls, useGlassLook } from './GlassControls';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Compare'>;
-type Example = NonNullable<
-  NonNullable<RootStackParamList['Compare']>['example']
->;
 type Scheme = 'light' | 'dark';
 type Background = 'photo' | 'colors' | 'plain';
-type Live = 'v1' | 'v2';
-
-const EXAMPLES: { key: Example; title: string; subtitle: string }[] = [
-  {
-    key: 'buttons',
-    title: 'Buttons',
-    subtitle: 'Text, icon and prominent; regular ↔ clear, refraction, shine',
-  },
-  {
-    key: 'shape',
-    title: 'Shape / card',
-    subtitle: 'Rounded glass with content',
-  },
-  { key: 'tabbar', title: 'Tab bar', subtitle: 'Lozenge and press feedback' },
-  {
-    key: 'morph',
-    title: 'Morph & merge',
-    subtitle: 'Glass that melts together and pulls apart',
-  },
-  {
-    key: 'bars',
-    title: 'Header & scrolling',
-    subtitle: 'Scroll edge (fade or blur) and fixed bars, live v1 or v2',
-  },
-  {
-    key: 'controller',
-    title: 'Bars controller',
-    subtitle: 'Top and bottom tabs: glass sliders and every option live',
-  },
-];
+type Edge = 'auto' | 'fade' | 'blur';
 
 const TABS = [
   { key: 'home', title: 'Home', Icon: HomeIcon },
@@ -85,58 +37,24 @@ const TABS = [
   { key: 'lab', title: 'Lab', Icon: LabIcon },
 ];
 
-const V2_ITEMS: GlassTabBarV2Item[] = TABS.map(
-  ({ key, title, Icon, badge }) => ({
-    key,
-    title,
-    badge,
-    icon: (focused, color) => (
-      <Icon color={color as string} size={24} focused={focused} />
-    ),
-  }),
-);
-
-// The toggles are shared by every Compare screen, so Dark set on the list
-// stays on in each example.
-type Settings = { scheme: Scheme; background: Background; reduced: boolean };
-let settings: Settings = {
-  scheme: 'light',
-  background: 'photo',
-  reduced: false,
-};
-const listeners = new Set<() => void>();
-
-function useSettings() {
-  return useSyncExternalStore(
-    listener => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    () => settings,
-  );
-}
-
-function updateSettings(next: Partial<Settings>) {
-  settings = { ...settings, ...next };
-  listeners.forEach(listener => listener());
-}
-
 /**
- * Current (v1) and new (v2) components side by side, one screen per example,
- * over a photo, colours or a plain page, in light and dark, with a Reduce
- * Transparency simulation. Without an `example` param it lists the examples.
+ * The v1 navigation header and GlassHeaderV2 over the same scrolling page, in
+ * light and dark, over a photo, colours or a plain page. The header buttons
+ * are v1 glass buttons with the Blur % and White % sliders.
  */
-export function CompareScreen({ navigation, route }: Props) {
+export function CompareScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const example = route.params?.example;
-  const { scheme, background, reduced } = useSettings();
-  const [live, setLive] = useState<Live>('v2');
-  const [edge, setEdge] = useState<'auto' | 'fade' | 'blur'>('auto');
+  const [scheme, setScheme] = useState<Scheme>('light');
+  const [background, setBackground] = useState<Background>('photo');
+  const [live, setLive] = useState<'v1' | 'v2'>('v2');
+  const [edge, setEdge] = useState<Edge>('auto');
   const [edgeBlur, setEdgeBlur] = useState(24);
   const [edgeStrength, setEdgeStrength] = useState(1);
   const [edgeHeight, setEdgeHeight] = useState(28);
-  const [headerSpacing, setHeaderSpacing] = useState(0);
-  const [look, setLook] = useGlassLook();
+  const [useBlur, setUseBlur] = useState(false);
+  const [blurPercent, setBlurPercent] = useState(50);
+  const [white, setWhite] = useState(0);
+  const [muted, setMuted] = useState(false);
   const [tab, setTab] = useState(0);
   const scrollY = useRef(new Animated.Value(0)).current;
   const onScroll = useMemo(
@@ -149,19 +67,19 @@ export function CompareScreen({ navigation, route }: Props) {
 
   const dark = scheme === 'dark';
   const label = dark ? '#FFFFFF' : '#000000';
-  const secondary = dark ? 'rgba(235,235,245,0.6)' : 'rgba(60,60,67,0.6)';
   const page = dark ? '#000000' : '#F2F2F7';
-  const reduceTransparency = reduced ? 'on' : 'system';
-  const liveBars = example === 'bars';
-  const title = EXAMPLES.find(item => item.key === example)?.title ?? 'Compare';
+  const glass = {
+    blur: useBlur ? blurPercent / 100 : undefined,
+    frost: white / 100,
+  };
 
-  // v1 header (the shared one from LiquidHeaderProvider) only while v1 is live.
+  // The v1 header (the shared one from LiquidHeaderProvider) only while v1 is live.
   useLiquidNavigationHeader(
     navigation,
-    liveBars && live === 'v1'
+    live === 'v1'
       ? {
-          title,
-          glass: { colorScheme: scheme },
+          title: 'Header',
+          glass: { colorScheme: scheme, ...glass },
           right: [
             { key: 'plus', icon: <PlusIcon color={label} /> },
             { key: 'compose', icon: <ComposeIcon color={label} /> },
@@ -170,18 +88,8 @@ export function CompareScreen({ navigation, route }: Props) {
       : { backButton: false },
   );
 
-  const backButton = (
-    <GlassButtonV2
-      icon={<Text style={[styles.chevron, { color: label }]}>‹</Text>}
-      accessibilityLabel="Back"
-      onPress={navigation.goBack}
-      colorScheme={scheme}
-      reduceTransparency={reduceTransparency}
-    />
-  );
-
-  const backdrop = (
-    <>
+  return (
+    <View style={[styles.screen, { backgroundColor: page }]}>
       <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} />
       {background === 'photo' ? (
         <Image
@@ -190,46 +98,32 @@ export function CompareScreen({ navigation, route }: Props) {
           resizeMode="cover"
         />
       ) : null}
-    </>
-  );
-
-  if (example === 'controller') {
-    return (
-      <View style={[styles.screen, { backgroundColor: page }]}>
-        {backdrop}
-        <CompareController
-          scheme={scheme}
-          reduceTransparency={reduceTransparency}
-          label={label}
-          onBack={navigation.goBack}
-        />
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.screen, { backgroundColor: page }]}>
-      {backdrop}
       <Animated.ScrollView
         onScroll={onScroll}
         scrollEventThrottle={16}
         contentContainerStyle={{
           paddingTop: insets.top + 64,
-          paddingBottom: insets.bottom + (liveBars ? 200 : 40),
+          paddingBottom: insets.bottom + 120,
         }}
       >
-        <Text style={[styles.largeTitle, { color: label }]}>{title}</Text>
+        <Text style={[styles.largeTitle, { color: label }]}>Header</Text>
 
-        <Panel dark={dark}>
+        <View
+          style={[
+            styles.panel,
+            {
+              backgroundColor: dark
+                ? 'rgba(28,28,30,0.92)'
+                : 'rgba(255,255,255,0.92)',
+            },
+          ]}
+        >
           <Row label="Appearance" color={label}>
             <LiquidSegmentedControl
               segments={['Light', 'Dark']}
               selectedIndex={dark ? 1 : 0}
-              onChange={i =>
-                updateSettings({ scheme: i === 1 ? 'dark' : 'light' })
-              }
+              onChange={i => setScheme(i === 1 ? 'dark' : 'light')}
               colorScheme={scheme}
-              style={styles.segmented}
             />
           </Row>
           <Row label="Background" color={label}>
@@ -237,360 +131,191 @@ export function CompareScreen({ navigation, route }: Props) {
               segments={['Photo', 'Colors', 'Plain']}
               selectedIndex={['photo', 'colors', 'plain'].indexOf(background)}
               onChange={i =>
-                updateSettings({
-                  background: (['photo', 'colors', 'plain'] as const)[i]!,
-                })
+                setBackground((['photo', 'colors', 'plain'] as const)[i]!)
               }
               colorScheme={scheme}
-              style={styles.segmented}
             />
           </Row>
-          {liveBars ? (
-            <Row label="Live bars" color={label}>
-              <LiquidSegmentedControl
-                segments={['v1', 'v2']}
-                selectedIndex={live === 'v1' ? 0 : 1}
-                onChange={i => setLive(i === 0 ? 'v1' : 'v2')}
-                colorScheme={scheme}
-                style={styles.segmented}
-              />
-            </Row>
-          ) : null}
-          {liveBars && live === 'v2' ? (
-            <Row label="Header edge (v2)" color={label}>
-              <LiquidSegmentedControl
-                segments={['Auto', 'Fade', 'Blur']}
-                selectedIndex={['auto', 'fade', 'blur'].indexOf(edge)}
-                onChange={i => setEdge((['auto', 'fade', 'blur'] as const)[i]!)}
-                colorScheme={scheme}
-                style={styles.segmented}
-              />
-            </Row>
-          ) : null}
-          {liveBars && live === 'v2' ? (
+          <Row label="Header" color={label}>
+            <LiquidSegmentedControl
+              segments={['v1', 'v2']}
+              selectedIndex={live === 'v1' ? 0 : 1}
+              onChange={i => setLive(i === 0 ? 'v1' : 'v2')}
+              colorScheme={scheme}
+            />
+          </Row>
+
+          <Text style={[styles.heading, { color: label }]}>
+            Buttons glass (header and below)
+          </Text>
+          <Row label="Glass" color={label}>
+            <LiquidSegmentedControl
+              segments={['Regular', 'Blur %']}
+              selectedIndex={useBlur ? 1 : 0}
+              onChange={i => setUseBlur(i === 1)}
+              colorScheme={scheme}
+            />
+          </Row>
+          <Slider
+            label={`Blur ${Math.round(blurPercent)}%`}
+            value={blurPercent}
+            max={100}
+            onChange={value => {
+              setBlurPercent(value);
+              setUseBlur(true);
+            }}
+            scheme={scheme}
+            color={label}
+          />
+          <Slider
+            label={`White ${Math.round(white)}%`}
+            value={white}
+            max={100}
+            onChange={setWhite}
+            scheme={scheme}
+            color={label}
+          />
+          <View style={styles.buttons}>
+            <LiquidButton title="Edit" colorScheme={scheme} {...glass} />
+            <LiquidIconButton
+              accessibilityLabel="Add"
+              colorScheme={scheme}
+              {...glass}
+            >
+              <PlusIcon color={label} />
+            </LiquidIconButton>
+            <LiquidButton
+              morph
+              title={muted ? 'Unmute' : 'Mute'}
+              onPress={() => setMuted(value => !value)}
+              colorScheme={scheme}
+              {...glass}
+            />
+          </View>
+
+          {live === 'v2' ? (
             <>
-              <Row
+              <Text style={[styles.heading, { color: label }]}>
+                Scroll edge (v2)
+              </Text>
+              <Row label="Edge" color={label}>
+                <LiquidSegmentedControl
+                  segments={['Auto', 'Fade', 'Blur']}
+                  selectedIndex={['auto', 'fade', 'blur'].indexOf(edge)}
+                  onChange={i =>
+                    setEdge((['auto', 'fade', 'blur'] as const)[i]!)
+                  }
+                  colorScheme={scheme}
+                />
+              </Row>
+              <Slider
                 label={`Edge blur ${Math.round(edgeBlur)} (Blur)`}
+                value={edgeBlur}
+                max={48}
+                onChange={setEdgeBlur}
+                scheme={scheme}
                 color={label}
-              >
-                <LiquidSlider
-                  value={edgeBlur}
-                  minimumValue={0}
-                  maximumValue={48}
-                  onValueChange={setEdgeBlur}
-                  colorScheme={scheme}
-                  accessibilityLabel="Edge blur radius"
-                />
-              </Row>
-              <Row
-                label={`Edge strength ${edgeStrength.toFixed(2)} (Fade, Blur)`}
+              />
+              <Slider
+                label={`Edge strength ${Math.round(edgeStrength * 100)}%`}
+                value={edgeStrength * 100}
+                max={100}
+                onChange={value => setEdgeStrength(value / 100)}
+                scheme={scheme}
                 color={label}
-              >
-                <LiquidSlider
-                  value={edgeStrength}
-                  minimumValue={0}
-                  maximumValue={1}
-                  onValueChange={setEdgeStrength}
-                  colorScheme={scheme}
-                  accessibilityLabel="Edge strength"
-                />
-              </Row>
-              <Row
-                label={`Edge height ${Math.round(edgeHeight)} (Fade, Blur)`}
+              />
+              <Slider
+                label={`Edge height ${Math.round(edgeHeight)}`}
+                value={edgeHeight}
+                max={96}
+                onChange={setEdgeHeight}
+                scheme={scheme}
                 color={label}
-              >
-                <LiquidSlider
-                  value={edgeHeight}
-                  minimumValue={0}
-                  maximumValue={96}
-                  onValueChange={setEdgeHeight}
-                  colorScheme={scheme}
-                  accessibilityLabel="Edge height"
-                />
-              </Row>
-              <Row
-                label={`Header buttons merge ${Math.round(headerSpacing)}`}
-                color={label}
-              >
-                <LiquidSlider
-                  value={headerSpacing}
-                  minimumValue={0}
-                  maximumValue={24}
-                  onValueChange={setHeaderSpacing}
-                  colorScheme={scheme}
-                  accessibilityLabel="Header buttons merge distance"
-                />
-              </Row>
+              />
             </>
           ) : null}
-          <Row label="Reduce Transparency (simulated, v2)" color={label}>
-            <Switch
-              value={reduced}
-              onValueChange={value => updateSettings({ reduced: value })}
-            />
-          </Row>
-        </Panel>
+        </View>
 
-        {example == null ? (
-          <View style={styles.section}>
-            {EXAMPLES.map(item => (
-              <Pressable
-                key={item.key}
-                accessibilityRole="button"
-                onPress={() =>
-                  navigation.push('Compare', { example: item.key })
-                }
+        <View style={styles.list}>
+          {PHOTOS.concat(PHOTOS).map((photo, i) => (
+            <View
+              key={`${photo.id}-${i}`}
+              style={[
+                styles.item,
+                {
+                  backgroundColor:
+                    background === 'colors'
+                      ? photo.color
+                      : dark
+                        ? '#1C1C1E'
+                        : '#FFFFFF',
+                },
+              ]}
+            >
+              {background !== 'colors' ? (
+                <Image source={{ uri: photo.image }} style={styles.thumb} />
+              ) : null}
+              <Text
                 style={[
-                  styles.item,
-                  { backgroundColor: dark ? '#1C1C1E' : '#FFFFFF' },
+                  styles.itemText,
+                  { color: background === 'colors' ? '#FFFFFF' : label },
                 ]}
               >
-                <View style={styles.itemBody}>
-                  <Text style={[styles.itemText, { color: label }]}>
-                    {item.title}
-                  </Text>
-                  <Text style={[styles.itemSubtitle, { color: secondary }]}>
-                    {item.subtitle}
-                  </Text>
-                </View>
-                <Text style={[styles.disclosure, { color: secondary }]}>›</Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-
-        {example === 'buttons' ? (
-          <Section title="Buttons" color={label}>
-            <Side label="v1" color={label}>
-              <View style={styles.buttons}>
-                <LiquidButton title="Edit" colorScheme={scheme} />
-                <LiquidIconButton colorScheme={scheme} accessibilityLabel="Add">
-                  <PlusIcon color={label} />
-                </LiquidIconButton>
-                <LiquidIconButton
-                  colorScheme={scheme}
-                  tintColor="#0A84FF"
-                  accessibilityLabel="Compose"
-                >
-                  <ComposeIcon color="#FFFFFF" />
-                </LiquidIconButton>
-              </View>
-            </Side>
-            <Side label="v2" color={label}>
-              <View style={styles.buttons}>
-                <GlassButtonV2
-                  clarity={look.clarity}
-                  refraction={look.refraction}
-                  shine={look.shine}
-                  title="Edit"
-                  colorScheme={scheme}
-                  reduceTransparency={reduceTransparency}
-                />
-                <GlassButtonV2
-                  clarity={look.clarity}
-                  refraction={look.refraction}
-                  shine={look.shine}
-                  icon={<PlusIcon color={label} />}
-                  accessibilityLabel="Add"
-                  colorScheme={scheme}
-                  reduceTransparency={reduceTransparency}
-                />
-                <GlassButtonV2
-                  clarity={look.clarity}
-                  refraction={look.refraction}
-                  shine={look.shine}
-                  icon={<ComposeIcon color="#FFFFFF" />}
-                  tintColor="#0A84FF"
-                  accessibilityLabel="Compose"
-                  colorScheme={scheme}
-                  reduceTransparency={reduceTransparency}
-                />
-              </View>
-            </Side>
-            <GlassControls
-              look={look}
-              onChange={setLook}
-              scheme={scheme}
-              color={label}
-            />
-          </Section>
-        ) : null}
-
-        {example === 'morph' ? (
-          <CompareMorph
-            scheme={scheme}
-            reduceTransparency={reduceTransparency}
-            label={label}
-          />
-        ) : null}
-
-        {example === 'shape' ? (
-          <Section title="Shape / card" color={label}>
-            <Side label="v1" color={label}>
-              <LiquidGlassView
-                cornerRadius={22}
-                colorScheme={scheme}
-                style={styles.card}
-              >
-                <Text style={[styles.cardText, { color: label }]}>
-                  Glass card
-                </Text>
-              </LiquidGlassView>
-            </Side>
-            <Side label="v2" color={label}>
-              <GlassShapeV2
-                cornerRadius={22}
-                colorScheme={scheme}
-                reduceTransparency={reduceTransparency}
-                style={styles.card}
-              >
-                <Text style={[styles.cardText, { color: label }]}>
-                  Glass card
-                </Text>
-              </GlassShapeV2>
-            </Side>
-          </Section>
-        ) : null}
-
-        {example === 'tabbar' ? (
-          <Section title="Tab bar" color={label}>
-            <Text style={[styles.sideLabel, styles.chip, { color: label }]}>
-              v1
-            </Text>
-            <View style={styles.barBox}>
-              <LiquidBottomTabBar
-                {...mockTabBarProps(tab, setTab, label)}
-                colorScheme={scheme}
-                bottomOffset={8}
-              />
+                {photo.title}
+              </Text>
             </View>
-            <Text style={[styles.sideLabel, styles.chip, { color: label }]}>
-              v2
-            </Text>
-            <View style={styles.barBox}>
-              <GlassTabBarV2
-                items={V2_ITEMS}
-                selectedIndex={tab}
-                onSelect={setTab}
-                colorScheme={scheme}
-                reduceTransparency={reduceTransparency}
-                bottomOffset={8}
-                trailing={{
-                  icon: <SearchIcon color={label} />,
-                  onPress: () => {},
-                  accessibilityLabel: 'Search',
-                }}
-              />
-            </View>
-          </Section>
-        ) : null}
-
-        {liveBars ? (
-          <Section title="Scrolling content" color={label}>
-            {PHOTOS.concat(PHOTOS).map((photo, i) => (
-              <View
-                key={`${photo.id}-${i}`}
-                style={[
-                  styles.item,
-                  {
-                    backgroundColor:
-                      background === 'colors'
-                        ? photo.color
-                        : dark
-                          ? '#1C1C1E'
-                          : '#FFFFFF',
-                  },
-                ]}
-              >
-                {background !== 'colors' ? (
-                  <Image source={{ uri: photo.image }} style={styles.thumb} />
-                ) : null}
-                <Text
-                  style={[
-                    styles.itemText,
-                    { color: background === 'colors' ? '#FFFFFF' : label },
-                  ]}
-                >
-                  {photo.title}
-                </Text>
-              </View>
-            ))}
-          </Section>
-        ) : null}
+          ))}
+        </View>
       </Animated.ScrollView>
 
-      {!liveBars ? (
+      {live === 'v2' ? (
         <GlassHeaderV2
+          edge={edge}
+          edgeBlurRadius={edgeBlur}
+          edgeStrength={edgeStrength}
+          edgeHeight={edgeHeight}
           scrollY={scrollY}
           titleAppearsAt={40}
           colorScheme={scheme}
-          reduceTransparency={reduceTransparency}
           title={
-            <Text style={[styles.inlineTitle, { color: label }]}>{title}</Text>
+            <Text style={[styles.inlineTitle, { color: label }]}>Header</Text>
           }
-          left={backButton}
+          left={
+            <LiquidIconButton
+              accessibilityLabel="Back"
+              onPress={navigation.goBack}
+              colorScheme={scheme}
+              {...glass}
+            >
+              <Text style={[styles.chevron, { color: label }]}>‹</Text>
+            </LiquidIconButton>
+          }
+          right={
+            <>
+              <LiquidIconButton
+                accessibilityLabel="Add"
+                colorScheme={scheme}
+                {...glass}
+              >
+                <PlusIcon color={label} />
+              </LiquidIconButton>
+              <LiquidIconButton
+                accessibilityLabel="Compose"
+                tintColor="#0A84FF"
+                colorScheme={scheme}
+                {...glass}
+              >
+                <ComposeIcon color="#FFFFFF" />
+              </LiquidIconButton>
+            </>
+          }
         />
-      ) : live === 'v2' ? (
-        <>
-          <GlassHeaderV2
-            edge={edge}
-            edgeBlurRadius={edgeBlur}
-            edgeStrength={edgeStrength}
-            edgeHeight={edgeHeight}
-            spacing={headerSpacing}
-            scrollY={scrollY}
-            titleAppearsAt={40}
-            colorScheme={scheme}
-            reduceTransparency={reduceTransparency}
-            title={
-              <Text style={[styles.inlineTitle, { color: label }]}>
-                {title}
-              </Text>
-            }
-            left={backButton}
-            right={
-              <>
-                <GlassButtonV2
-                  icon={<PlusIcon color={label} />}
-                  accessibilityLabel="Add"
-                  colorScheme={scheme}
-                  reduceTransparency={reduceTransparency}
-                />
-                <GlassButtonV2
-                  icon={<ComposeIcon color="#FFFFFF" />}
-                  tintColor="#0A84FF"
-                  accessibilityLabel="Compose"
-                  colorScheme={scheme}
-                  reduceTransparency={reduceTransparency}
-                />
-              </>
-            }
-          />
-          <GlassTabBarV2
-            items={V2_ITEMS}
-            selectedIndex={tab}
-            onSelect={setTab}
-            colorScheme={scheme}
-            reduceTransparency={reduceTransparency}
-            accessory={
-              <Text style={[styles.accessoryText, { color: label }]}>
-                Not Playing
-              </Text>
-            }
-            trailing={{
-              icon: <SearchIcon color={label} />,
-              onPress: () => {},
-              accessibilityLabel: 'Search',
-            }}
-          />
-        </>
-      ) : (
-        <LiquidBottomTabBar
-          {...mockTabBarProps(tab, setTab, label)}
-          insets={insets}
-          colorScheme={scheme}
-        />
-      )}
+      ) : null}
+      <LiquidBottomTabBar
+        {...mockTabBarProps(tab, setTab, label)}
+        insets={insets}
+        colorScheme={scheme}
+      />
     </View>
   );
 }
@@ -644,23 +369,6 @@ function mockTabBarProps(
   } as unknown as BottomTabBarProps;
 }
 
-function Panel({ dark, children }: { dark: boolean; children: ReactNode }) {
-  return (
-    <View
-      style={[
-        styles.panel,
-        {
-          backgroundColor: dark
-            ? 'rgba(28,28,30,0.92)'
-            : 'rgba(255,255,255,0.92)',
-        },
-      ]}
-    >
-      {children}
-    </View>
-  );
-}
-
 function Row({
   label,
   color,
@@ -678,38 +386,36 @@ function Row({
   );
 }
 
-function Section({
-  title,
-  color,
-  children,
-}: {
-  title: string;
-  color: ColorValue;
-  children: ReactNode;
-}) {
-  return (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, styles.chip, { color }]}>
-        {title.toUpperCase()}
-      </Text>
-      {children}
-    </View>
-  );
-}
-
-function Side({
+function Slider({
   label,
+  value,
+  max,
+  onChange,
+  disabled,
+  scheme,
   color,
-  children,
 }: {
   label: string;
+  value: number;
+  max: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+  scheme: Scheme;
   color: ColorValue;
-  children: ReactNode;
 }) {
   return (
-    <View style={styles.side}>
-      <Text style={[styles.sideLabel, styles.chip, { color }]}>{label}</Text>
-      {children}
+    <View style={styles.row}>
+      <Text style={[styles.rowLabel, { color }]}>{label}</Text>
+      <LiquidSlider
+        value={value}
+        minimumValue={0}
+        maximumValue={max}
+        step={1}
+        onValueChange={onChange}
+        disabled={disabled}
+        colorScheme={scheme}
+        accessibilityLabel={label}
+      />
     </View>
   );
 }
@@ -730,6 +436,11 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 10,
   },
+  heading: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginTop: 6,
+  },
   row: {
     gap: 6,
   },
@@ -737,51 +448,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  segmented: {
-    alignSelf: 'stretch',
-  },
-  section: {
-    marginTop: 24,
-    marginHorizontal: 16,
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  // A neutral grey chip reads in both appearances over any background.
-  chip: {
-    alignSelf: 'flex-start',
-    overflow: 'hidden',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: 'rgba(128, 128, 128, 0.35)',
-  },
-  side: {
-    gap: 6,
-  },
-  sideLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
   buttons: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  card: {
-    height: 110,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardText: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  barBox: {
-    height: 80,
-    marginHorizontal: -16,
+  list: {
+    marginTop: 24,
+    marginHorizontal: 16,
+    gap: 8,
   },
   item: {
     flexDirection: 'row',
@@ -789,19 +464,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 10,
     borderRadius: 16,
-  },
-  itemBody: {
-    flex: 1,
-    gap: 2,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
-  itemSubtitle: {
-    fontSize: 13,
-  },
-  disclosure: {
-    fontSize: 26,
-    paddingRight: 6,
   },
   thumb: {
     width: 56,
@@ -820,9 +482,5 @@ const styles = StyleSheet.create({
     fontSize: 30,
     lineHeight: 32,
     marginTop: -3,
-  },
-  accessoryText: {
-    fontSize: 15,
-    fontWeight: '600',
   },
 });

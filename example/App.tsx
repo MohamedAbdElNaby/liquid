@@ -27,12 +27,7 @@ export type RootStackParamList = {
   EditProfile: undefined;
   Profile: { title: string; image: string };
   Merge: undefined;
-  Compare:
-    | {
-        example?:
-          'buttons' | 'shape' | 'tabbar' | 'morph' | 'bars' | 'controller';
-      }
-    | undefined;
+  Compare: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

@@ -83,6 +83,10 @@ private const val HOLD_FRAMES = 1
  * melting as it lands instead of crawling the last bit lifted.
  */
 private const val ARRIVE_DISTANCE = 0.08f
+/** How close (in tabs) the lens gets before the tap is reported and the new screen mounts. */
+private const val SELECT_DISTANCE = 0.25f
+/** Reports the tap after this long even if the lens hasn't come close yet. */
+private const val SELECT_FALLBACK_MS = 250L
 /** How far (in tabs) the lens can be pulled past the first and last tab. */
 private const val MAX_OVERSHOOT = 0.35f
 /** How much of the overshoot stretches the bar, in tab widths. */
@@ -98,6 +102,11 @@ internal class TabBarState {
   var lensTintColor by mutableStateOf<Int?>(null)
   var colorScheme by mutableStateOf("system")
   var lensEnabled by mutableStateOf(true)
+  /** Multipliers for the drop: swell, magnification, rim bend and fill (1 = default). */
+  var lensScale by mutableFloatStateOf(1f)
+  var lensMagnification by mutableFloatStateOf(1f)
+  var lensRefraction by mutableFloatStateOf(1f)
+  var lensFrost by mutableFloatStateOf(1f)
   var tabCount by mutableIntStateOf(1)
   var widthPx by mutableIntStateOf(0)
   var heightPx by mutableIntStateOf(0)
@@ -194,7 +203,7 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
     val lensView = addComposeView(above = true) { LeftToRight { TabBarLens(state, lensBackdrop) } }
     lensBackdrop = createBackdrop(
       target = lensView,
-      magnification = { 1f + 0.05f * state.press },
+      magnification = { 1f + 0.05f * state.lensMagnification * state.press },
       enabled = { state.lensEnabled && state.press > 0.01f },
       // Tab content seen through the lens takes the focused color, like iOS 26.
       childPaint = { parent, child ->
@@ -347,8 +356,11 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
         startAnimating()
         if (!longPressed) {
           pendingSelect = index
-          // Navigate right away: React renders the new screen while the lens is still travelling.
-          flushPendingSelect()
+          // Navigate as the lens lands (onFrame), not on release: the new screen mounts on this
+          // same thread, and mounting while the lens travels made it stutter. The timer is a
+          // fallback in case the lens never reports arriving.
+          handler.removeCallbacks(flushRunnable)
+          handler.postDelayed(flushRunnable, SELECT_FALLBACK_MS)
         }
       }
       MotionEvent.ACTION_CANCEL -> {
@@ -364,10 +376,13 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
   }
 
   /**
-   * Reports the tab chosen on release, as soon as the finger lifts, so the screen switches without
-   * waiting for the lens to finish travelling.
+   * Reports the tab chosen on release once the lens reaches it (or after [SELECT_FALLBACK_MS]), so
+   * the new screen mounts after the travel instead of during it.
    */
+  private val flushRunnable = Runnable { flushPendingSelect() }
+
   private fun flushPendingSelect() {
+    handler.removeCallbacks(flushRunnable)
     val index = pendingSelect
     if (index < 0) {
       return
@@ -391,8 +406,8 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
     scaleX.stiffness = 600f
     scaleY.stiffness = 600f
     press.target = 1f
-    scaleX.target = PRESSED_SCALE_X
-    scaleY.target = PRESSED_SCALE_Y
+    scaleX.target = 1f + (PRESSED_SCALE_X - 1f) * state.lensScale
+    scaleY.target = 1f + (PRESSED_SCALE_Y - 1f) * state.lensScale
   }
 
   private fun settle() {
@@ -427,6 +442,10 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
     velocity.target = (value.value - previousValue) / dt
     previousValue = value.value
     moving = velocity.step(dt) || moving
+
+    if (pendingSelect >= 0 && abs(value.value - value.target) < SELECT_DISTANCE) {
+      flushPendingSelect()
+    }
 
     // The lens only settles once it is close to its tab.
     // The lens arrives, stays lifted for a moment, then settles into the pill.
@@ -477,7 +496,7 @@ class LiquidTabBarView(context: Context) : LiquidComposeHost(context) {
     for (i in 0 until tabCount) {
       val item = getChildAt(leading + i) ?: continue
       val proximity = (1f - abs(clamped - i)).coerceAtLeast(0f)
-      val scale = 1f + (TAB_LIFT_SCALE + TAB_MAGNIFICATION * proximity) * lift
+      val scale = 1f + (TAB_LIFT_SCALE + TAB_MAGNIFICATION * state.lensMagnification * proximity) * lift
       item.scaleX = scale
       item.scaleY = scale
     }
@@ -589,7 +608,8 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
           // Refraction stays strong until the very end so the drop never looks blurry.
           val progress = kotlin.math.sqrt(state.press)
           // Light refraction, no color fringes: the rim bends the content without mirroring it.
-          lens(8f.dp.toPx() * progress, 12f.dp.toPx() * progress)
+          val bend = state.lensRefraction.coerceAtLeast(0f)
+          lens(8f.dp.toPx() * progress * bend, 12f.dp.toPx() * progress * bend)
         },
         // Reflections fade out during the first part of the settle, before the drop melts.
         highlight = {
@@ -606,8 +626,8 @@ private fun TabBarLens(state: TabBarState, backdrop: Backdrop) {
           drawRoundRect(
             color = state.lensTintColor?.let { tint -> Color(tint).let { it.copy(alpha = it.alpha * state.press) } }
               // Dark glass in dark mode, so the drop matches the dark bar.
-              ?: if (dark) Color(0xFF1C1C1E).copy(alpha = 0.42f * state.press)
-              else Color.White.copy(alpha = 0.22f * state.press),
+              ?: if (dark) Color(0xFF1C1C1E).copy(alpha = (0.42f * state.lensFrost * state.press).coerceIn(0f, 1f))
+              else Color.White.copy(alpha = (0.22f * state.lensFrost * state.press).coerceIn(0f, 1f)),
             cornerRadius = CornerRadius(size.height / 2f),
           )
           // The drop's edge, like iOS: a fine hairline in the glass's own shade.
@@ -680,6 +700,26 @@ class LiquidTabBarViewManager : LiquidComposeHostManager() {
   @ReactProp(name = "colorScheme")
   fun setColorScheme(view: ReactViewGroup, value: String?) {
     bar(view)?.state?.colorScheme = value ?: "system"
+  }
+
+  @ReactProp(name = "lensScale", defaultFloat = 1f)
+  fun setLensScale(view: ReactViewGroup, value: Float) {
+    bar(view)?.state?.lensScale = value.coerceAtLeast(0f)
+  }
+
+  @ReactProp(name = "lensMagnification", defaultFloat = 1f)
+  fun setLensMagnification(view: ReactViewGroup, value: Float) {
+    bar(view)?.state?.lensMagnification = value.coerceAtLeast(0f)
+  }
+
+  @ReactProp(name = "lensRefraction", defaultFloat = 1f)
+  fun setLensRefraction(view: ReactViewGroup, value: Float) {
+    bar(view)?.state?.lensRefraction = value
+  }
+
+  @ReactProp(name = "lensFrost", defaultFloat = 1f)
+  fun setLensFrost(view: ReactViewGroup, value: Float) {
+    bar(view)?.state?.lensFrost = value.coerceAtLeast(0f)
   }
 
   @ReactProp(name = "lensEnabled", defaultBoolean = true)

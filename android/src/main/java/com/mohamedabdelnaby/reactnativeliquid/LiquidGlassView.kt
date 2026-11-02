@@ -28,7 +28,12 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
   internal val glassState = GlassState().apply { density = resources.displayMetrics.density }
 
   private val viewTreeBackdrop: ViewTreeBackdrop? =
-    if (isGlassEffectSupported) ViewTreeBackdrop(this, skipUnchanged = true) else null
+    if (isGlassEffectSupported) {
+      // A merged glass (in a container) never samples the page itself: the container does.
+      ViewTreeBackdrop(this, enabled = { !glassState.grouped }, skipUnchanged = true)
+    } else {
+      null
+    }
 
   private val backdrop: Backdrop = viewTreeBackdrop ?: emptyBackdrop()
 
@@ -236,10 +241,18 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
     when (ev.actionMasked) {
       MotionEvent.ACTION_DOWN -> {
         glassState.pressed = true
+        downX = ev.rawX
+        downY = ev.rawY
+        touchAt(ev)
         press(true)
+      }
+      MotionEvent.ACTION_MOVE -> {
+        touchAt(ev)
+        drag(ev.rawX - downX, ev.rawY - downY)
       }
       MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
         glassState.pressed = false
+        drag(0f, 0f, released = true)
         press(false)
       }
     }
@@ -258,17 +271,83 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
   private var pressFrameTime = 0L
   private var pressScheduled = false
 
+  // Dragging while pressed pulls the glass toward the finger like a drop: it
+  // slides a little (rubber-banded) and stretches along the drag, then wobbles
+  // back on release. Translation and stretch add to what React sets.
+  private var baseTranslationX = 0f
+  private var baseTranslationY = 0f
+  private var downX = 0f
+  private var downY = 0f
+  private var dragSpringsOrNull: Array<LiquidSpring>? = null
+  // pull x, pull y, stretch x, stretch y
+  private val dragSprings: Array<LiquidSpring>
+    get() = dragSpringsOrNull ?: Array(4) { i ->
+      LiquidSpring(0.8f, 420f, 0.0005f).apply { snap(if (i < 2) 0f else 1f) }
+    }.also { dragSpringsOrNull = it }
+
   override fun setScaleX(scaleX: Float) {
     baseScaleX = scaleX
-    super.setScaleX(scaleX * pressScale())
+    super.setScaleX(scaleX * pressScale() * stretch(2))
   }
 
   override fun setScaleY(scaleY: Float) {
     baseScaleY = scaleY
-    super.setScaleY(scaleY * pressScale())
+    super.setScaleY(scaleY * pressScale() * stretch(3))
+  }
+
+  override fun setTranslationX(translationX: Float) {
+    baseTranslationX = translationX
+    super.setTranslationX(translationX + (dragSpringsOrNull?.get(0)?.value ?: 0f))
+  }
+
+  override fun setTranslationY(translationY: Float) {
+    baseTranslationY = translationY
+    super.setTranslationY(translationY + (dragSpringsOrNull?.get(1)?.value ?: 0f))
   }
 
   private fun pressScale(): Float = pressSpringOrNull?.value ?: 1f
+
+  private fun stretch(index: Int): Float = dragSpringsOrNull?.get(index)?.value ?: 1f
+
+  /** Where the finger is, for the lens's bulge under it (Android 13+). */
+  private fun touchAt(ev: MotionEvent) {
+    glassState.touchX = ev.x
+    glassState.touchY = ev.y
+  }
+
+  private fun drag(dx: Float, dy: Float, released: Boolean = false) {
+    if (!ValueAnimator.areAnimatorsEnabled()) {
+      return
+    }
+    val springs = dragSprings
+    val density = resources.displayMetrics.density
+    // How far the glass follows the finger: at most 12 dp, less for small glass.
+    val reach = minOf(12f * density, 0.15f * minOf(width, height).coerceAtLeast(1))
+    fun pull(d: Float) = reach * kotlin.math.tanh(d / (4f * reach))
+    fun amount(d: Float) = kotlin.math.abs(kotlin.math.tanh(d / (8f * reach)))
+    if (released) {
+      // Underdamped, so it overshoots and wobbles back like a drop.
+      for (spring in springs) {
+        spring.dampingRatio = 0.45f
+        spring.stiffness = 220f
+      }
+      springs[0].target = 0f
+      springs[1].target = 0f
+      springs[2].target = 1f
+      springs[3].target = 1f
+    } else {
+      for (spring in springs) {
+        spring.dampingRatio = 0.8f
+        spring.stiffness = 420f
+      }
+      springs[0].target = pull(dx)
+      springs[1].target = pull(dy)
+      // Longer along the drag, thinner across it (about the same volume).
+      springs[2].target = 1f + 0.12f * amount(dx) - 0.05f * amount(dy)
+      springs[3].target = 1f + 0.12f * amount(dy) - 0.05f * amount(dx)
+    }
+    scheduleFrame()
+  }
 
   private fun press(down: Boolean) {
     val size = maxOf(width, height).coerceAtLeast(1)
@@ -285,6 +364,10 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
       pressSpring.stiffness = 210f
       pressSpring.target = 1f
     }
+    scheduleFrame()
+  }
+
+  private fun scheduleFrame() {
     if (!pressScheduled) {
       pressScheduled = true
       pressFrameTime = 0L
@@ -296,9 +379,12 @@ class LiquidGlassView(context: Context) : ReactViewGroup(context) {
     override fun doFrame(frameTimeNanos: Long) {
       val dt = if (pressFrameTime == 0L) 1f / 60f else ((frameTimeNanos - pressFrameTime) / 1e9f).coerceIn(1f / 240f, 1f / 30f)
       pressFrameTime = frameTimeNanos
-      val moving = pressSpring.step(dt)
-      super@LiquidGlassView.setScaleX(baseScaleX * pressSpring.value)
-      super@LiquidGlassView.setScaleY(baseScaleY * pressSpring.value)
+      var moving = pressSpring.step(dt)
+      dragSpringsOrNull?.forEach { if (it.step(dt)) moving = true }
+      super@LiquidGlassView.setScaleX(baseScaleX * pressSpring.value * stretch(2))
+      super@LiquidGlassView.setScaleY(baseScaleY * pressSpring.value * stretch(3))
+      super@LiquidGlassView.setTranslationX(baseTranslationX + (dragSpringsOrNull?.get(0)?.value ?: 0f))
+      super@LiquidGlassView.setTranslationY(baseTranslationY + (dragSpringsOrNull?.get(1)?.value ?: 0f))
       if (moving) {
         Choreographer.getInstance().postFrameCallback(this)
       } else {

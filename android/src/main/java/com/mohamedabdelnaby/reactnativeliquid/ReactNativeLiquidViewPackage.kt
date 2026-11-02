@@ -18,8 +18,6 @@ class ReactNativeLiquidViewPackage : BaseReactPackage() {
       LiquidSearchViewManager(),
       LiquidScrollEdgeViewManager(),
       LiquidScrollEdgeContainerViewManager(),
-      LiquidGlassV2ViewManager(),
-      LiquidGlassGroupV2ViewManager(),
     )
   }
 

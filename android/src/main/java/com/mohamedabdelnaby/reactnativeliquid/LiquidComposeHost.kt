@@ -197,6 +197,9 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
    */
   protected open val mirrorsInRtl = false
 
+  /** How far the Compose layers reach past this view on every side, in px (glass that swells). */
+  protected open val composeOutset: Int = 0
+
   /** React lays out its own children; the ComposeViews are ours to size (once attached). */
   private fun layoutComposeViews() {
     val mirrored = mirrorsInRtl && I18nUtil.instance.isRTL(context)
@@ -205,11 +208,12 @@ abstract class LiquidComposeHost(context: Context) : ReactViewGroup(context) {
       if (!view.isAttachedToWindow) {
         continue
       }
+      val outset = composeOutset
       view.measure(
-        MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
-        MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY),
+        MeasureSpec.makeMeasureSpec(width + outset * 2, MeasureSpec.EXACTLY),
+        MeasureSpec.makeMeasureSpec(height + outset * 2, MeasureSpec.EXACTLY),
       )
-      view.layout(0, 0, width, height)
+      view.layout(-outset, -outset, width + outset, height + outset)
     }
     onSizeChanged()
   }

@@ -1,9 +1,18 @@
-import { StyleSheet, type ColorValue, type ViewProps } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  type ColorValue,
+  type ViewProps,
+} from 'react-native';
 import {
   NativeLiquidGlassContainerView,
   NativeLiquidGlassView,
 } from './NativeLiquidGlass';
-import type { LiquidColorSchemeSetting } from './theme';
+import {
+  frostColor,
+  useLiquidColorScheme,
+  type LiquidColorSchemeSetting,
+} from './theme';
 
 export type LiquidGlassStyle = 'regular' | 'clear';
 
@@ -16,6 +25,18 @@ export type LiquidGlassViewProps = ViewProps & {
   glassStyle?: LiquidGlassStyle;
   /** Tints the glass, like `.glassProminent` buttons. */
   tintColor?: ColorValue;
+  /**
+   * How much the glass blurs what is behind it, from 0 (clear, sharp) to 1
+   * (fully frosted), on both platforms: clear glass over a real blur of the
+   * page (iOS `backdropBlur`, Android `blurRadius`). Unset, `glassStyle`
+   * decides as before.
+   */
+  blur?: number;
+  /**
+   * A wash over the glass, from 0 (none) to 1 (milky): white in light mode, like the light header buttons, black in dark mode. Ignored with `tintColor`.
+   * @default 0
+   */
+  frost?: number;
   /**
    * Reacts to touches: native interactive glass on iOS 26+, a press highlight
    * and stronger refraction on Android.
@@ -141,6 +162,15 @@ export type LiquidGlassViewProps = ViewProps & {
   highlight?: boolean;
   /** Android: draws a soft drop shadow. @default true */
   shadow?: boolean;
+  /**
+   * Android 13+: `ios` bends the page at the rim (a compressed mirror of what
+   * is inside the edge) and lights the top-left and bottom-right of the rim,
+   * like iOS 26 (lens adapted from Liquid-Glass-Android by pandadog, MIT).
+   * `classic` is the earlier lens and highlight. `refractionHeight` and
+   * `refractionAmount` tune both.
+   * @default 'ios'
+   */
+  androidLens?: 'ios' | 'classic';
 };
 
 /**
@@ -150,13 +180,19 @@ export type LiquidGlassViewProps = ViewProps & {
 export function LiquidGlassView({
   glassStyle = 'regular',
   tintColor,
+  blur,
+  frost = 0,
   interactive = false,
   cornerRadius,
   colorScheme = 'system',
-  blurRadius = glassStyle === 'clear' ? 2 : 20,
+  blurRadius,
+  backdropBlur,
   style,
   ...rest
 }: LiquidGlassViewProps) {
+  const dark = useLiquidColorScheme(colorScheme) === 'dark';
+  const amount = blur == null ? null : Math.min(Math.max(blur, 0), 1);
+  const wash = Math.min(Math.max(frost, 0), 1);
   const borderRadius = StyleSheet.flatten(style)?.borderRadius;
   const radius =
     cornerRadius ?? (typeof borderRadius === 'number' ? borderRadius : 0);
@@ -165,12 +201,25 @@ export function LiquidGlassView({
     <NativeLiquidGlassView
       {...rest}
       style={style}
-      glassStyle={glassStyle}
-      glassTintColor={tintColor}
+      glassStyle={amount == null ? glassStyle : 'clear'}
+      glassTintColor={
+        tintColor ?? (wash > 0 ? frostColor(wash, dark) : undefined)
+      }
       interactive={interactive}
       cornerRadius={radius}
       colorScheme={colorScheme}
-      blurRadius={blurRadius}
+      blurRadius={
+        blurRadius ??
+        (amount != null && Platform.OS === 'android'
+          ? 2 + amount * 22
+          : glassStyle === 'clear'
+            ? 2
+            : 20)
+      }
+      backdropBlur={
+        backdropBlur ??
+        (amount != null && Platform.OS === 'ios' ? amount * 24 : undefined)
+      }
     />
   );
 }

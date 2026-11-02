@@ -25,6 +25,14 @@ export interface NativeProps extends ViewProps {
   backdropBlur?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
   colorScheme?: CodegenTypes.WithDefault<'system' | 'light' | 'dark', 'system'>;
   lensEnabled?: CodegenTypes.WithDefault<boolean, true>;
+  /** How much the drop swells while pressed: 0 none, 1 iOS 26, 2 twice as much. */
+  lensScale?: CodegenTypes.WithDefault<CodegenTypes.Float, 1>;
+  /** How much the tab under the drop is magnified: 0 none, 1 default. */
+  lensMagnification?: CodegenTypes.WithDefault<CodegenTypes.Float, 1>;
+  /** Android: how strongly the drop's rim bends the tabs: 0 none, 1 default. */
+  lensRefraction?: CodegenTypes.WithDefault<CodegenTypes.Float, 1>;
+  /** Android: the drop's milky fill: 0 crystal clear, 1 default. */
+  lensFrost?: CodegenTypes.WithDefault<CodegenTypes.Float, 1>;
   /**
    * Scroll position of a pager in tabs (fractional while swiping). The pill
    * follows it while the bar is not touched. Negative values are ignored.

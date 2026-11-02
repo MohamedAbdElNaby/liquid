@@ -37,6 +37,9 @@ import {
   type LiquidExpandableSearchProps,
 } from '../components/LiquidExpandableSearch';
 import {
+  lensWashColor,
+  tabBarFrostColor,
+  useLiquidColorScheme,
   useLiquidColors,
   type LiquidColorSchemeSetting,
   type LiquidColors,
@@ -82,6 +85,12 @@ export type LiquidBottomTabBarOptions = {
   glassTintColor?: ColorValue;
   /** Frosts the content under the bar, from 0 to 1. @default 0.85 */
   blur?: number;
+  /**
+   * A wash over the glass, from 0 (none) to 1 (milky): white in light mode, like the light header buttons, black in dark mode. Ignored with `glassTintColor`.
+   * @default 0
+   */
+  frost?: number;
+
   /** @default 'system' */
   colorScheme?: LiquidColorSchemeSetting;
   /** Overrides `tabBarActiveTintColor` from the screen options. */
@@ -113,6 +122,19 @@ export type LiquidBottomTabBarOptions = {
    * @default true
    */
   lens?: boolean;
+  /** How much the drop swells while pressed: 0 none, 1 iOS 26, 2 twice as much. @default 1 */
+  lensScale?: number;
+  /** How much the tab under the drop is magnified: 0 none, 1 default. @default 1 */
+  lensMagnification?: number;
+  /** Android: how strongly the drop's rim bends the tabs: 0 none, 1 default. @default 1 */
+  lensRefraction?: number;
+  /** Android: the drop's milky fill: 0 crystal clear, 1 default, 2 twice as milky. @default 1 */
+  lensFrost?: number;
+  /**
+   * Washes the drop: 0 leaves its default fill, up to 1 for a strong wash,
+   * white in light mode and black in dark mode.
+   */
+  lensWash?: number;
   /** Style of the glass capsule. */
   style?: StyleProp<ViewStyle>;
 };
@@ -147,6 +169,7 @@ export function LiquidBottomTabBar({
   glassStyle = 'clear',
   glassTintColor: glassTintColorProp,
   blur = 0.85,
+  frost = 0,
   colorScheme = 'system',
   activeTintColor,
   inactiveTintColor,
@@ -157,11 +180,18 @@ export function LiquidBottomTabBar({
   accessory,
   search,
   lens = true,
+  lensScale,
+  lensMagnification,
+  lensRefraction,
+  lensFrost,
+  lensWash,
   style,
 }: LiquidBottomTabBarProps) {
   const { colors } = useLiquidColors(colorScheme);
+  const dark = useLiquidColorScheme(colorScheme) === 'dark';
   // A light tint keeps the tabs readable on the clear glass.
-  const glassTintColor = glassTintColorProp ?? colors.tabBarGlass;
+  const glassTintColor =
+    glassTintColorProp ?? tabBarFrostColor(frost, colors, dark);
   const onHeightChange = useContext(HeightCallbackContext);
   const keyboardVisible = useKeyboardVisible();
   const [ownSearchExpanded, setOwnSearchExpanded] = useState(
@@ -260,6 +290,11 @@ export function LiquidBottomTabBar({
       }
       colorScheme={colorScheme}
       lensEnabled={lens}
+      lensScale={lensScale}
+      lensMagnification={lensMagnification}
+      lensRefraction={lensRefraction}
+      lensFrost={lensFrost}
+      lensTintColor={lensWashColor(lensWash, dark)}
       onTabSelect={(event) => selectTab(event.nativeEvent.index)}
       onTabLongPress={(event) => longPressTab(event.nativeEvent.index)}
       style={[styles.bar, { height }, style]}

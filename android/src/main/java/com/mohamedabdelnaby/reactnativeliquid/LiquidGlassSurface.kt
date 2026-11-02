@@ -33,6 +33,7 @@ import com.mohamedabdelnaby.reactnativeliquid.backdrop.Backdrop
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.drawBackdrop
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.blur
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.lens
+import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.iosLens
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.effects.vibrancy
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.highlight.Highlight
 import com.mohamedabdelnaby.reactnativeliquid.backdrop.highlight.HighlightStyle
@@ -56,6 +57,13 @@ internal class GlassState {
   var chromaticAberration by mutableStateOf(false)
   var depthEffect by mutableStateOf(false)
   var highlight by mutableStateOf(true)
+  /** `ios`: the iOS 26 lens and rim light (Android 13+); `classic`: the earlier lens. */
+  var lens by mutableStateOf("ios")
+  /** Drawn by the enclosing LiquidGlassContainer (merged with its neighbours) instead of here. */
+  var grouped by mutableStateOf(false)
+  /** Where the finger is while pressed, in px (for the lens's bulge). */
+  var touchX by mutableFloatStateOf(0f)
+  var touchY by mutableFloatStateOf(0f)
   /** Specular rim colour (rimColor): the highlight in that colour and width. */
   var rimColor by mutableStateOf<Int?>(null)
   var rimWidth by mutableStateOf(1f)
@@ -146,6 +154,13 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
       if (!moving) break
     }
   }
+
+  if (state.grouped) {
+    // The container draws this glass; the morph above keeps running for it.
+    return
+  }
+
+  val iosLens = state.lens == "ios" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
   Box(
     Modifier
@@ -301,6 +316,23 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
           else RoundedCornerShape(min(radius, state.maxRadiusPx))
         },
         effects = {
+          if (iosLens) {
+            blur((if (state.backdropBlur > 0f) state.backdropBlur else state.blurRadius).dp.toPx())
+            iosLens(
+              cornerRadius = state.cornerRadius * state.density,
+              // Our props are the classic lens's; these factors give the iOS
+              // profile at their defaults (12 / 24 dp: a 16 dp bevel and a
+              // 53 dp bend at the very rim).
+              bevel = state.refractionHeight.dp.toPx() * 1.33f,
+              refraction = state.refractionAmount.dp.toPx() * 2.2f,
+              dispersion = if (state.chromaticAberration) 0.15f else 0f,
+              specular = (if (dark) 0.85f else 1f) * (if (state.glassStyle == "clear") 1.2f else 1f),
+              press = pressProgress,
+              touchX = state.touchX,
+              touchY = state.touchY,
+            )
+            return@drawBackdrop
+          }
           vibrancy()
           blur((if (state.backdropBlur > 0f) state.backdropBlur else state.blurRadius).dp.toPx())
           val maxHeight = state.maxRadiusPx
@@ -313,7 +345,10 @@ internal fun LiquidGlassSurface(state: GlassState, backdrop: Backdrop) {
         },
         highlight = {
           val rim = state.rimColor
-          if (rim != null) {
+          if (rim == null && iosLens) {
+            // The lens draws its own rim light.
+            null
+          } else if (rim != null) {
             // Angled like iOS: brightest on the top-left and bottom-right curves.
             Highlight(width = state.rimWidth.dp, style = HighlightStyle.Default(color = Color(rim)))
           } else if (!state.highlight) null

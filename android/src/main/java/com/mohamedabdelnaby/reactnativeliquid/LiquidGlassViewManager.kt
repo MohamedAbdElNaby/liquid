@@ -88,6 +88,11 @@ class LiquidGlassViewManager : ReactViewManager() {
     view.glass { colorScheme = value ?: "system" }
   }
 
+  @ReactProp(name = "androidLens")
+  fun setAndroidLens(view: ReactViewGroup, value: String?) {
+    view.glass { lens = value ?: "ios" }
+  }
+
   @ReactProp(name = "blurRadius", defaultFloat = 3f)
   fun setBlurRadius(view: ReactViewGroup, value: Float) {
     view.glass { blurRadius = value }

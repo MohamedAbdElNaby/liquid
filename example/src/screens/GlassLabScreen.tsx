@@ -15,6 +15,7 @@ import {
   LiquidButton,
   LiquidGlassContainer,
   LiquidGlassView,
+  LiquidIconButton,
   LiquidSegmentedControl,
   LiquidSlider,
   LiquidToggle,
@@ -27,10 +28,12 @@ import {
 } from '@mohamed_abd_elnaby/react-native-liquid';
 import type { RootStackParamList } from '../../App';
 import { MorphToolbar } from './MorphToolbar';
+import { TAB_BARS_LAB_HEIGHT, useTabBarsLab } from './TabBarsLab';
 import { CheckIcon, ComposeIcon, PlusIcon } from '../HeaderIcons';
 
 const BACKGROUND = 'https://picsum.photos/id/1069/1200/2400';
 const TINTS = [undefined, '#0A84FF', '#FF375F', '#30D158'];
+const PREVIEW_HEIGHT = 160;
 const SCHEMES: LiquidColorSchemeSetting[] = ['system', 'light', 'dark'];
 
 function Label({ children }: { children: ReactNode }) {
@@ -49,8 +52,29 @@ export function GlassLabScreen() {
   const [pressed, setPressed] = useState<'add' | 'compose' | null>(null);
   const BLUE = '#0A84FF';
 
+  // Blur % and white %: shared by the card, the buttons and the header buttons.
+  const [style, setStyle] = useState(0);
+  const [blurPercent, setBlurPercent] = useState(50);
+  const [white, setWhite] = useState(0);
+  const blurAmount = style === 2 ? blurPercent / 100 : undefined;
+  // One appearance for the whole lab: the card, the buttons, the header
+  // buttons, the panels and the tab bars.
+  const [scheme, setScheme] = useState(0);
+  const mode = useColorScheme() ?? 'light';
+  const appearance: 'light' | 'dark' =
+    SCHEMES[scheme] === 'system' ? mode : (SCHEMES[scheme] as 'light' | 'dark');
+  const dark = appearance === 'dark';
+  const glass = {
+    glassStyle: (style === 1 ? 'clear' : 'regular') as LiquidGlassStyle,
+    blur: blurAmount,
+    frost: white / 100,
+    colorScheme: appearance,
+  };
+  const tabBars = useTabBarsLab({ dark, labelStyle: styles.label });
+
   useLiquidNavigationHeader(navigation, {
     title: 'Glass Lab',
+    glass,
     right:
       pressed === 'add'
         ? [
@@ -63,36 +87,34 @@ export function GlassLabScreen() {
             null,
           ]
         : pressed === 'compose'
-        ? [
-            null,
-            {
-              key: 'compose-done',
-              accessibilityLabel: 'Done',
-              tintColor: BLUE,
-              icon: <CheckIcon color="#FFFFFF" />,
-              onPress: () => setPressed(null),
-            },
-          ]
-        : [
-            {
-              key: 'add',
-              accessibilityLabel: 'Add',
-              icon: <PlusIcon color={themeColors.label} />,
-              onPress: () => setPressed('add'),
-            },
-            {
-              key: 'compose',
-              accessibilityLabel: 'Compose',
-              tintColor: BLUE,
-              icon: <ComposeIcon color="#FFFFFF" />,
-              onPress: () => setPressed('compose'),
-            },
-          ],
+          ? [
+              null,
+              {
+                key: 'compose-done',
+                accessibilityLabel: 'Done',
+                tintColor: BLUE,
+                icon: <CheckIcon color="#FFFFFF" />,
+                onPress: () => setPressed(null),
+              },
+            ]
+          : [
+              {
+                key: 'add',
+                accessibilityLabel: 'Add',
+                icon: <PlusIcon color={themeColors.label} />,
+                onPress: () => setPressed('add'),
+              },
+              {
+                key: 'compose',
+                accessibilityLabel: 'Compose',
+                tintColor: BLUE,
+                icon: <ComposeIcon color="#FFFFFF" />,
+                onPress: () => setPressed('compose'),
+              },
+            ],
   });
 
-  const [style, setStyle] = useState(0);
   const [tint, setTint] = useState(0);
-  const [scheme, setScheme] = useState(0);
   const [interactive, setInteractive] = useState(true);
   const [radius, setRadius] = useState(28);
   const [blur, setBlur] = useState(8);
@@ -101,8 +123,8 @@ export function GlassLabScreen() {
   const [chromatic, setChromatic] = useState(false);
   const [depth, setDepth] = useState(false);
   const [merged, setMerged] = useState(true);
-  const mode = useColorScheme() ?? 'light';
-  const glassStyle: LiquidGlassStyle = style === 0 ? 'regular' : 'clear';
+  const [muted, setMuted] = useState(false);
+  const [lens, setLens] = useState(0);
 
   return (
     <View style={styles.background}>
@@ -110,7 +132,11 @@ export function GlassLabScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: headerHeight + 8, paddingBottom: insets.bottom + 16 },
+          // Room for the pinned preview above the controls.
+          {
+            paddingTop: headerHeight + 8 + PREVIEW_HEIGHT + 16,
+            paddingBottom: insets.bottom + TAB_BARS_LAB_HEIGHT + 16,
+          },
         ]}
       >
         <MorphToolbar />
@@ -121,46 +147,52 @@ export function GlassLabScreen() {
         </Text>
 
         <LiquidGlassView
-          glassStyle={glassStyle}
-          tintColor={TINTS[tint]}
-          colorScheme={SCHEMES[scheme]}
-          interactive={interactive}
-          cornerRadius={radius}
-          blurRadius={blur}
-          refractionHeight={refractionHeight}
-          refractionAmount={refractionAmount}
-          chromaticAberration={chromatic}
-          depthEffect={depth}
-          style={styles.preview}
-        >
-          <Text style={styles.previewText}>LiquidGlassView</Text>
-        </LiquidGlassView>
-
-        <LiquidGlassView
-          colorScheme={mode}
+          colorScheme={appearance}
           cornerRadius={28}
           style={styles.panel}
         >
-          <Label>Style</Label>
+          <Label>Appearance (everything)</Label>
           <LiquidSegmentedControl
-            colorScheme={mode}
-            segments={['Regular', 'Clear']}
-            selectedIndex={style}
-            onChange={setStyle}
-          />
-          <Label>Tint</Label>
-          <LiquidSegmentedControl
-            colorScheme={mode}
-            segments={['None', 'Blue', 'Pink', 'Green']}
-            selectedIndex={tint}
-            onChange={setTint}
-          />
-          <Label>Color scheme</Label>
-          <LiquidSegmentedControl
-            colorScheme={mode}
+            colorScheme={appearance}
             segments={['System', 'Light', 'Dark']}
             selectedIndex={scheme}
             onChange={setScheme}
+          />
+          <Label>Style</Label>
+          <LiquidSegmentedControl
+            colorScheme={appearance}
+            segments={['Regular', 'Clear', 'Blur %']}
+            selectedIndex={style}
+            onChange={setStyle}
+          />
+          <Label>Blur {Math.round(blurPercent)}%</Label>
+          <LiquidSlider
+            value={blurPercent}
+            minimumValue={0}
+            maximumValue={100}
+            step={1}
+            onValueChange={value => {
+              // Moving it is choosing it.
+              setBlurPercent(value);
+              setStyle(2);
+            }}
+          />
+          <Label>
+            {dark ? 'Black' : 'White'} {Math.round(white)}%
+          </Label>
+          <LiquidSlider
+            value={white}
+            minimumValue={0}
+            maximumValue={100}
+            step={1}
+            onValueChange={setWhite}
+          />
+          <Label>Tint</Label>
+          <LiquidSegmentedControl
+            colorScheme={appearance}
+            segments={['None', 'Blue', 'Pink', 'Green']}
+            selectedIndex={tint}
+            onChange={setTint}
           />
           <View style={styles.row}>
             <Label>Interactive</Label>
@@ -174,7 +206,42 @@ export function GlassLabScreen() {
             onValueChange={setRadius}
           />
 
+          <Text style={styles.section}>Buttons (same glass)</Text>
+          <View style={styles.buttonRow}>
+            <LiquidButton title="Glass" {...glass} />
+            <LiquidButton title="Prominent" variant="prominent" {...glass} />
+            <LiquidIconButton accessibilityLabel="Add" {...glass}>
+              <PlusIcon color={themeColors.label} />
+            </LiquidIconButton>
+          </View>
+          <View style={styles.buttonRow}>
+            <LiquidButton title="Small" size="small" {...glass} />
+            <LiquidButton
+              title="Large"
+              size="large"
+              variant="prominent"
+              tintColor="#30D158"
+              {...glass}
+            />
+            <LiquidButton title="Disabled" disabled {...glass} />
+          </View>
+          <View style={styles.buttonRow}>
+            <LiquidButton
+              morph
+              title={muted ? 'Unmute' : 'Mute'}
+              onPress={() => setMuted(value => !value)}
+              {...glass}
+            />
+          </View>
+
           <Text style={styles.section}>Android only</Text>
+          <Label>Lens</Label>
+          <LiquidSegmentedControl
+            colorScheme={appearance}
+            segments={['iOS', 'Classic']}
+            selectedIndex={lens}
+            onChange={setLens}
+          />
           <Label>Blur {blur.toFixed(1)} dp</Label>
           <LiquidSlider
             value={blur}
@@ -203,8 +270,16 @@ export function GlassLabScreen() {
           </View>
         </LiquidGlassView>
 
+        {/* A plain card, not glass: glass clips its children, which cut the
+            tab bars' drop off at their edges, and the bars should see the
+            page itself, as they do at the bottom of a real screen. */}
+        <View style={[styles.panel, styles.plainPanel]}>
+          <Text style={styles.section}>Tab bars</Text>
+          {tabBars.controls}
+        </View>
+
         <LiquidGlassView
-          colorScheme={mode}
+          colorScheme={appearance}
           cornerRadius={28}
           style={styles.panel}
         >
@@ -234,6 +309,38 @@ export function GlassLabScreen() {
           style={styles.button}
         />
       </ScrollView>
+
+      {/* Pinned at the bottom, outside the ScrollView, like real tab bars. */}
+      <View
+        pointerEvents="box-none"
+        style={[styles.pinnedBars, { bottom: insets.bottom }]}
+      >
+        {tabBars.bars}
+      </View>
+
+      {/* Pinned under the header: every control below changes it in view. */}
+      <View
+        pointerEvents="box-none"
+        style={[styles.pinned, { top: headerHeight + 8 }]}
+      >
+        <LiquidGlassView
+          {...glass}
+          tintColor={TINTS[tint]}
+          colorScheme={appearance}
+          interactive={interactive}
+          cornerRadius={radius}
+          // Blur % sets the Android blur itself; this slider is for the other styles.
+          blurRadius={style === 2 ? undefined : blur}
+          refractionHeight={refractionHeight}
+          refractionAmount={refractionAmount}
+          chromaticAberration={chromatic}
+          androidLens={lens === 0 ? 'ios' : 'classic'}
+          depthEffect={depth}
+          style={styles.preview}
+        >
+          <Text style={styles.previewText}>LiquidGlassView</Text>
+        </LiquidGlassView>
+      </View>
     </View>
   );
 }
@@ -257,8 +364,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginTop: -12,
   },
+  plainPanel: {
+    borderRadius: 28,
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
+  },
+  pinnedBars: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+  },
+  pinned: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+  },
   preview: {
-    height: 160,
+    height: PREVIEW_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -286,6 +407,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 10,
   },
   containerDemo: {
     flexDirection: 'row',
